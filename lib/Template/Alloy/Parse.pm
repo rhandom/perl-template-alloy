@@ -1,8 +1,8 @@
-package CGI::Ex::Template::Parse;
+package Template::Alloy::Parse;
 
 =head1 NAME
 
-CGI::Ex::Template::Parse - Common parsing routines for creating AST from templates
+Template::Alloy::Parse - Common parsing routines for creating AST from templates
 
 =head1 DESCRIPTION
 
@@ -23,7 +23,7 @@ use base qw(Exporter);
 our $VERSION   = '2.13';
 our @EXPORT_OK = qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
 
-use CGI::Ex::Template qw(@CONFIG_COMPILETIME @CONFIG_RUNTIME
+use Template::Alloy qw(@CONFIG_COMPILETIME @CONFIG_RUNTIME
                          $QR_OP $QR_OP_ASSIGN $QR_OP_PREFIX
                          $OP $OP_ASSIGN $OP_PREFIX $OP_POSTFIX);
 
@@ -106,22 +106,22 @@ our $QR_AQ_SPACE  = '(?: \\s+ | \$ | (?=;) )';
 our $_escapes = {n => "\n", r => "\r", t => "\t", '"' => '"', '\\' => '\\', '' => ''};
 
 sub parse_tree {
-    my $syntax = $_[0]->{'SYNTAX'} || 'cet';
-    my $meth   = $CGI::Ex::Template::SYNTAX->{$syntax} || $_[0]->throw('parse', "Unknown SYNTAX \"$syntax\"");
+    my $syntax = $_[0]->{'SYNTAX'} || 'alloy';
+    my $meth   = $Template::Alloy::SYNTAX->{$syntax} || $_[0]->throw('parse', "Unknown SYNTAX \"$syntax\"");
     return $meth->(@_);
 }
 
 ###----------------------------------------------------------------###
 
 sub dump_parse {
-    my $obj = UNIVERSAL::isa($_[0], 'CGI::Ex::Template') ? shift : CGI::Ex::Template->new;
+    my $obj = UNIVERSAL::isa($_[0], 'Template::Alloy') ? shift : Template::Alloy->new;
     my $str = shift;
     require Data::Dumper;
     return Data::Dumper::Dumper($obj->parse_tree(\$str));
 }
 
 sub dump_parse_expr {
-    my $obj = UNIVERSAL::isa($_[0], 'CGI::Ex::Template') ? shift : CGI::Ex::Template->new;
+    my $obj = UNIVERSAL::isa($_[0], 'Template::Alloy') ? shift : Template::Alloy->new;
     my $str = shift;
     require Data::Dumper;
     return Data::Dumper::Dumper($obj->parse_expr(\$str));

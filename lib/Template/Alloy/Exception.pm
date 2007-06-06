@@ -1,8 +1,8 @@
-package CGI::Ex::Template::Exception;
+package Template::Alloy::Exception;
 
 =head1 NAME
 
-CGI::Ex::Template::Exception - Handle exceptions
+Template::Alloy::Exception - Handle exceptions
 
 =cut
 
@@ -42,7 +42,7 @@ sub as_string {
     my $self = shift;
     if ($self->type =~ /^parse/) {
         if (my $doc = $self->doc) {
-            my ($line, $char) = CGI::Ex::Template->get_line_number_by_index($doc, $self->offset, 'include_char');
+            my ($line, $char) = Template::Alloy->get_line_number_by_index($doc, $self->offset, 'include_char');
             return $self->type ." error - $doc->{'name'} line $line char $char: ". $self->info;
         } else {
             return $self->type .' error - '. $self->info .' (At char '. $self->offset .')';

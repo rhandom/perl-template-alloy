@@ -1,15 +1,15 @@
-package CGI::Ex::Template::TT;
+package Template::Alloy::TT;
 
 =head1 NAME
 
-CGI::Ex::Template::TT - provide Template::Toolkit support
+Template::Alloy::TT - provide Template::Toolkit support
 
 =head1 DESCRIPTION
 
 Provides for extra or extended features that may not be as commonly used.
 This module should not normally be used by itself.
 
-See the CGI::Ex::Template documentation for configuration and other parameters.
+See the Template::Alloy documentation for configuration and other parameters.
 
 =head1 AUTHOR
 
@@ -24,8 +24,8 @@ This module may be distributed under the same terms as Perl itself.
 use strict;
 use warnings;
 
-use CGI::Ex::Template::Parse qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
-use CGI::Ex::Template qw(@CONFIG_COMPILETIME $QR_OP_ASSIGN);
+use Template::Alloy::Parse qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
+use Template::Alloy qw(@CONFIG_COMPILETIME $QR_OP_ASSIGN);
 
 our $VERSION = '2.13';
 
@@ -104,7 +104,7 @@ sub parse_tree_tt3 {
                         || $self->throw('parse', 'Missing close }', undef, pos($$str_ref));
                 } else {
                     local $self->{'_operator_precedence'} = 1; # no operators
-                    local $CGI::Ex::Template::Parse::QR_COMMENTS = qr{};
+                    local $Template::Alloy::Parse::QR_COMMENTS = qr{};
                     $ref = $self->parse_expr($str_ref);
                 }
                 $self->throw('parse', "Error while parsing for interpolated string", undef, pos($$str_ref))

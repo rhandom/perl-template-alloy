@@ -1,8 +1,8 @@
-package CGI::Ex::Template::Play;
+package Template::Alloy::Play;
 
 =head1 NAME
 
-CGI::Ex::Template::Play - Take the AST and play it in perl
+Template::Alloy::Play - Take the AST and play it in perl
 
 =head1 DESCRIPTION
 
@@ -19,9 +19,9 @@ This module may be distributed under the same terms as Perl itself.
 use strict;
 use warnings;
 use base qw(Exporter);
-use CGI::Ex::Template qw(@CONFIG_RUNTIME);
+use Template::Alloy qw(@CONFIG_RUNTIME);
 
-our $VERSION    = '2.13';
+our $VERSION    = $Template::Alloy::VERSION;
 our $QR_NUM     = '(?:\d*\.\d+ | \d+)';
 our $DIRECTIVES = {
     BLOCK   => \&play_BLOCK,
@@ -191,7 +191,7 @@ sub play_DUMP {
         my $meth;
         foreach my $prop (keys %$conf) { $obj->$prop($conf->{$prop}) if $prop =~ /^\w+$/ && ($meth = $obj->can($prop)) }
         my $sort = defined($conf->{'Sortkeys'}) ? $obj->Sortkeys : 1;
-        $obj->Sortkeys(sub { my $h = shift; [grep {$_ !~ $CGI::Ex::Template::QR_PRIVATE} ($sort ? sort keys %$h : keys %$h)] });
+        $obj->Sortkeys(sub { my $h = shift; [grep {$_ !~ $Template::Alloy::QR_PRIVATE} ($sort ? sort keys %$h : keys %$h)] });
         $handler = sub { $obj->Values([@_]); $obj->Dump }
     }
 
@@ -216,7 +216,7 @@ sub play_DUMP {
     }
 
     if ($conf->{'html'} || (! defined($conf->{'html'}) && $ENV{'REQUEST_METHOD'})) {
-        $out = $CGI::Ex::Template::SCALAR_OPS->{'html'}->($out);
+        $out = $Template::Alloy::SCALAR_OPS->{'html'}->($out);
         $out = "<pre>$out</pre>";
         $out = "<b>DUMP: File \"$info->{file}\" line $info->{line}</b>$out" if $conf->{'header'} || ! defined $conf->{'header'};
     } else {
@@ -404,7 +404,7 @@ sub play_LOOP {
         ### setup the loop
         $self->throw('loop', 'Scalar value used in LOOP') if $ref && ref($ref) ne 'HASH';
         local $self->{'_vars'} = (! $global) ? ($ref || {}) : (ref($ref) eq 'HASH') ? {%{ $self->{'_vars'} }, %$ref} : $self->{'_vars'};
-        if ($self->{'LOOP_CONTEXT_VARS'} && ! $CGI::Ex::Template::QR_PRIVATE) {
+        if ($self->{'LOOP_CONTEXT_VARS'} && ! $Template::Alloy::QR_PRIVATE) {
             $self->{'_vars'}->{'__counter__'} = ++$i;
             $self->{'_vars'}->{'__first__'} = $i == 1 ? 1 : 0;
             $self->{'_vars'}->{'__last__'}  = $i == @$items ? 1 : 0;
@@ -443,7 +443,7 @@ sub play_MACRO {
 
         ### prevent recursion
         local $self_copy->{'_macro_recurse'} = $self_copy->{'_macro_recurse'} || 0;
-        my $max = $self_copy->{'MAX_MACRO_RECURSE'} || $CGI::Ex::Template::MAX_MACRO_RECURSE;
+        my $max = $self_copy->{'MAX_MACRO_RECURSE'} || $Template::Alloy::MAX_MACRO_RECURSE;
         $self_copy->throw('macro_recurse', "MAX_MACRO_RECURSE $max reached")
             if ++$self_copy->{'_macro_recurse'} > $max;
 
@@ -495,14 +495,14 @@ sub play_PERL {
     ### try the code
     my $err;
     eval {
-        package CGI::Ex::Template::Perl;
+        package Template::Alloy::Perl;
 
         my $context = $self->context;
         my $stash   = $context->stash;
 
         ### setup a fake handle
         local *PERLOUT;
-        tie *PERLOUT, 'CGI::Ex::Template::EvalPerlHandle', $out_ref;
+        tie *PERLOUT, 'Template::Alloy::EvalPerlHandle', $out_ref;
         my $old_fh = select PERLOUT;
 
         eval $out;
@@ -610,7 +610,7 @@ sub play_RAWPERL {
     my $err;
     my $output = '';
     eval {
-        package CGI::Ex::Template::Perl;
+        package Template::Alloy::Perl;
 
         my $context = $self->context;
         my $stash   = $context->stash;
@@ -645,8 +645,8 @@ sub play_SET {
             $val = $self->play_expr($val);
         }
 
-        if ($CGI::Ex::Template::OP_DISPATCH->{$op}) {
-            $val = $CGI::Ex::Template::OP_DISPATCH->{$op}->($self->play_expr($set), $val);
+        if ($Template::Alloy::OP_DISPATCH->{$op}) {
+            $val = $Template::Alloy::OP_DISPATCH->{$op}->($self->play_expr($set), $val);
         }
 
         $self->set_variable($set, $val);
@@ -894,7 +894,7 @@ sub play_WHILE {
     my $sub_tree = $node->[4];
 
     ### iterate use the iterator object
-    my $count = $CGI::Ex::Template::WHILE_MAX;
+    my $count = $Template::Alloy::WHILE_MAX;
     while (--$count > 0) {
 
         $self->play_expr($var) || last;
@@ -909,7 +909,7 @@ sub play_WHILE {
             die $err;
         }
     }
-    die "WHILE loop terminated (> $CGI::Ex::Template::WHILE_MAX iterations)\n" if ! $count;
+    die "WHILE loop terminated (> $Template::Alloy::WHILE_MAX iterations)\n" if ! $count;
 
     return;
 }
@@ -961,7 +961,7 @@ sub list_plugins {
 
 ###----------------------------------------------------------------###
 
-package CGI::Ex::Template::EvalPerlHandle;
+package Template::Alloy::EvalPerlHandle;
 
 sub TIEHANDLE {
     my ($class, $out_ref) = @_;

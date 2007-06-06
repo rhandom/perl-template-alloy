@@ -1,8 +1,8 @@
-package CGI::Ex::Template::Context;
+package Template::Alloy::Context;
 
 =head1 NAME
 
-CGI::Ex::Template::Context - Provide a TT style context
+Template::Alloy::Context - Provide a TT style context
 
 =head1 DESCRIPTION
 
@@ -18,9 +18,9 @@ This module may be distributed under the same terms as Perl itself.
 
 use strict;
 use warnings;
-use base qw(Exporter);
+use Template::Alloy;
 
-our $VERSION   = '2.13';
+our $VERSION = $Template::Alloy::VERSION;
 
 use vars qw($AUTOLOAD);
 
@@ -42,7 +42,7 @@ sub config { shift->_template }
 
 sub stash {
     my $self = shift;
-    return $self->{'stash'} ||= bless {_template => $self->_template}, 'CGI::Ex::Template::_Stash';
+    return $self->{'stash'} ||= bless {_template => $self->_template}, 'Template::Alloy::_Stash';
 }
 
 sub insert {
@@ -99,7 +99,7 @@ sub filter {
 
     my $filter;
     if (! ref $name) {
-        $filter = $t->{'FILTERS'}->{$name} || $CGI::Ex::Template::FILTER_OPS->{$name} || $CGI::Ex::Template::SCALAR_OPS->{$name};
+        $filter = $t->{'FILTERS'}->{$name} || $Template::Alloy::FILTER_OPS->{$name} || $Template::Alloy::SCALAR_OPS->{$name};
         $t->throw('filter', $name) if ! $filter;
     } elsif (UNIVERSAL::isa($name, 'CODE') || UNIVERSAL::isa($name, 'ARRAY')) {
         $filter = $name;
@@ -141,7 +141,7 @@ sub DESTROY {}
 
 ###----------------------------------------------------------------###
 
-package CGI::Ex::Template::_Stash;
+package Template::Alloy::_Stash;
 
 use vars qw($AUTOLOAD);
 
