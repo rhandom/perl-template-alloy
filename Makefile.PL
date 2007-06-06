@@ -8,7 +8,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile(
               NAME          => "Template::Alloy",
               AUTHOR        => "Paul Seamons",
-              ABSTRACT_FROM => "lib/Template/Alloy.pm",
+              ABSTRACT_FROM => "lib/Template/Alloy.pod",
               VERSION_FROM  => "lib/Template/Alloy.pm",
               INSTALLDIRS   => 'site',
               

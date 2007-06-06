@@ -11,7 +11,6 @@ use warnings;
 use Template::Alloy;
 
 our $VERSION = $Template::Alloy::VERSION;
-our $error;
 
 sub parse_tree_velocity {
     my $self    = shift;

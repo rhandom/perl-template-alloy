@@ -18,7 +18,6 @@ This module may be distributed under the same terms as Perl itself.
 
 use strict;
 use warnings;
-use base qw(Exporter);
 use Template::Alloy qw(@CONFIG_RUNTIME);
 
 our $VERSION    = $Template::Alloy::VERSION;

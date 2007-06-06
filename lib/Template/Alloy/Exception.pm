@@ -6,6 +6,9 @@ Template::Alloy::Exception - Handle exceptions
 
 =cut
 
+use strict;
+use warnings;
+
 use overload
     '""' => \&as_string,
     bool => sub { defined shift },

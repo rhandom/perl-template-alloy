@@ -19,13 +19,13 @@ This module may be distributed under the same terms as Perl itself.
 use strict;
 use warnings;
 use base qw(Exporter);
-
-our $VERSION   = '2.13';
-our @EXPORT_OK = qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
-
 use Template::Alloy qw(@CONFIG_COMPILETIME @CONFIG_RUNTIME
                          $QR_OP $QR_OP_ASSIGN $QR_OP_PREFIX
                          $OP $OP_ASSIGN $OP_PREFIX $OP_POSTFIX);
+
+our $VERSION   = $Template::Alloy::VERSION;
+our @EXPORT_OK = qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
+
 
 ###----------------------------------------------------------------###
 
@@ -106,7 +106,7 @@ our $QR_AQ_SPACE  = '(?: \\s+ | \$ | (?=;) )';
 our $_escapes = {n => "\n", r => "\r", t => "\t", '"' => '"', '\\' => '\\', '' => ''};
 
 sub parse_tree {
-    my $syntax = $_[0]->{'SYNTAX'} || 'cet';
+    my $syntax = $_[0]->{'SYNTAX'} || 'alloy';
     my $meth   = $Template::Alloy::SYNTAX->{$syntax} || $_[0]->throw('parse', "Unknown SYNTAX \"$syntax\"");
     return $meth->(@_);
 }
