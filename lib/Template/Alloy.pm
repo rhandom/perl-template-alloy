@@ -1,7 +1,7 @@
-package CGI::Ex::Template;
+package Template::Alloy;
 
 ###----------------------------------------------------------------###
-#  See the perldoc in CGI/Ex/Template.pod
+#  See the perldoc in Template/Alloy.pod
 #  Copyright 2007 - Paul Seamons                                     #
 #  Distributed under the Perl Artistic License without warranty      #
 ###----------------------------------------------------------------###
@@ -9,9 +9,9 @@ package CGI::Ex::Template;
 use strict;
 use warnings;
 use base qw(Exporter);
-use CGI::Ex::Template::Exception;
+use Template::Alloy::Exception;
 
-our $VERSION   = '2.14';
+our $VERSION   = '1.001';
 our @EXPORT_OK = qw(@CONFIG_COMPILETIME @CONFIG_RUNTIME
                     $QR_OP $QR_OP_ASSIGN $QR_OP_PREFIX $QR_PRIVATE
                     $OP $OP_ASSIGN $OP_PREFIX $OP_POSTFIX $OP_DISPATCH);
@@ -1200,21 +1200,21 @@ sub exception {
             $type = 'undef';
         }
     }
-    return CGI::Ex::Template::Exception->new($type, $info, @_);
+    return Template::Alloy::Exception->new($type, $info, @_);
 }
 
 sub throw { die shift->exception(@_) }
 
 sub context {
     my $self = shift;
-    require CGI::Ex::Template::Context;
-    return CGI::Ex::Template::Context->new({_template => $self});
+    require Template::Alloy::Context;
+    return Template::Alloy::Context->new({_template => $self});
 }
 
 sub iterator {
     my $self = shift;
-    require CGI::Ex::Template::Iterator;
-    CGI::Ex::Template::Iterator->new(@_);
+    require Template::Alloy::Iterator;
+    Template::Alloy::Iterator->new(@_);
 }
 
 sub undefined_get {
@@ -1310,8 +1310,8 @@ sub define_operator {
 
 sub define_directive {
     my ($self, $name, $args) = @_;
-    require CGI::Ex::Template::Parse;
-    $CGI::Ex::Template::Parse::DIRECTIVES->{$name} = [@{ $args }{qw(parse_sub play_sub is_block is_postop continues no_interp)}];
+    require Template::Alloy::Parse;
+    $Template::Alloy::Parse::DIRECTIVES->{$name} = [@{ $args }{qw(parse_sub play_sub is_block is_postop continues no_interp)}];
     return 1;
 }
 
@@ -1544,4 +1544,4 @@ sub filter_redirect {
 
 1;
 
-### See the perldoc in CGI/Ex/Template.pod
+### See the perldoc in Template/Alloy.pod
