@@ -848,7 +848,7 @@ ${indent}${INDENT}select \$old_fh;
 ${indent}};
 ${indent}\$err ||= \$\@;
 ${indent}if (\$err) {
-${indent}${INDENT}\$self->throw('undef', \$err) if ! UNIVERSAL::can(\$err, 'type');
+${indent}${INDENT}\$self->throw('undef', \$err) if ref(\$err) !~ /Template::Exception\$/;
 ${indent}${INDENT}die \$err;
 ${indent}}";
 
@@ -1017,7 +1017,7 @@ ${indent}if (\$err) {";
     }
     if (@names) {
         $$str_ref .= "
-${indent}${INDENT}\$err = \$self->exception('undef', \$err) if ! UNIVERSAL::can(\$err, 'type');
+${indent}${INDENT}\$err = \$self->exception('undef', \$err) if ref(\$err) !~ /Template::Exception\$/;
 ${indent}${INDENT}my \$type = \$err->type;
 ${indent}${INDENT}die \$err if \$type =~ /stop|return/;
 ${indent}${INDENT}local \$self->{'_vars'}->{'error'} = \$err;

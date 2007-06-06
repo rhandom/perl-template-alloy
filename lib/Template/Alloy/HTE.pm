@@ -23,8 +23,9 @@ This module may be distributed under the same terms as Perl itself.
 
 use strict;
 use warnings;
+use Template::Alloy;
 
-our $VERSION = '2.13';
+our $VERSION = $Template::Alloy::VERSION;
 our %DOCUMENTS; # global cache used with new(cache => 1) and output
 
 ###----------------------------------------------------------------###
