@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-02_view.t - Test the ability to handle views in Template::Alloy
+7_template_02_view.t - Test the ability to handle views in Template::Alloy
 
 =cut
 
