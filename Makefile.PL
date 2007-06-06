@@ -34,8 +34,8 @@ sub postamble {
     
 pm_to_blib: README
 
-README: \$(ABSTRACT_FROM)
-	pod2text \$(ABSTRACT_FROM) > README
+README: \$(VERSION_FROM)
+	pod2text \$(VERSION_FROM) > README
 ^;
 }
 
