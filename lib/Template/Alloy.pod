@@ -1,12 +1,12 @@
 =head1 NAME
 
-CGI::Ex::Template - Fast and lightweight TT2/3 template engine
+Template::Alloy - Fast and lightweight TT2/3 template engine
 
 =head1 SYNOPSIS
 
     ### Template::Toolkit style usage
 
-    my $t = CGI::Ex::Template->new(
+    my $t = Template::Alloy->new(
         INCLUDE_PATH => ['/path/to/templates'],
     );
 
@@ -25,12 +25,12 @@ CGI::Ex::Template - Fast and lightweight TT2/3 template engine
     my $out = '';
     $t->process('my/template.tt', $swap, \$out);
 
-    ### CET uses the same syntax and configuration as Template::Toolkit
+    ### Alloy uses the same syntax and configuration as Template::Toolkit
 
 
     ### HTML::Template style usage
 
-    my $t = CGI::Ex::Template->new(
+    my $t = Template::Alloy->new(
         filename => 'my/template.ht',
         path     => ['/path/to/templates'],
     );
@@ -50,56 +50,56 @@ CGI::Ex::Template - Fast and lightweight TT2/3 template engine
     # process into a variable
     my $out = $t->output;
 
-    ### CET can also use the same syntax and configuration as HTML::Template
+    ### Alloy can also use the same syntax and configuration as HTML::Template
 
 =head1 DESCRIPTION
 
-CGI::Ex::Template happened by accident (accidentally on purpose).  The
-CGI::Ex::Template (CET hereafter) was originally a part of the CGI::Ex
+Template::Alloy happened by accident (accidentally on purpose).  The
+Template::Alloy (Alloy hereafter) was originally a part of the CGI::Ex
 suite that performed simple variable interpolation.  It used TT2 style
 variables in TT2 style tags "[% foo.bar %]".  That was all the
-original CGI::Ex::Template did.  This was fine and dandy for a couple
-of years.  In winter of 2005-2006 CET was revamped to add a few
-features.  One thing led to another and soon CET provided for most of
-the features of TT2 as well as some from TT3.  CGI::Ex::Template is a
+original Template::Alloy did.  This was fine and dandy for a couple
+of years.  In winter of 2005-2006 Alloy was revamped to add a few
+features.  One thing led to another and soon Alloy provided for most of
+the features of TT2 as well as some from TT3.  Template::Alloy is a
 full-featured implementation of the Template::Toolkit language.
 
-As of version 2.13, CGI::Ex::Template also provides near full
+As of version 2.13, Template::Alloy also provides near full
 compatibility with HTML::Template (HT), HTML::Template::JIT (HTJ), and
 HTML::Template::Expr (HTE).  Version 2.13 introduced the SYNTAX
 configuration allowing for inclusion of TT style templates in HT and
 vice versa.  It also provided the HTML::Template output and param
-methods which allow CET to provide the HTML::Template interface.  It
-was possible to add this extra functionality because CGI::Ex::Template
+methods which allow Alloy to provide the HTML::Template interface.  It
+was possible to add this extra functionality because Template::Alloy
 employs an open architecture.
 
-CGI::Ex::Template uses a recursive regex based grammar (early versions
+Template::Alloy uses a recursive regex based grammar (early versions
 before the 2.10 release did not).  This allows for the embedding of
 opening and closing tags inside other tags (as in [% a = "[% 1 + 2 %]"
 ; a|eval %]).  The individual methods such as parse_expr and play_expr
 may be used by external applications to add TT style variable parsing
 to other applications.
 
-CGI::Ex::Template is fast but CGI::Ex::Template::XS is even faster.
-If CGI::Ex::Template isn't fast enough for you, the XS version has key
+Template::Alloy is fast but Template::Alloy::XS is even faster.
+If Template::Alloy isn't fast enough for you, the XS version has key
 methods coded in C and provides a noticable improvement over the
-non-XS version.  CET by itself is generally faster than TT, HT, and HTE.
-The XS version is nearly always faster - even than HTJ.  CET also uses less
+non-XS version.  Alloy by itself is generally faster than TT, HT, and HTE.
+The XS version is nearly always faster - even than HTJ.  Alloy also uses less
 memory than TT and HTE, and only a little more than HT.  (This is all
 as of version 2.13 in May 2007 - those other modules will undoubtedly
 receive updates that will improve their performance).
 
 Most of the standard Template::Toolkit documentation covering
 directives, variables, configuration, plugins, filters, syntax, and
-vmethods should apply to CET just fine (This pod tries to explain
+vmethods should apply to Alloy just fine (This pod tries to explain
 everything - but there is too much).  The section on differences
-between CET and TT will explain what too look out for.
+between Alloy and TT will explain what too look out for.
 
 Additionally, most of the standard HTML::Template and
 HTML::Template::Expr documentation covering methods, variables,
-expressions, and syntax will apply to CET just fine as well.
+expressions, and syntax will apply to Alloy just fine as well.
 
-So should you use CGI::Ex::Template ?  Well, try it out.  It may
+So should you use Template::Alloy ?  Well, try it out.  It may
 give you no visible improvement.  Or it could.
 
 =head1 PUBLIC METHODS
@@ -111,13 +111,13 @@ commonly used public methods are listed later in this document.
 
 =item C<new>
 
-    my $obj = CGI::Ex::Template->new({
+    my $obj = Template::Alloy->new({
         INCLUDE_PATH => ['/my/path/to/content', '/my/path/to/content2'],
     });
 
-Arguments may be passed as a hash or as a hashref.  Returns a CGI::Ex::Template object.
+Arguments may be passed as a hash or as a hashref.  Returns a Template::Alloy object.
 
-There are currently no errors during CGI::Ex::Template object creation.  If you are
+There are currently no errors during Template::Alloy object creation.  If you are
 using the HTML::Template interface, this is different behavior.  The document is
 not parsed until the output or process methods are called.
 
@@ -127,7 +127,7 @@ This is the main method call for starting processing.  Any errors that result in
 template processing being stopped will be stored and available via the ->error method.
 This is the TT compatible method - see the output method for HT compatibility.
 
-    my $t = CGI::Ex::Template->new;
+    my $t = Template::Alloy->new;
     $t->process($in, $swap, $out)
         || die $t->error;
 
@@ -174,7 +174,7 @@ The process method defaults to using the "cet" syntax which will parse TT3 and m
 TT2 documents.  To parse HT or HTE documents, you must pass the SYNTAX configuration
 item to the "new" method.  All calls to process would then default to HTE syntax.
 
-    my $obj = CGI::Ex::Template->new(SYNTAX => 'hte');
+    my $obj = Template::Alloy->new(SYNTAX => 'hte');
 
 =item C<process_simple>
 
@@ -199,10 +199,10 @@ be retrieved via the error method.
 
 HTML::Template way to process a template.  The output method requires that a filename,
 filehandle, scalarref, or arrayref argument was passed to the new method.  All of
-the HT calling conventions for new are supported.  The key difference is that CET will
+the HT calling conventions for new are supported.  The key difference is that Alloy will
 not actually process the template until the output method is called.
 
-    my $obj = CGI::Ex::Template->new(filename => 'myfile.html');
+    my $obj = Template::Alloy->new(filename => 'myfile.html');
     $obj->param(\%swap);
     print $obj->output;
 
@@ -212,7 +212,7 @@ The output method defaults to using the "hte" syntax which will parse HTE and HT
 To parse TT3 or TT2 documents, you must pass the SYNTAX configuration
 item to the "new" method.  All calls to process would then default to TT3 syntax.
 
-    my $obj = CGI::Ex::Template->new(SYNTAX => 'tt3');
+    my $obj = Template::Alloy->new(SYNTAX => 'tt3');
 
 Any errors that occur during the output method will die with the error as the die value.
 
@@ -230,7 +230,7 @@ HTML::Template way to get or set variable values that will be used by the output
 
 See the HTML::Template documentation for more information.
 
-Note: CET does not support the die_on_bad_params configuration.  This is because CET
+Note: Alloy does not support the die_on_bad_params configuration.  This is because Alloy
 does not resolve variable names until the output method is called.
 
 =item C<define_vmethod>
@@ -238,7 +238,7 @@ does not resolve variable names until the output method is called.
 This method is available for defining extra Virtual methods or filters.  This method is similar
 to Template::Stash::define_vmethod.
 
-    CGI::Ex::Template->define_vmethod(
+    Template::Alloy->define_vmethod(
         'text',
         reverse => sub { my $item = shift; return scalar reverse $item },
     );
@@ -248,7 +248,7 @@ to Template::Stash::define_vmethod.
 This is the HTML::Template way of defining text vmethods.  It is the same as
 calling define_vmethod with "text" as the first argument.
 
-    CGI::Ex::Template->register_function(
+    Template::Alloy->register_function(
         reverse => sub { my $item = shift; return scalar reverse $item },
     );
 
@@ -257,7 +257,7 @@ calling define_vmethod with "text" as the first argument.
 This method can be used for adding new directives or overridding existing
 ones.
 
-   CGI::Ex::Template->define_directive(
+   Template::Alloy->define_directive(
        MYDIR => {
            parse_sub => sub {}, # parse additional items in the tag
            play_sub  => sub {
@@ -275,7 +275,7 @@ ones.
 Now with a template like:
 
    my $str = "([% MYDIR %]This is something[% END %])";
-   CGI::Ex::Template->new->process(\$str);
+   Template::Alloy->new->process(\$str);
 
 You will get:
 
@@ -286,10 +286,10 @@ We'll add more details in later revisions of this document.
 =item C<define_syntax>
 
 This method can be used for adding other syntaxes to or overridding
-existing ones in the list of choices available in CET.  The syntax can
+existing ones in the list of choices available in Alloy.  The syntax can
 be chosen by the SYNTAX configuration item.
 
-    CGI::Ex::Template->define_syntax(
+    Template::Alloy->define_syntax(
         my_uber_syntax => sub {
             my $self = shift;
             local $self->{'V2PIPE'}      = 0;
@@ -308,7 +308,7 @@ can be played by the execute_tree method.
 
 This method allows for adding new operators or overriding existing ones.
 
-    CGI::Ex::Template->define_operator({
+    Template::Alloy->define_operator({
         type       => 'right', # can be one of prefix, postfix, right, left, none, ternary, assign
         precedence => 84,      # relative precedence for resolving multiple operators without parens
         symbols    => ['foo', 'FOO'], # any mix of chars can be used for the operators
@@ -321,7 +321,7 @@ This method allows for adding new operators or overriding existing ones.
 You can then use it in a template as in the following:
 
    my $str = "[% 'ralph' foo 1 + 2 * 3 %]";
-   CGI::Ex::Template->new->process(\$str);
+   Template::Alloy->new->process(\$str);
 
 You will get:
 
@@ -344,13 +344,13 @@ Add more functions to the XS version.
 
 Find other syntaxes to include.
 
-=head1 HOW IS CGI::Ex::Template DIFFERENT from Template::Toolkit
+=head1 HOW IS Template::Alloy DIFFERENT from Template::Toolkit
 
-CET uses the same base template syntax and configuration items as TT2,
-but the internals of CET were written from scratch.  Additionally much
+Alloy uses the same base template syntax and configuration items as TT2,
+but the internals of Alloy were written from scratch.  Additionally much
 of the planned TT3 syntax is supported as well as most of that of
 HTML::Template::Expr.  The following is a list of some of the ways
-that the configuration and syntax of CET are different from that of
+that the configuration and syntax of Alloy are different from that of
 TT2.  Note: items that are planned to work in TT3 are marked with
 (TT3).
 
@@ -537,7 +537,7 @@ Allow all Scalar vmethods to behave as top level functions.
 
     [% sprintf("%d %d", 7, 8) %] # = "7 8"
 
-The following are equivalent in CET:
+The following are equivalent in Alloy:
 
     [% "abc".length %]
     [% length("abc") %]
@@ -702,7 +702,7 @@ Added CONFIG directive.
 Configuration options can use lowercase names instead
 of the all uppercase names that TT2 uses.
 
-    my $t = CGI::Ex::Template->new({
+    my $t = Template::Alloy->new({
         anycase     => 1,
         interpolate => 1,
     });
@@ -723,7 +723,7 @@ Added LOOP directive (works the same as LOOP in HTML::Template.
 
 =item
 
-CET can parse HTML::Template and HTML::Template::Expr documents
+Alloy can parse HTML::Template and HTML::Template::Expr documents
 as well as TT2 and TT3 documents.
 
 =item
@@ -738,7 +738,7 @@ included templates or eval'ed strings.
 
 =item
 
-CET does not generate Perl code.
+Alloy does not generate Perl code.
 
 It generates an "opcode" tree.  The opcode tree is an arrayref
 of scalars and array refs nested as deeply as possible.  This "simple"
@@ -747,9 +747,9 @@ via JSON or YAML.
 
 =item
 
-CET uses storable for its compiled templates.
+Alloy uses storable for its compiled templates.
 
-If EVAL_PERL is off, CET will not eval_string on ANY piece of information.
+If EVAL_PERL is off, Alloy will not eval_string on ANY piece of information.
 
 =item
 
@@ -763,7 +763,7 @@ configuration items.
 
 There is no context.
 
-CET provides a context object that mimics the Template::Context
+Alloy provides a context object that mimics the Template::Context
 interface for use by some TT filters, eval perl blocks, views,
 and plugins.
 
@@ -773,8 +773,8 @@ There is no stash.
 
 Well there is but it isn't an object.
 
-CET only supports the variables passed in VARIABLES, PRE_DEFINE, and
-those passed to the process method.  CET provides a stash object that
+Alloy only supports the variables passed in VARIABLES, PRE_DEFINE, and
+those passed to the process method.  Alloy provides a stash object that
 mimics the Template::Stash interface for use by some TT filters, eval
 perl blocks, and plugins.
 
@@ -782,16 +782,16 @@ perl blocks, and plugins.
 
 There is no provider.
 
-CET uses the load_parsed_tree method to get and cache templates.
+Alloy uses the load_parsed_tree method to get and cache templates.
 
 =item
 
 There is no parser/grammar.
 
-CET has its own built-in recursive regex based parser and grammar system.
+Alloy has its own built-in recursive regex based parser and grammar system.
 
-CET can actually be substituted in place of the native Template::Parser and
-Template::Grammar in TT by using the Template::Parser::CET module.  This
+Alloy can actually be substituted in place of the native Template::Parser and
+Template::Grammar in TT by using the Template::Parser::Alloy module.  This
 module uses the output of parse_tree to generate a TT style compiled perl
 document.
 
@@ -803,7 +803,7 @@ It only understands DEBUG_DIRS (8) and DEBUG_UNDEF (2).
 
 =item
 
-CET has better line information
+Alloy has better line information
 
 When debug dirs is on, directives on different lines separated
 by colons show the line they are on rather than a general line range.
@@ -812,12 +812,12 @@ Parse errors actually know what line and character they occured at.
 
 =back
 
-=head1 HOW IS CGI::Ex::Template DIFFERENT from HTML::Template
+=head1 HOW IS Template::Alloy DIFFERENT from HTML::Template
 
-CET can use the same base template syntax and configuration items as HTE
-and HT.  The internals of CET were written to support TT3, but were
+Alloy can use the same base template syntax and configuration items as HTE
+and HT.  The internals of Alloy were written to support TT3, but were
 general enough to be extended to support HTML::Template as well.  The result
-is HTML::Template::Expr compatible syntax, with CET speed and a wide range
+is HTML::Template::Expr compatible syntax, with Alloy speed and a wide range
 of additional features.
 
 The TMPL_VAR, TMPL_IF, TMPL_ELSE, TMPL_UNLESS, TMPL_LOOP, and TMPL_INCLUDE
@@ -901,13 +901,13 @@ Allow for Expr parsing to follow proper precedence rules.
 =item
 
 Uses all of the caching and opcode tree optimations provided by
-CGI::Ex::Template and CGI::Ex::Template::XS.
+Template::Alloy and Template::Alloy::XS.
 
 =item
 
-CET does not provide the query method from HTML::Template.  This
+Alloy does not provide the query method from HTML::Template.  This
 is because parsing of the document is delayed until the output
-method is called, and because CET supports TT style chained
+method is called, and because Alloy supports TT style chained
 variables which often are not resolvable until run time.
 
 =back
@@ -919,7 +919,7 @@ mini-language.
 
 A variable is the most simple construct to insert into the TT mini
 language.  A variable name will look for the matching value inside
-CGI::Ex::Templates internal stash of variables which is essentially a
+Template::Alloys internal stash of variables which is essentially a
 hash reference.  This stash is initially populated by either passing a
 hashref as the second argument to the process method, or by setting
 the "VARIABLES" or "PRE_DEFINE" configuration variables.
@@ -944,15 +944,15 @@ The following are some sample ways to access variables.
             vname => 'one',
         },
         my_list   => [20 .. 50],
-        cet       => CGI::Ex::Template->new,
+        cet       => Template::Alloy->new,
     );
 
-    ### pass the variables into the CET process
+    ### pass the variables into the Alloy process
     $cet->process($template_name, \%vars)
          || die $cet->error;
 
     ### pass the variables during object creation (will be available to every process call)
-    my $cet = CGI::Ex::Template->new(VARIABLES => \%vars);
+    my $cet = Template::Alloy->new(VARIABLES => \%vars);
 
 =head2 GETTING VARIABLES
 
@@ -1008,7 +1008,7 @@ the "." operator.
 
 Would print something like:
 
-    CGI::Ex::Template=HASH(0x814dc28)
+    Template::Alloy=HASH(0x814dc28)
 
     $VAR1 = [ [ undef, '+', '1', '2' ], 0 ];
 
@@ -1047,7 +1047,7 @@ Would print:
     3234
     3234
 
-In CET it is also possible to embed any expression (non-directive) in
+In Alloy it is also possible to embed any expression (non-directive) in
 "${" and "}" and it is possible to use non-integers for array access.
 (This is not available in TT2)
 
@@ -1117,9 +1117,9 @@ Would print
 =head1 LITERALS AND CONSTRUCTORS
 
 The following are the types of literals (numbers and strings) and
-constructors (hash and array constructs) allowed in CET.  They can be
+constructors (hash and array constructs) allowed in Alloy.  They can be
 used as arguments to functions, in place of variables in directives,
-and in place of variables in expressions.  In CET it is also possible
+and in place of variables in expressions.  In Alloy it is also possible
 to call virtual methods on literal values.
 
 =over 4
@@ -1153,9 +1153,9 @@ Returns the string.  No variable interpolation happens.
     [% str = 'A string' %]  Sets the value of str.
     [% 'A string'.split %]  Splits the string on ' ' and returns the list.
 
-Note: virtual methods can only be used on literal strings in CET, not in TT.
+Note: virtual methods can only be used on literal strings in Alloy, not in TT.
 
-You may also embed the current tags in strings (CET only).
+You may also embed the current tags in strings (Alloy only).
 
     [% '[% 1 + 2 %]' | eval %]  Prints "3"
 
@@ -1170,9 +1170,9 @@ Returns the string.  Variable interpolation happens.
     [% str = "Hello" %]              Sets the value of str.
     [% "foo".replace('foo','bar') %] Prints "bar".
 
-Note: virtual methods can only be used on literal strings in CET, not in TT.
+Note: virtual methods can only be used on literal strings in Alloy, not in TT.
 
-You may also embed the current tags in strings (CET only).
+You may also embed the current tags in strings (Alloy only).
 
     [% "[% 1 + 2 %]" | eval %]  Prints "3"
 
@@ -1184,7 +1184,7 @@ You may also embed the current tags in strings (CET only).
     [% [4, 5, 6].size %]          Prints 3.
     [% [7, 8, 9].reverse.0 %]     Prints 9.
 
-Note: virtual methods can only be used on array contructs in CET, not in TT.
+Note: virtual methods can only be used on array contructs in Alloy, not in TT.
 
 =item Quoted Array Constructs.
 
@@ -1193,7 +1193,7 @@ Note: virtual methods can only be used on array contructs in CET, not in TT.
     [% qw[4 5 6].size %]           Prints 3.
     [% qw(Red Blue).reverse.0 %]   Prints Blue.
 
-Note: this works in CET and is planned for TT3.
+Note: this works in Alloy and is planned for TT3.
 
 =item Hash Constructs.
 
@@ -1205,14 +1205,14 @@ Note: this works in CET and is planned for TT3.
     [% {Tom => 'You are Tom',
         Kay => 'You are Kay'}.$name %]   Prints You are Tom
 
-Note: virtual methods can only be used on hash contructs in CET, not in TT.
+Note: virtual methods can only be used on hash contructs in Alloy, not in TT.
 
 =item Regex Constructs.
 
     [% /foo/ %]                              Prints (?-xism:foo)
     [% a = /(foo)/i %][% "FOO".match(a).0 %] Prints FOO
 
-Note: this works in CET and is planned for TT3.
+Note: this works in Alloy and is planned for TT3.
 
 =head1 EXPRESSIONS
 
@@ -1238,7 +1238,7 @@ list of available operators, please see the section titled OPERATORS.
 The following is the list of builtin virtual methods and filters that
 can be called on each type of data.
 
-In CGI::Ex::Template, the "|" operator can be used to call virtual
+In Template::Alloy, the "|" operator can be used to call virtual
 methods just the same way that the "." operator can.  The main
 difference between the two is that on access to hashrefs or objects,
 the "|" means to always call the virtual method or filter rather than
@@ -1251,12 +1251,12 @@ are discussed in a later section.
 =head2 SCALAR VIRTUAL METHODS AND FILTERS
 
 The following is the list of builtin virtual methods and filters that
-can be called on scalar data types.  In CET and TT3, filters and
+can be called on scalar data types.  In Alloy and TT3, filters and
 virtual methods are more closely related than in TT2.  In general
 anywhere a virtual method can be used a filter can be used also - and
 likewise all scalar virtual methods can be used as filters.
 
-In addition to the filters listed below, CET will automatically load
+In addition to the filters listed below, Alloy will automatically load
 Template::Filters and use them if Template::Toolkit is installed.
 
 In addition to the scalar virtual methods, any scalar will be
@@ -1267,7 +1267,7 @@ Scalar virtual methods are also available through the "Text" virtual
 object (except for true filters such as eval and redirect).
 
 All scalar virtual methods are available as top level functions as well.
-This is not true of TT2.  In CGI::Ex::Template the following are equivalent:
+This is not true of TT2.  In Template::Alloy the following are equivalent:
 
     [% "abc".length %]
     [% length("abc") %]
@@ -1314,7 +1314,7 @@ Returns the arctangent.  The item itself represents Y, the passed argument repre
     [% item.eval %]
 
 Process the string as though it was a template.  This will start the parsing
-engine and will use the same configuration as the current process.  CET is several times
+engine and will use the same configuration as the current process.  Alloy is several times
 faster at doing this than TT is and is considered acceptable.
 
 This is a filter and is not available via the Text virtual object.
@@ -1410,7 +1410,7 @@ Returns the natural log base "e" of the item.
 
     [% item.match("(\w+) (\w+)", 1) %] Same as before - but match globally.
 
-In CGI::Ex::Template and TT3 you can use regular expressions notation as well.
+In Template::Alloy and TT3 you can use regular expressions notation as well.
 
     [% item.match( /(\w+) (\w+)/ ) %] Same as before.
 
@@ -1462,7 +1462,7 @@ This is a filter and is not available via the Text virtual object.
 
     [% item.replace("(\w+)", "($1)") %] Surround all words with parenthesis.
 
-In CGI::Ex::Template and TT3 you may also use normal regular expression notation.
+In Template::Alloy and TT3 you may also use normal regular expression notation.
 
     [% item.replace(/(\w+)/, "($1)") %] Same as before.
 
@@ -1470,7 +1470,7 @@ In CGI::Ex::Template and TT3 you may also use normal regular expression notation
 
     [% item.search("(\w+)") %] Tests if the given pattern is in the string.
 
-In CGI::Ex::Template and TT3 you may also use normal regular expression notation.
+In Template::Alloy and TT3 you may also use normal regular expression notation.
 
     [% item.search(/(\w+)/, "($1)") %] Same as before.
 
@@ -1490,7 +1490,7 @@ In CGI::Ex::Template and TT3 you may also use normal regular expression notation
 
     [% item.split("\s+", 3) %] Returns an arrayref from the item split on /\s+/ splitting until 3 elements are found.
 
-In CGI::Ex::Template and TT3 you may also use normal regular expression notation.
+In Template::Alloy and TT3 you may also use normal regular expression notation.
 
     [% item.split( /\s+/, 3 ) %] Same as before.
 
@@ -1756,8 +1756,8 @@ and represent the keys to be deleted.
 
 TT3 has a concept of Text, List, and Hash virtual objects which provide
 direct access to the scalar, list, and hash virtual methods.  In the TT3
-engine this will allow for more concise generated code.  Because CET does
-not generated perl code to be executed later, CET provides for these virtual
+engine this will allow for more concise generated code.  Because Alloy does
+not generated perl code to be executed later, Alloy provides for these virtual
 objects but does so as more of a namespace (using the methods does not
 provide a speed optimization in your template - just may help clarify things).
 
@@ -1799,11 +1799,11 @@ the pipe operator.
        | List.join(", ") %] => a, b
 
 Again, there aren't any speed optimizations to using the virtual
-objects in CET, but it can help clarify the intent in some cases.
+objects in Alloy, but it can help clarify the intent in some cases.
 
 Note: these aren't really objects.  All of the "virtual objects" are
 references to the $SCALAR_OPS, $LIST_OPS, and $HASH_OPS hashes
-found in the $VOBJS hash of CGI::Ex::Template.
+found in the $VOBJS hash of Template::Alloy.
 
 =head1 DIRECTIVES (TT Style)
 
@@ -1826,7 +1826,7 @@ directive that can also be used as a post-operative directive (such as
 IF, WHILE, FOREACH, UNLESS, FILTER, and WRAPPER) must be separated
 from preceding directives with a semi-colon if it is being used as a
 block directive.  It is more safe to always use a semi-colon.  Note:
-separating by space is only available in CET but is a planned TT3
+separating by space is only available in Alloy but is a planned TT3
 feature.
 
     [% SET a = 1 ; SET a = 2 ; GET a %]
@@ -1985,16 +1985,16 @@ Used to end a block directive.
 =item C<FILTER>
 
 Used to apply different treatments to blocks of text.  It may operate as a BLOCK
-directive or as a post operative directive.  CET supports all of the filters in
+directive or as a post operative directive.  Alloy supports all of the filters in
 Template::Filters.  The lines between scalar virtual methods and filters is blurred (or
-non-existent) in CET.  Anything that is a scalar virtual method may be used as a FILTER.
+non-existent) in Alloy.  Anything that is a scalar virtual method may be used as a FILTER.
 
 TODO - enumerate the at least 7 ways to pass and use filters.
 
 =item C<'|'>
 
 Alias for the FILTER directive.  Note that | is similar to the
-'.' in CGI::Ex::Template.  Therefore a pipe cannot be used directly after a
+'.' in Template::Alloy.  Therefore a pipe cannot be used directly after a
 variable name in some situations (the pipe will act only on that variable).
 This is the behavior employed by TT3.  To get the TT2 behavior for a PIPE, use
 the V2PIPE configuration item.
@@ -2061,7 +2061,7 @@ Would print:
         Key a = 1
         Key a = 2
 
-The FOREACH process uses the CGI::Ex::Template::Iterator class to handle
+The FOREACH process uses the Template::Alloy::Iterator class to handle
 iterations (It is compatible with Template::Iterator).  During the FOREACH
 loop an object blessed into the iterator class is stored in the variable "loop".
 
@@ -2209,7 +2209,7 @@ Would print:
 
      (1)  (2)  (3) 
 
-If CET is in HT mode and GLOBAL_VARS is false, the contents of
+If Alloy is in HT mode and GLOBAL_VARS is false, the contents of
 the hashref will be the only items available during the loop iteration.
 
 If LOOP_CONTEXT_VARS is true, and $QR_PRIVATE is false (default when
@@ -2282,7 +2282,7 @@ Would print:
 During execution, anything printed to STDOUT will be inserted into the template.  Also,
 the $stash and $context variables are set and are references to objects that mimic the
 interface provided by Template::Context and Template::Stash.  These are provided for
-compatibility only.  $self contains the current CGI::Ex::Template object.
+compatibility only.  $self contains the current Template::Alloy object.
 
 =item C<PROCESS>
 
@@ -2483,7 +2483,7 @@ Would print something like:
       Error.info.foo:      bar
 
 You can also give the CATCH block a type to catch.  And you
-can nest TRY blocks.  If types are specified, CET will try and
+can nest TRY blocks.  If types are specified, Alloy will try and
 find the closest matching type.  Also, an error object can
 be re-thrown using $error as the argument to THROW.
 
@@ -2547,14 +2547,14 @@ Would print:
 Plugins that are loaded are looked up for in the namespace listed in
 the PLUGIN_BASE directive which defaults to Template::Plugin.  So in
 the previous example, if Template::Toolkit was installed, the iter
-object would loaded by the class Template::Plugin::Iterator.  In CET,
+object would loaded by the class Template::Plugin::Iterator.  In Alloy,
 an effective way to disable plugins is to set the PLUGIN_BASE to a
 non-existent base such as "_" (In TT it will still fall back to look
 in Template::Plugin).
 
 Note: The iterator plugin will fall back and use
-CGI::Ex::Template::Iterator if Template::Toolkit is not installed.  No
-other plugins come installed with CGI::Ex::Template.
+Template::Alloy::Iterator if Template::Toolkit is not installed.  No
+other plugins come installed with Template::Alloy.
 
 The names of the Plugin being loaded from PLUGIN_BASE are case
 insensitive.  However, using case insensitive names is bad as it
@@ -2562,12 +2562,12 @@ requires scanning the @INC directories for any module matching the
 PLUGIN_BASE and caching the result (OK - not that bad).
 
 If the plugin is not found and the LOAD_PERL directive is set, then
-CET will try and load a module by that name (note: this type of lookup
+Alloy will try and load a module by that name (note: this type of lookup
 is case sensitive and will not scan the @INC dirs for a matching
 file).
 
     # The LOAD_PERL directive should be set to 1
-    [% USE cet = CGI::Ex::Template %]
+    [% USE cet = Template::Alloy %]
     [%~ cet.dump_parse_expr('2 * 3').replace('\s+', ' ') %]
 
 Would print:
@@ -2618,7 +2618,7 @@ Note that (f = f - 1) is a valid expression that returns the value
 of the assignment.  The parenthesis are not optional.
 
 WHILE has a built in limit of 1000 iterations.  This is controlled by the
-global variable $WHILE_MAX in CGI::Ex::Template.
+global variable $WHILE_MAX in Template::Alloy.
 
 WHILE may also be used as a post operative directive.
 
@@ -2687,7 +2687,7 @@ be operated.  If a NAME is specified, it may only be a single
 level value (as opposed to a TT chained variable).  In the case
 of the TMPL_INCLUDE directive, the NAME is the file to be included.
 
-In CET, the EXPR attribute can be used with any of these types to
+In Alloy, the EXPR attribute can be used with any of these types to
 specify TT compatible variable or expression that will be used for
 the value.
 
@@ -2712,9 +2712,9 @@ the value.
       <TMPL_VAR name>
     </TMPL_LOOP>
 
-CGI::Ex::Template makes all of the other TT3 directives available
+Template::Alloy makes all of the other TT3 directives available
 in addition to the normal set of HTML::Template directives.  For
-example, the following is valid in CET.
+example, the following is valid in Alloy.
 
     <TMPL_MACRO bar(n) BLOCK>You said <TMPL_VAR n></TMPL_MACRO>
     <TMPL_GET bar("hello")>
@@ -2738,7 +2738,7 @@ false.
 
 =head1 OPERATORS
 
-The following operators are available in CGI::Ex::Template.  Except
+The following operators are available in Template::Alloy.  Except
 where noted these are the same operators available in TT.  They are
 listed in the order of their precedence (the higher the precedence the
 tighter it binds).
@@ -2767,13 +2767,13 @@ call the vmethod - use "|".
 
 The pipe operator.  Similar to the dot operator.  Allows for
 explicit calling of virtual methods and filters (filters are "merged"
-with virtual methods in CGI::Ex::Template and TT3) when accessing
+with virtual methods in Template::Alloy and TT3) when accessing
 hashrefs and objects.  See the note for the "." operator.
 
 The pipe character is similar to TT2 in that it can be used in place
 of a directive as an alias for FILTER.  It similar to TT3 in that it
 can be used for virtual method access.  This duality is one source of
-difference between CGI::Ex::Template and TT2 compatibility.  Templates
+difference between Template::Alloy and TT2 compatibility.  Templates
 that have directives that end with a variable name that then use the
 "|" directive to apply a filter will be broken as the "|" will be
 applied to the variable name.
@@ -2788,12 +2788,12 @@ Though they do the same thing, internally, foo|html is stored as a
 single variable while "foo FILTER html" is stored as the variable foo
 which is then passed to the FILTER html.
 
-A TT2 sample that would break in CGI::Ex::Template or TT3 is:
+A TT2 sample that would break in Template::Alloy or TT3 is:
 
     [% PROCESS foo a = b | html %]
 
 Under TT2 the content returned by "PROCESS foo a = b" would all be
-passed to the html filter.  Under CGI::Ex::Template and TT3, b would
+passed to the html filter.  Under Template::Alloy and TT3, b would
 be passed to the html filter before assigning it to the variable "a"
 before the template foo was processed.
 
@@ -2954,7 +2954,7 @@ Right associative binary.  Or.  The first true value is returned.
     [% 0 || '' || 7 %] => 7
 
 Note: perl is left associative on this operator - but it doesn't matter because
-|| has its own precedence level.  Setting it to right allows for CET to short
+|| has its own precedence level.  Setting it to right allows for Alloy to short
 circuit earlier in the expression optree (left is (((1,2), 3), 4) while right
 is (1, (2, (3, 4))).
 
@@ -3012,19 +3012,19 @@ Right associative. Lower precedence version of the '||' operator.
 =item C<{}>
 
 This operator is not used in TT.  It is used internally
-by CGI::Ex::Template to delay the creation of a hash until the
+by Template::Alloy to delay the creation of a hash until the
 execution of the compiled template.
 
 =item C<[]>
 
 This operator is not used in TT.  It is used internally
-by CGI::Ex::Template to delay the creation of an array until the
+by Template::Alloy to delay the creation of an array until the
 execution of the compiled template.
 
 =item C<qr>
 
 This operator is not used in TT.  It is used internally
-by CGI::Ex::Template to store a regular expression and its options.
+by Template::Alloy to store a regular expression and its options.
 It will return a compiled Regexp object when compiled.
 
 =back
@@ -3121,7 +3121,7 @@ Items may be passed in upper or lower case.
 
 These variables should be passed to the "new" constructor.
 
-    my $obj = CGI::Ex::Template->new(
+    my $obj = Template::Alloy->new(
         VARIABLES  => \%hash_of_variables,
         AUTO_RESET => 0,
         TRIM       => 1,
@@ -3305,11 +3305,11 @@ other matching keyname can be found.  The selection process is similar
 to that of the TRY/CATCH/THROW directives (see those directives for more
 information).
 
-    my $t = CGI::Ex::Template->new({
+    my $t = Template::Alloy->new({
         ERROR => 'general/catch_all_errors.html',
     });
 
-    my $t = CGI::Ex::Template->new({
+    my $t = Template::Alloy->new({
         ERROR => {
             default   => 'general/catch_all_errors.html',
             foo       => 'catch_all_general_foo_errors.html',
@@ -3350,7 +3350,7 @@ Allow for passing in TT style filters.
         3 ([% a | filter3 %])
     };
 
-    my $obj = CGI::Ex::Template->new(FILTERS => $filters);
+    my $obj = Template::Alloy->new(FILTERS => $filters);
     $obj->process(\$str) || die $obj->error;
 
 Would print:
@@ -3391,16 +3391,16 @@ Indicates if the USE directive can fall back and try and load a perl module
 if the indicated module was not found in the PLUGIN_BASE path.  See the
 USE directive.
 
-=item MAX_EVAL_RECURSE (CET only)
+=item MAX_EVAL_RECURSE (Alloy only)
 
-Will use $CGI::Ex::Template::MAX_EVAL_RECURSE if not present.  Default is 50.
+Will use $Template::Alloy::MAX_EVAL_RECURSE if not present.  Default is 50.
 Prevents runaway on the following:
 
     [% f = "[% f|eval %]" %][% f|eval %]
 
-=item MAX_MACRO_RECURSE (CET only)
+=item MAX_MACRO_RECURSE (Alloy only)
 
-Will use $CGI::Ex::Template::MAX_MACRO_RECURSE if not present.  Default is 50.
+Will use $Template::Alloy::MAX_MACRO_RECURSE if not present.  Default is 50.
 Prevents runaway on the following:
 
     [% MACRO f BLOCK %][% f %][% END %][% f %]
@@ -3410,13 +3410,13 @@ Prevents runaway on the following:
 No Template::Namespace::Constants support.  Hashref of hashrefs representing
 constants that will be folded into the template at compile time.
 
-    CGI::Ex::Template->new(NAMESPACE => {constants => {
+    Template::Alloy->new(NAMESPACE => {constants => {
          foo => 'bar',
     }});
 
 Is the same as
 
-    CGI::Ex::Template->new(CONSTANTS => {
+    Template::Alloy->new(CONSTANTS => {
          foo => 'bar',
     });
 
@@ -3541,8 +3541,8 @@ The syntax may be passed in upper or lower case.
 
 The available choices are:
 
-    cet - CGI::Ex::Template style - the same as TT3
-    tt3 - Template::Toolkit ver3 - same as CET
+    cet - Template::Alloy style - the same as TT3
+    tt3 - Template::Toolkit ver3 - same as Alloy
     tt2 - Template::Toolkit ver2 - almost the same as TT3
     tt1 - Template::Toolkit ver1 - almost the same as TT2
     ht  - HTML::Template - same as HTML::Template::Expr without EXPR
@@ -3555,7 +3555,7 @@ syntax.
 The following is a sample of HTML::Template interface usage parsing
 a Template::Toolkit style document.
 
-    my $obj = CGI::Ex::Template->new(filename => 'my/template.tt'
+    my $obj = Template::Alloy->new(filename => 'my/template.tt'
                                      syntax   => 'cet');
     $obj->param(\%swap);
     print $obj->output;
@@ -3563,7 +3563,7 @@ a Template::Toolkit style document.
 The following is a sample of Template::Toolkit interface usage parsing
 a HTML::Template::Expr style document.
 
-    my $obj = CGI::Ex::Template->new(SYNTAX => 'hte');
+    my $obj = Template::Alloy->new(SYNTAX => 'hte');
     $obj->process('my/template.ht', \%swap);
 
 You can use the define_syntax method to add another custom syntax to
@@ -3668,7 +3668,7 @@ See the section on VARIABLES for the types of information that can be passed in.
 =item VMETHOD_FUNCTIONS
 
 Defaults to 1.  All scalar virtual methods are available as top level functions as well.
-This is not true of TT2.  In CGI::Ex::Template the following are equivalent:
+This is not true of TT2.  In Template::Alloy the following are equivalent:
 
     [% "abc".length %]
     [% length("abc") %]
@@ -3683,7 +3683,7 @@ the processed content.  If an arrayref is passed the filenames are
 processed in reverse order, so that the first filename specified will
 end up being on the outside (surrounding all other wrappers).
 
-   my $t = CGI::Ex::Template->new(
+   my $t = Template::Alloy->new(
        WRAPPER => ['my/wrappers/outer.html', 'my/wrappers/inner.html'],
    );
 
@@ -3708,7 +3708,7 @@ Items may be passed in upper or lower case.
 
 These variables should be passed to the "new" constructor.
 
-    my $obj = CGI::Ex::Template->new(
+    my $obj = Template::Alloy->new(
         type   => 'filename',
         source => 'my/template.ht',
         die_on_bad_params => 1,
@@ -3760,7 +3760,7 @@ Will not be cached.
 
 =item cache
 
-If set to one, then CET will use a global, in-memory document cache
+If set to one, then Alloy will use a global, in-memory document cache
 to store compiled templates in between calls.  This is generally only
 useful in a mod_perl environment.  The document is checked for a different
 modification time at each request.
@@ -3841,21 +3841,21 @@ they specify their own type via an ESCAPE attribute.
 
 =item die_on_bad_params
 
-CET does not resolve variables until the template is output.
+Alloy does not resolve variables until the template is output.
 
 =item force_untaint
 
 =item strict
 
-CET is strict on parsing HT documents.
+Alloy is strict on parsing HT documents.
 
 =item shared_cache, double_cache
 
-CET doesn't have shared caching.  Yet.
+Alloy doesn't have shared caching.  Yet.
 
 =item search_path_on_include
 
-CET will check the full path array on each include.
+Alloy will check the full path array on each include.
 
 =item debug items
 
@@ -3864,11 +3864,11 @@ can use the TT style DEBUG and DUMP directives to do intropection.
 
 =item max_includes
 
-CET uses TT's recursion protection.
+Alloy uses TT's recursion protection.
 
 =item filter
 
-CET doesn't offer these.
+Alloy doesn't offer these.
 
 =back
 
@@ -3878,31 +3878,31 @@ CET doesn't offer these.
 
 =item LOAD_TEMPLATES
 
-CGI::Ex::Template has its own mechanism for loading and storing
+Template::Alloy has its own mechanism for loading and storing
 compiled templates.  TT would use a Template::Provider that would
-return a Template::Document.  The closest thing in CGI::Ex::Template
+return a Template::Document.  The closest thing in Template::Alloy
 is the load_parsed_template method.  There is no immediate plan to
 support the TT behavior.
 
 =item LOAD_PLUGINS
 
-CGI::Ex::Template uses its own mechanism for loading plugins.  TT
+Template::Alloy uses its own mechanism for loading plugins.  TT
 would use a Template::Plugins object to load plugins requested via the
-USE directive.  The functionality for doing this in CGI::Ex::Template
+USE directive.  The functionality for doing this in Template::Alloy
 is contained in the list_plugins method and the play_USE method.  There
 is no immediate plan to support the TT behavior.
 
 Full support is offered for the PLUGINS and LOAD_PERL configuration items.
 
-Also note that CGI::Ex::Template only natively supports the Iterator plugin.
+Also note that Template::Alloy only natively supports the Iterator plugin.
 Any of the other plugins requested will need to provided by installing
 Template::Toolkit or the appropriate plugin module.
 
 =item LOAD_FILTERS
 
-CGI::Ex::Template uses its own mechanism for loading filters.  TT
+Template::Alloy uses its own mechanism for loading filters.  TT
 would use the Template::Filters object to load filters requested via the
-FILTER directive.  The functionality for doing this in CGI::Ex::Template
+FILTER directive.  The functionality for doing this in Template::Alloy
 is contained in the list_filters method and the play_expr method.
 
 Full support is offered for the FILTERS configuration item.
@@ -3910,36 +3910,36 @@ Full support is offered for the FILTERS configuration item.
 =item TOLERANT
 
 This option is used by the LOAD_TEMPLATES and LOAD_PLUGINS options and
-is not applicable in CGI::Ex::Template.
+is not applicable in Template::Alloy.
 
 =item SERVICE
 
-CGI::Ex::Template has no concept of service (theoretically the CGI::Ex::Template
+Template::Alloy has no concept of service (theoretically the Template::Alloy
 is the "service").
 
 =item CONTEXT
 
-CGI::Ex::Template provides its own pseudo context object to plugins,
-filters, and perl blocks.  The CGI::Ex::Template model doesn't really
-allow for a separate context.  CGI::Ex::Template IS the context.
+Template::Alloy provides its own pseudo context object to plugins,
+filters, and perl blocks.  The Template::Alloy model doesn't really
+allow for a separate context.  Template::Alloy IS the context.
 
 =item STASH
 
-CGI::Ex::Template manages its own stash of variables.  A pseudo stash
+Template::Alloy manages its own stash of variables.  A pseudo stash
 object is available via the pseudo context object for use in plugins,
 filters, and perl blocks.
 
 =item PARSER
 
-CGI::Ex::Template has its own built in parser.  The closest similarity is
+Template::Alloy has its own built in parser.  The closest similarity is
 the parse_tree method.  The output of parse_tree is an optree that is
-later run by execute_tree.  CET provides a backend to the Template::Parser::CET
+later run by execute_tree.  Alloy provides a backend to the Template::Parser::Alloy
 module which can be used to replace the default parser when using
 the standard Template::Toolkit library.
 
 =item GRAMMAR
 
-CGI::Ex::Template maintains its own grammar.  The grammar is defined
+Template::Alloy maintains its own grammar.  The grammar is defined
 in the parse_tree method and the callbacks listed in the global
 $DIRECTIVES hashref.
 
@@ -3948,7 +3948,7 @@ $DIRECTIVES hashref.
 
 =head1 VARIABLE PARSE TREE
 
-CGI::Ex::Template parses templates into an tree of operations (an AST
+Template::Alloy parses templates into an tree of operations (an AST
 or abstract syntax tree).  Even variable access is parsed into a tree.
 This is done in a manner somewhat similar to the way that TT operates
 except that nested variables such as foo.bar|baz contain the '.' or
@@ -4001,18 +4001,18 @@ Some notes on the parsing.
 
 The following perl can be typed at the command line to view the parsed variable tree:
 
-    perl -e 'use CGI::Ex::Template; print CGI::Ex::Template::dump_parse_expr("foo.bar + 2")."\n"'
+    perl -e 'use Template::Alloy; print Template::Alloy::dump_parse_expr("foo.bar + 2")."\n"'
 
 Also the following can be included in a template to view the output in a template:
 
-    [% USE cet = CGI::Ex::Template %]
+    [% USE cet = Template::Alloy %]
     [%~ cet.dump_parse_expr('foo.bar + 2').replace('\s+', ' ') %]
 
 
 =head1 SEMI PUBLIC METHODS
 
-The following list of methods are other interesting methods of CET that
-may be re-implemented by subclasses of CET.
+The following list of methods are other interesting methods of Alloy that
+may be re-implemented by subclasses of Alloy.
 
 =over 4
 
@@ -4029,7 +4029,7 @@ variable.  It is mainly used for testing.
 =item C<exception>
 
 Creates an exception object blessed into the package listed in
-$CGI::Ex::Template::PACKAGE_EXCEPTION.
+Template::Alloy::Exception.
 
 =item C<execute_tree>
 
@@ -4055,7 +4055,7 @@ Resolves the file passed, and then returns its contents.
 =item C<list_filters>
 
 Dynamically loads the filters list from Template::Filters when a filter
-is used that is not natively implemented in CET.
+is used that is not natively implemented in Alloy.
 
 =item C<list_plugins>
 
@@ -4116,7 +4116,7 @@ too general for most cases.  Also, you may pass a coderef via the UNDEFINED_GET 
 
 =head1 OTHER UTILITY METHODS
 
-The following is a brief list of other methods used by CET.  Generally, these
+The following is a brief list of other methods used by Alloy.  Generally, these
 shouldn't be overwritten by subclasses.
 
 =over 4
