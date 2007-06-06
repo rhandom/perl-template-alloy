@@ -1502,7 +1502,7 @@ sub vmethod_url {
 
 sub filter_eval {
     my $context = shift;
-    my $syntax  = shift;
+    my $args    = pop || {};
 
     return sub {
         ### prevent recursion
@@ -1513,7 +1513,7 @@ sub filter_eval {
 
 
         my $text = shift;
-        local $t->{'SYNTAX'} = $syntax || $t->{'SYNTAX'};
+        local @{ $t }{ map {uc} keys %$args } = values %$args;
         return $context->process(\$text);
     };
 }
