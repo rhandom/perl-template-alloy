@@ -19,9 +19,9 @@ This module may be distributed under the same terms as Perl itself.
 use strict;
 use warnings;
 use base qw(Exporter);
-use Template::Alloy qw(@CONFIG_COMPILETIME @CONFIG_RUNTIME
-                         $QR_OP $QR_OP_ASSIGN $QR_OP_PREFIX
-                         $OP $OP_ASSIGN $OP_PREFIX $OP_POSTFIX);
+use Template::Alloy;
+use Template::Alloy::Operator qw($QR_OP $QR_OP_ASSIGN $QR_OP_PREFIX
+                                 $OP $OP_ASSIGN $OP_PREFIX $OP_POSTFIX);
 
 our $VERSION   = $Template::Alloy::VERSION;
 our @EXPORT_OK = qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
@@ -40,6 +40,17 @@ our $TAGS = {
     template  => ['\[%',    '%\]'   ], # Normal Template Toolkit
     template1 => ['[\[%]%', '%[%\]]'], # TT1
     tt2       => ['\[%',    '%\]'   ], # TT2
+};
+
+our $SYNTAX = {
+    alloy    => sub { shift->parse_tree_tt3(@_) },
+    ht       => sub { my $self = shift; local $self->{'V2EQUALS'} = 0; local $self->{'EXPR'} = 0; $self->parse_tree_hte(@_) },
+    hte      => sub { my $self = shift; local $self->{'V2EQUALS'} = 0; $self->parse_tree_hte(@_) },
+    tt3      => sub { shift->parse_tree_tt3(@_) },
+    tt2      => sub { my $self = shift; local $self->{'V2PIPE'} = 1; $self->parse_tree_tt3(@_) },
+    tt1      => sub { my $self = shift; local $self->{'V2PIPE'} = 1; local $self->{'V1DOLLAR'} = 1; $self->parse_tree_tt3(@_) },
+    tmpl     => sub { shift->parse_tree_tmpl(@_) },
+    velocity => sub { shift->parse_tree_velocity(@_) },
 };
 
 our $DIRECTIVES = {
@@ -106,9 +117,23 @@ our $QR_AQ_SPACE  = '(?: \\s+ | \$ | (?=;) )';
 our $_escapes = {n => "\n", r => "\r", t => "\t", '"' => '"', '\\' => '\\', '$' => '$'};
 our $QR_ESCAPES = qr{[nrt\"\$\\]};
 
+sub define_directive {
+    my ($self, $name, $args) = @_;
+    $DIRECTIVES->{$name} = [@{ $args }{qw(parse_sub play_sub is_block is_postop continues no_interp)}];
+    return 1;
+}
+
+sub define_syntax {
+    my ($self, $name, $sub) = @_;
+    $SYNTAX->{$name} = $sub;
+    return 1;
+}
+
+###----------------------------------------------------------------###
+
 sub parse_tree {
     my $syntax = $_[0]->{'SYNTAX'} || 'alloy';
-    my $meth   = $Template::Alloy::SYNTAX->{$syntax} || $_[0]->throw('parse', "Unknown SYNTAX \"$syntax\"");
+    my $meth   = $SYNTAX->{$syntax} || $_[0]->throw('parse', "Unknown SYNTAX \"$syntax\"");
     return $meth->(@_);
 }
 
@@ -708,8 +733,8 @@ sub parse_CATCH {
 sub parse_CONFIG {
     my ($self, $str_ref) = @_;
 
-    my %ctime = map {$_ => 1} @CONFIG_COMPILETIME;
-    my %rtime = map {$_ => 1} @CONFIG_RUNTIME;
+    my %ctime = map {$_ => 1} @Template::Alloy::CONFIG_COMPILETIME;
+    my %rtime = map {$_ => 1} @Template::Alloy::CONFIG_RUNTIME;
 
     my $mark   = pos($$str_ref);
     my $config = $self->parse_args($str_ref, {named_at_front => 1, is_parened => 1});

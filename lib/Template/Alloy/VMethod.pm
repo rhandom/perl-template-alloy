@@ -132,7 +132,19 @@ foreach (values %$VOBJS) {
 }
 
 ###----------------------------------------------------------------###
+### long virtual methods or filters
+### many of these vmethods have used code from Template/Stash.pm to
+### assure conformance with the TT spec.
 
+sub define_vmethod {
+    my ($self, $type, $name, $sub) = @_;
+    if (   $type =~ /scalar|item|text/i) { $SCALAR_OPS->{$name} = $sub }
+    elsif ($type =~ /array|list/i ) { $LIST_OPS->{  $name} = $sub }
+    elsif ($type =~ /hash/i       ) { $HASH_OPS->{  $name} = $sub }
+    elsif ($type =~ /filter/i     ) { $FILTER_OPS->{$name} = $sub }
+    else { die "Invalid type vmethod type $type" }
+    return 1;
+}
 
 sub vmethod_fmt_scalar {
     my $str = shift; $str = ''   if ! defined $str;

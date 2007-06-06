@@ -24,8 +24,9 @@ This module may be distributed under the same terms as Perl itself.
 use strict;
 use warnings;
 
+use Template::Alloy;
 use Template::Alloy::Parse qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
-use Template::Alloy qw(@CONFIG_COMPILETIME $QR_OP_ASSIGN);
+use Template::Alloy::Operator qw($QR_OP_ASSIGN);
 
 our $VERSION = $Template::Alloy::VERSION;
 
@@ -43,7 +44,7 @@ sub parse_tree_tt3 {
     local $self->{'START_TAG'}  = $self->{'START_TAG'} || $TAGS->{$STYLE}->[0];
     local $self->{'_start_tag'} = (! $self->{'INTERPOLATE'}) ? $self->{'START_TAG'} : qr{(?: $self->{'START_TAG'} | (\$))}sx;
 
-    local @{ $self }{@CONFIG_COMPILETIME} = @{ $self }{@CONFIG_COMPILETIME};
+    local @{ $self }{@Template::Alloy::CONFIG_COMPILETIME} = @{ $self }{@Template::Alloy::CONFIG_COMPILETIME};
     local @{ $DIRECTIVES }{ keys %$ALIASES } = values %$ALIASES; # temporarily add to the table
 
     my @tree;             # the parsed tree

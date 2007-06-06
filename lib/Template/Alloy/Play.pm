@@ -137,7 +137,7 @@ sub play_CLEAR {
 sub play_CONFIG {
     my ($self, $config, $node, $out_ref) = @_;
 
-    my %rtime = map {$_ => 1} @CONFIG_RUNTIME;
+    my %rtime = map {$_ => 1} @Template::Alloy::CONFIG_RUNTIME;
 
     ### do runtime config - not many options get these
     my ($named, @the_rest) = @$config;
