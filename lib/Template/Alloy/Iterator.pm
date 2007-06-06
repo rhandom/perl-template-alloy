@@ -1,10 +1,13 @@
-package CGI::Ex::Template::Iterator;
+package Template::Alloy::Iterator;
 
 =head1 NAME
 
-CGI::Ex::Template::Iterator - Handle foreach iterations
+Template::Alloy::Iterator - Handle foreach iterations
 
 =cut
+
+use strict;
+use warnings;
 
 sub new {
     my ($class, $items) = @_;
