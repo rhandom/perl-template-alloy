@@ -11,8 +11,17 @@ use warnings;
 use Template::Alloy::Exception;
 use Template::Alloy::VMethod qw($SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
 
-our $VERSION  = '1.001';
-our $AUTOLOAD;
+our $VERSION            = '1.001';
+our $QR_PRIVATE         = qr/^[_.]/;
+our $WHILE_MAX          = 1000;
+our $EXTRA_COMPILE_EXT  = '.sto';
+our $MAX_EVAL_RECURSE   = 50;
+our $MAX_MACRO_RECURSE  = 50;
+our $STAT_TTL           = 1;
+our $QR_INDEX           = '(?:\d*\.\d+ | \d+)';
+our @CONFIG_COMPILETIME = qw(SYNTAX ANYCASE INTERPOLATE PRE_CHOMP POST_CHOMP SEMICOLONS V1DOLLAR V2PIPE V2EQUALS AUTO_EVAL SHOW_UNDEFINED_INTERP);
+our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
+
 our $AUTOROLE = {
     Compile  => [qw(load_perl compile_template compile_tree compile_expr compile_expr_flat compile_operator)],
     HTE      => [qw(parse_tree_hte param output register_function clear_param query new_file new_scalar_ref new_array_ref new_filehandle)],
@@ -24,13 +33,13 @@ our $AUTOROLE = {
     Velocity => [qw(parse_tree_velocity merge)],
     VMethod  => [qw(define_vmethod)],
 };
-our $AUTOLOOKUP = { map { my $type = $_; map { ($_ => $type) } @{ $AUTOROLE->{$type} } } keys %$AUTOROLE };
+our $ROLEMAP = { map { my $type = $_; map { ($_ => $type) } @{ $AUTOROLE->{$type} } } keys %$AUTOROLE };
 
+our $AUTOLOAD;
 sub AUTOLOAD {
     my $self = shift;
     my $meth = ($AUTOLOAD && $AUTOLOAD =~ /::(\w+)$/) ? $1 : $self->throw('autoload', "Invalid method $AUTOLOAD");
-    my $type = delete($AUTOLOOKUP->{$meth})
-        || do { require Carp; Carp::croak("Can't locate object method \"$meth\" via package ".ref($self)) };
+    my $type = delete($ROLEMAP->{$meth}) || do { require Carp; Carp::croak("Can't locate object method \"$meth\" via package ".ref($self)) };
 
     my $pkg  = __PACKAGE__."::$type";
     my $file = "$pkg.pm";
@@ -48,20 +57,6 @@ sub DESTROY {}
 
 ###----------------------------------------------------------------###
 
-our $QR_PRIVATE = qr/^[_.]/;
-
-our $WHILE_MAX    = 1000;
-our $EXTRA_COMPILE_EXT = '.sto';
-our $MAX_EVAL_RECURSE  = 50;
-our $MAX_MACRO_RECURSE = 50;
-our $STAT_TTL          ||= 1;
-our $QR_INDEX = '(?:\d*\.\d+ | \d+)';
-
-our @CONFIG_COMPILETIME = qw(SYNTAX ANYCASE INTERPOLATE PRE_CHOMP POST_CHOMP SEMICOLONS V1DOLLAR V2PIPE V2EQUALS AUTO_EVAL SHOW_UNDEFINED_INTERP);
-our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
-
-###----------------------------------------------------------------###
-
 sub new {
   my $class = shift;
   my $args  = ref($_[0]) ? { %{ shift() } } : {@_};
@@ -71,7 +66,7 @@ sub new {
       @{ $args }{ map { uc $_ } @keys } = delete @{ $args }{ @keys };
   }
 
-  my $self  = bless $args, $class;
+  my $self = bless $args, $class;
 
   if ($self->{'DEBUG'}) { # "enable" some types of tt style debugging
       $self->{'_debug_dirs'}  = 1 if $self->{'DEBUG'} =~ /^\d+$/ ? $self->{'DEBUG'} & 8 : $self->{'DEBUG'} =~ /dirs|all/;
@@ -221,7 +216,6 @@ sub load_template {
         return $doc;
     }
 
-
     ### lookup the filename
     if (! $doc->{'_filename'} && ! ref $file) {
         $doc->{'name'} = $file;
@@ -261,7 +255,6 @@ sub load_template {
             }
         }
     }
-
 
     ### return perl - if they want perl - otherwise - the ast
     if (! $doc->{'_no_perl'} && $self->{'COMPILE_PERL'}) {
@@ -346,8 +339,7 @@ sub load_tree {
 
 ### allow for resolving full expression ASTs
 sub play_expr {
-    ### allow for the parse tree to store literals
-    return $_[1] if ! ref $_[1];
+    return $_[1] if ! ref $_[1]; # allow for the parse tree to store literals
 
     my $self = shift;
     my $var  = shift;
@@ -380,7 +372,6 @@ sub play_expr {
             $ref = $self->{'_vars'}->{lc $name} if ! defined $ref && $self->{'LOWER_CASE_VAR_FALLBACK'};
         }
     }
-
 
     my %seen_filters;
     while (defined $ref) {
@@ -499,7 +490,6 @@ sub play_expr {
                 # didn't find a method by that name - so fail down to hash and array access
             }
 
-            ### hash member access
             if (UNIVERSAL::isa($ref, 'HASH')) {
                 if ($was_dot_call && exists($ref->{$name}) ) {
                     return \ $ref->{$name} if $i >= $#$var && $ARGS->{'return_ref'} && ! ref $ref->{$name};
@@ -513,7 +503,6 @@ sub play_expr {
                     $ref = undef;
                 }
 
-            ### array access
             } elsif (UNIVERSAL::isa($ref, 'ARRAY')) {
                 if ($name =~ m{ ^ -? $QR_INDEX $ }ox) {
                     return \ $ref->[$name] if $i >= $#$var && $ARGS->{'return_ref'} && ! ref $ref->[$name];
@@ -528,15 +517,13 @@ sub play_expr {
 
     } # end of while
 
-    ### allow for undefinedness
     if (! defined $ref) {
         if ($self->{'_debug_undef'}) {
             my $chunk = $var->[$i - 2];
             $chunk = $self->play_expr($chunk) if ref($chunk) eq 'ARRAY';
             die "$chunk is undefined\n";
-        } else {
-            $ref = $self->undefined_any($var);
         }
+        $ref = $self->undefined_any($var);
     }
 
     return $ref;
@@ -569,7 +556,6 @@ sub play_variable {
         $self->throw('play_variable', "Wrong number of args");
     }
     my $args = $var->[$i++];
-
 
     my %seen_filters;
     while (defined $ref) {
@@ -673,7 +659,6 @@ sub play_variable {
                 # didn't find a method by that name - so fail down to hash and array access
             }
 
-            ### hash member access
             if (UNIVERSAL::isa($ref, 'HASH')) {
                 if ($was_dot_call && exists($ref->{$name}) ) {
                     $ref = $ref->{$name};
@@ -683,7 +668,6 @@ sub play_variable {
                     $ref = undef;
                 }
 
-            ### array access
             } elsif (UNIVERSAL::isa($ref, 'ARRAY')) {
                 if ($name =~ m{ ^ -? $QR_INDEX $ }ox) {
                     $ref = $ref->[$name];
@@ -697,15 +681,13 @@ sub play_variable {
 
     } # end of while
 
-    ### allow for undefinedness
     if (! defined $ref) {
         if ($self->{'_debug_undef'}) {
             my $chunk = $var->[$i - 2];
             $chunk = $self->play_expr($chunk) if ref($chunk) eq 'ARRAY';
             die "$chunk is undefined\n";
-        } else {
-            $ref = $self->undefined_any($var);
         }
+        $ref = $self->undefined_any($var);
     }
 
     return $ref;
@@ -810,7 +792,6 @@ sub set_variable {
             # fall on down to "normal" accessors
         }
 
-        ### hash member access
         if (UNIVERSAL::isa($ref, 'HASH')) {
             if ($#$var <= $i) {
                 return $ref->{$name} = $val;
@@ -819,7 +800,6 @@ sub set_variable {
                 next;
             }
 
-        ### array access
         } elsif (UNIVERSAL::isa($ref, 'ARRAY')) {
             if ($name =~ m{ ^ -? $QR_INDEX $ }ox) {
                 if ($#$var <= $i) {
@@ -936,10 +916,7 @@ sub undefined_any {
     return;
 }
 
-sub list_filters {
-    my $self = shift;
-    return $self->{'_filters'} ||= eval { require Template::Filters; $Template::Filters::FILTERS } || {};
-}
+sub list_filters { shift->{'_filters'} ||= eval { require Template::Filters; $Template::Filters::FILTERS } || {} }
 
 sub debug_node {
     my ($self, $node) = @_;
@@ -969,7 +946,6 @@ sub get_line_number_by_index {
     my ($self, $doc, $index, $include_char) = @_;
     return 1 if $index <= 0;
 
-    ### get the line offsets for the doc
     my $lines = $doc->{'_line_offsets'} ||= do {
         $doc->{'_content'} ||= $self->slurp($doc->{'_filename'});
         my $i = 0;
@@ -996,8 +972,6 @@ sub get_line_number_by_index {
     }
     return $include_char ? ($i + 1, $index - $lines->[$i]) : $i + 1;
 }
-
-###----------------------------------------------------------------###
 
 1;
 
