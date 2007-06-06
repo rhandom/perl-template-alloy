@@ -1,15 +1,15 @@
-package CGI::Ex::Template::HTE;
+package Template::Alloy::HTE;
 
 =head1 NAME
 
-CGI::Ex::Template::HTE - provide HTML::Template and HTML::Template::Expr support
+Template::Alloy::HTE - provide HTML::Template and HTML::Template::Expr support
 
 =head1 DESCRIPTION
 
 Provides for extra or extended features that may not be as commonly used.
 This module should not normally be used by itself.
 
-See the CGI::Ex::Template documentation for configuration and other parameters.
+See the Template::Alloy documentation for configuration and other parameters.
 
 =head1 AUTHOR
 
@@ -32,12 +32,12 @@ our %DOCUMENTS; # global cache used with new(cache => 1) and output
 
 sub register_function {
     my ($name, $sub) = @_;
-    $CGI::Ex::Template::SCALAR_OPS->{$name} = $sub;
+    $Template::Alloy::SCALAR_OPS->{$name} = $sub;
 }
 
 sub clear_param { shift->{'param'} = {} }
 
-sub query { shift->throw('query', "Not implemented in CGI::Ex::Template") }
+sub query { shift->throw('query', "Not implemented in Template::Alloy") }
 
 sub new_file       { my $class = shift; my $in = shift; $class->new(source => $in, type => 'filename',   @_) }
 sub new_scalar_ref { my $class = shift; my $in = shift; $class->new(source => $in, type => 'scalarref',  @_) }
@@ -60,10 +60,10 @@ sub parse_tree_hte {
     local $self->{'_start_tag'} = (! $self->{'INTERPOLATE'}) ? $self->{'START_TAG'} : qr{(?: $self->{'START_TAG'} | (\$))}sx;
     local $self->{'_end_tag'}; # changes over time
 
-    my $dirs    = $CGI::Ex::Template::Parse::DIRECTIVES;
-    my $aliases = $CGI::Ex::Template::Parse::ALIASES;
+    my $dirs    = $Template::Alloy::Parse::DIRECTIVES;
+    my $aliases = $Template::Alloy::Parse::ALIASES;
     local @{ $dirs }{ keys %$aliases } = values %$aliases; # temporarily add to the table
-    local @{ $self }{@CGI::Ex::Template::CONFIG_COMPILETIME} = @{ $self }{@CGI::Ex::Template::CONFIG_COMPILETIME};
+    local @{ $self }{@Template::Alloy::CONFIG_COMPILETIME} = @{ $self }{@Template::Alloy::CONFIG_COMPILETIME};
 
     my @tree;             # the parsed tree
     my $pointer = \@tree; # pointer to current tree to handle nested blocks
@@ -136,11 +136,11 @@ sub parse_tree_hte {
                     local $self->{'_operator_precedence'} = 0; # allow operators
                     local $self->{'_end_tag'} = qr{\}};
                     $ref = $self->parse_expr($str_ref);
-                    $$str_ref =~ m{ \G \s* $CGI::Ex::Template::Parse::QR_COMMENTS \} }gcxo
+                    $$str_ref =~ m{ \G \s* $Template::Alloy::Parse::QR_COMMENTS \} }gcxo
                         || $self->throw('parse', 'Missing close }', undef, pos($$str_ref));
                 } else {
                     local $self->{'_operator_precedence'} = 1; # no operators
-                    local $CGI::Ex::Template::Parse::QR_COMMENTS = qr{};
+                    local $Template::Alloy::Parse::QR_COMMENTS = qr{};
                     $ref = $self->parse_expr($str_ref);
                 }
                 $self->throw('parse', "Error while parsing for interpolated string", undef, pos($$str_ref))
@@ -431,7 +431,7 @@ sub output {
     local $self->{'INCLUDE_PATH'} = $self->{'PATH'} || './';
     local $self->{'_documents'}   = $self->{'_documents'} || \%DOCUMENTS;
     local $self->{'LOWER_CASE_VAR_FALLBACK'} = ! $self->{'CASE_SENSITIVE'}; # un-smart HTML::Template default
-    local $CGI::Ex::Template::QR_PRIVATE = undef;
+    local $Template::Alloy::QR_PRIVATE = undef;
 
     my $out = '';
     $self->process_simple($content, $param, \$out) || die $self->error;
