@@ -130,7 +130,7 @@ sub parse_tree_hte {
                     next;
                 }
 
-                my $func = ($$str_ref =~ m{ \G ! }gcx) ? 'CALL' : 'GET';
+                my $not  = $$str_ref =~ m{ \G ! }gcx;
                 my $mark = pos($$str_ref);
                 my $ref;
                 if ($$str_ref =~ m{ \G \{ }gcx) {
@@ -146,7 +146,10 @@ sub parse_tree_hte {
                 }
                 $self->throw('parse', "Error while parsing for interpolated string", undef, pos($$str_ref))
                     if ! defined $ref;
-                push @$pointer, [$func, $mark, pos($$str_ref), $ref];
+                if (! $not && $self->{'SHOW_UNDEFINED_INTERP'}) {
+                    $ref = [[undef, '//', $ref, '$'.substr($$str_ref, $mark, pos($$str_ref)-$mark)], 0];
+                }
+                push @$pointer, ['GET', $mark, pos($$str_ref), $ref];
                 $post_chomp = 0; # no chomping after dollar vars
                 next;
             }

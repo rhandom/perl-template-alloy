@@ -6,7 +6,7 @@
 
 =cut
 
-use vars qw($module $is_ht $is_hte $is_cet $compile_perl);
+use vars qw($module $is_ht $is_hte $is_ta $compile_perl);
 BEGIN {
     $module = 'Template::Alloy';
     if (grep {/hte/i} @ARGV) {
@@ -20,7 +20,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => ($is_ta) ? 184 : ($is_ht) ? 60 : 64;
+use Test::More tests => ($is_ta) ? 196 : ($is_ht) ? 60 : 64;
 use Data::Dumper qw(Dumper);
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
@@ -244,6 +244,13 @@ print "### TT3 INTERPOLATE ################################# $is_compile_perl\n"
 process_ok('$foo <TMPL_GET foo> ${ 1 + 2 }' => '$foo FOO ${ 1 + 2 }', {foo => "FOO"}) if $is_ta;
 process_ok('$foo <TMPL_GET foo> ${ 1 + 2 }' => 'FOO FOO 3', {foo => "FOO", tt_config => [INTERPOLATE => 1]}) if $is_ta;
 process_ok('<TMPL_CONFIG INTERPOLATE => 1>$foo <TMPL_GET foo> ${ 1 + 2 }' => 'FOO FOO 3', {foo => "FOO"}) if $is_ta;
+
+process_ok('Foo $a Bar $!a Baz'     => "Foo 7 Bar 7 Baz", {a => 7, tt_config => ['INTERPOLATE' => 1]}) if $is_ta;
+process_ok('Foo $a Bar $!{a} Baz'   => "Foo 7 Bar 7 Baz", {a => 7, tt_config => ['INTERPOLATE' => 1]}) if $is_ta;
+process_ok('Foo $a Bar $!a Baz'     => "Foo 7 Bar 7 Baz", {a => 7, tt_config => ['INTERPOLATE' => 1, SHOW_UNDEFINED_INTERP => 1]}) if $is_ta;
+process_ok('Foo $a Bar $!{a} Baz'   => "Foo 7 Bar 7 Baz", {a => 7, tt_config => ['INTERPOLATE' => 1, SHOW_UNDEFINED_INTERP => 1]}) if $is_ta;
+process_ok('Foo $a Bar $!a Baz'     => "Foo \$a Bar  Baz",   {tt_config => ['INTERPOLATE' => 1, SHOW_UNDEFINED_INTERP => 1]}) if $is_ta;
+process_ok('Foo ${a} Bar $!{a} Baz' => "Foo \${a} Bar  Baz", {tt_config => ['INTERPOLATE' => 1, SHOW_UNDEFINED_INTERP => 1]}) if $is_ta;
 
 ###----------------------------------------------------------------###
 print "### DONE ############################################ $is_compile_perl\n";
