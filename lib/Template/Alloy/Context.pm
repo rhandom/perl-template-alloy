@@ -126,7 +126,7 @@ sub define_vmethod { shift->_template->define_vmethod(@_) }
 sub throw {
     my ($self, $type, $info) = @_;
 
-    if (UNIVERSAL::can($err, 'type')) {
+    if (UNIVERSAL::can($type, 'type')) {
 	die $type;
     } elsif (defined $info) {
 	$self->_template->throw($type, $info);
