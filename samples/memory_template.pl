@@ -17,9 +17,9 @@ my $txt  = "[% one %][% two %][% three %][% hash.keys.join %] [% code(one).lengt
 my $module;
 my $name;
 if (! fork) {
-    $module = 'CGI::Ex::Template';
+    $module = 'Template::Alloy';
 } elsif (! fork) {
-    $module = 'CGI::Ex::Template::XS';
+    $module = 'Template::Alloy::XS';
 } elsif (! fork) {
     $module = 'Template';
 } elsif (! fork) {
@@ -34,6 +34,9 @@ if (! fork) {
     $module = 'HTML::Template::Compiled';
 } elsif (! fork) {
     $module = 'Text::Tmpl';
+} elsif (! fork) {
+    $module = 'Template::Alloy';
+    $name   = 'Template::Alloy - bare';
 } elsif (! fork) {
     $module = 'Template';
     $name   = 'Template::Parser::CET';
@@ -53,6 +56,8 @@ if ($module) {
         my $t = eval { $module->new };
     } elsif ($module eq 'Text::Tmpl') {
         my $t = eval { $module->new->parse_string($txt) };
+    } elsif ($name =~ /bare/) {
+        my $t = eval { $module->new };
     } else {
 
         my $t = $module->new(ABSOLUTE => 1);
