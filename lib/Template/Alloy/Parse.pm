@@ -103,7 +103,8 @@ our $QR_BLOCK     = '\w+\b (?: :\w+\b)* )';
 our $QR_NUM       = '(?:\d*\.\d+ | \d+) (?: [eE][+-]\d+ )?';
 our $QR_AQ_SPACE  = '(?: \\s+ | \$ | (?=;) )';
 
-our $_escapes = {n => "\n", r => "\r", t => "\t", '"' => '"', '\\' => '\\', '' => ''};
+our $_escapes = {n => "\n", r => "\r", t => "\t", '"' => '"', '\\' => '\\', '$' => '$'};
+our $QR_ESCAPES = qr{[nrt\"\$\\]};
 
 sub parse_tree {
     my $syntax = $_[0]->{'SYNTAX'} || 'alloy';
@@ -224,39 +225,57 @@ sub parse_expr {
     ### allow for double quoted strings
     } elsif ($$str_ref =~ m{ \G \" }gcx) {
         my @pieces;
-        while ($$str_ref =~ m{ \G (.*?) ((?<!\\) \" | \$) }gcxs) {
-            my ($str, $dollar) = ($1, $2 eq '$');
-            my $n = ($str =~ m{ (\\+) $ }x) ? length($1) : 0; # count escapes at the end
-            $str =~ s/ \\ ([ntr\"\\]|) /$_escapes->{$1}/xg;
-            push @pieces, $str if length $str;
-
-            if ($n % 2) { ### odd escapes
+        while ($$str_ref =~ m{ \G (.*?) ([\"\$\\]) }gcxs) {
+            my ($str, $item) = ($1, $2);
+            if (length $str) {
+                if (defined($pieces[-1]) && ! ref($pieces[-1])) { $pieces[-1] .= $str; } else { push @pieces, $str }
+            }
+            if ($item eq '\\') {
+                my $chr = ($$str_ref =~ m{ \G ($QR_ESCAPES) }gcxo) ? $_escapes->{$1} : '\\';
+                if (defined($pieces[-1]) && ! ref($pieces[-1])) { $pieces[-1] .= $chr; } else { push @pieces, $chr }
+                next;
+            } elsif ($item eq '"') {
+                last;
+            } elsif ($self->{'AUTO_EVAL'}) {
                 if (defined($pieces[-1]) && ! ref($pieces[-1])) { $pieces[-1] .= '$'; } else { push @pieces, '$' }
                 next;
             }
-            last if ! $dollar;
 
+            my $not  = $$str_ref =~ m{ \G ! }gcx;
+            my $mark = pos($$str_ref);
+            my $ref;
             if ($$str_ref =~ m{ \G \{ }gcx) {
                 local $self->{'_operator_precedence'} = 0; # allow operators
-                my $ref = $self->parse_expr($str_ref);
+                $ref = $self->parse_expr($str_ref);
                 $$str_ref =~ m{ \G \s* $QR_COMMENTS \} }gcxo
                     || $self->throw('parse', 'Missing close }', undef, pos($$str_ref));
-                push @pieces, $ref if defined $ref;
             } else {
                 local $self->{'_operator_precedence'} = 1; # no operators
-                push @pieces, $self->parse_expr($str_ref)
+                $ref = $self->parse_expr($str_ref)
                     || $self->throw('parse', "Error while parsing for interpolated string", undef, pos($$str_ref));
             }
+            if (! $not && $self->{'SHOW_UNDEFINED_INTERP'}) {
+                $ref = [[undef, '//', $ref, '$'.substr($$str_ref, $mark, pos($$str_ref)-$mark)], 0];
+            }
+            push @pieces, $ref if defined $ref;
         }
-        if (@pieces == 1 && ! ref $pieces[0]) {
-            return $pieces[0] if $is_aq;
-            push @var, \ $pieces[0];
-            $is_literal = 1;
-        } elsif (! @pieces) {
+        if (! @pieces) { # [% "" %]
             return '' if $is_aq;
             push @var, \ '';
             $is_literal = 1;
-        } else {
+        } elsif (@pieces == 1 && ref $pieces[0]) { # [% "$foo" %] or [% "${ 1 + 2 }" %]
+            return $pieces[0] if $is_aq;
+            push @var, @{ $pieces[0] };
+            $already_parsed_args = 1;
+        } elsif ($self->{'AUTO_EVAL'}) {
+            push @var, [undef, '~', @pieces], 0, '|', 'eval', 0;
+            return \@var if $is_aq;
+            $already_parsed_args = 1;
+        } elsif (@pieces == 1) { # [% "foo" %]
+            return $pieces[0] if $is_aq;
+            push @var, \ $pieces[0];
+            $is_literal = 1;
+        } else { # [% "foo $bar baz" %]
             push @var, [undef, '~', @pieces];
             return [$var[0], 0] if $is_aq;
         }
