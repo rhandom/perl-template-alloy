@@ -580,13 +580,13 @@ sub compile_GET {
 sub compile_EVAL {
     my ($self, $node, $str_ref, $indent) = @_;
     my ($named, @strs) = @{ $node->[3] };
-#    $named = $self->play_expr($named);
 
     $$str_ref .= "
-${indent}foreach my \$str (".join(",\n", map {$self->compile_expr_flat($_)} @strs).") {
-${indent}${INDENT}\$str = \$self->play_expr(\$str);
+${indent}foreach (".join(",\n", map {$self->compile_expr_flat($_)} @strs).") {
+${indent}${INDENT}my \$str = \$self->play_expr(\$_);
 ${indent}${INDENT}next if ! defined \$str;
-${indent}${INDENT}\$\$out_ref .= \$self->play_variable(\$str, [undef, 0, '|', 'eval', 0]);
+${indent}${INDENT}my \$named = \$self->play_expr(".$self->compile_expr_flat($named).");
+${indent}${INDENT}\$\$out_ref .= \$self->play_variable(\$str, [undef, 0, '|', 'eval', [\$named]]);
 ${indent}}";
 }
 
@@ -848,7 +848,7 @@ ${indent}${INDENT}select \$old_fh;
 ${indent}};
 ${indent}\$err ||= \$\@;
 ${indent}if (\$err) {
-${indent}${INDENT}\$self->throw('undef', \$err) if ref(\$err) !~ /Template::Exception\$/;
+${indent}${INDENT}\$self->throw('undef', \$err) if ! UNIVERSAL::can(\$err, 'type');
 ${indent}${INDENT}die \$err;
 ${indent}}";
 
@@ -1017,7 +1017,7 @@ ${indent}if (\$err) {";
     }
     if (@names) {
         $$str_ref .= "
-${indent}${INDENT}\$err = \$self->exception('undef', \$err) if ref(\$err) !~ /Template::Exception\$/;
+${indent}${INDENT}\$err = \$self->exception('undef', \$err) if ! UNIVERSAL::can(\$err, 'type');
 ${indent}${INDENT}my \$type = \$err->type;
 ${indent}${INDENT}die \$err if \$type =~ /stop|return/;
 ${indent}${INDENT}local \$self->{'_vars'}->{'error'} = \$err;
