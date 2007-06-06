@@ -11,3 +11,4 @@ blib
 .cvsignore
 tmon\.out
 WrapEx.pm
+bench_various_templaters.pl.out

@@ -1,15 +1,15 @@
 use ExtUtils::MakeMaker;
 
 ###----------------------------------------------------------------###
-#  Copyright 2003 - Paul Seamons                                     #
+#  Copyright 2007 - Paul Seamons                                     #
 #  Distributed under the GNU General Public License without warranty #
 ###----------------------------------------------------------------###
 
 WriteMakefile(
-              NAME          => "CGI::Ex",
+              NAME          => "Template::Alloy",
               AUTHOR        => "Paul Seamons",
-              ABSTRACT_FROM => "lib/CGI/Ex.pm",
-              VERSION_FROM  => "lib/CGI/Ex.pm",
+              ABSTRACT_FROM => "lib/Template/Alloy.pm",
+              VERSION_FROM  => "lib/Template/Alloy.pm",
               INSTALLDIRS   => 'site',
               
               dist          => {
