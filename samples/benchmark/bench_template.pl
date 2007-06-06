@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-bench_template.pl - Test relative performance of CGI::Ex::Template to Template::Toolkit
+bench_template.pl - Test relative performance of Template::Alloy to Template::Toolkit
 
 =cut
 
@@ -10,7 +10,7 @@ use strict;
 use Benchmark qw(cmpthese timethese);
 use POSIX qw(tmpnam);
 use File::Path qw(rmtree);
-use CGI::Ex::Template;
+use Template::Alloy;
 use CGI::Ex::Dump qw(debug);
 use Template;
 use constant test_taint => 0 && eval { require Taint::Runtime }; # s/0/1/ to check tainting
@@ -44,11 +44,11 @@ my @config1 = (STASH => $s, ABSOLUTE => 1, CONSTANTS => {simple => 'var'}, EVAL_
 #push @config1, (INTERPOLATE => 1);
 my @config2 = (@config1, COMPILE_EXT => '.ttc');
 
-#use CGI::Ex::Template::XS;
-#my $tt1 = CGI::Ex::Template::XS->new(@config1);
+#use Template::Alloy::XS;
+#my $tt1 = Template::Alloy::XS->new(@config1);
 my $tt1 = Template->new(@config1);
 
-my $cet = CGI::Ex::Template->new(@config1, compile_perl => 1);
+my $cet = Template::Alloy->new(@config1, compile_perl => 1);
 
 #$swap->{$_} = $_ for (1 .. 1000); # swap size affects benchmark speed
 
@@ -113,8 +113,8 @@ my $filename;
 ### uncomment to run a specific test - otherwise all tests run
 #@run = qw(07);
 
-#                                                                         ### All percents are CGI::Ex::Template vs TT2
-#                                                                         ### (The percent that CET is faster than TT)
+#                                                                            ### All percents are Template::Alloy vs TT2
+#                                                                            ### (The percent that Alloy is faster than TT)
 #                                                                               Existing object by string ref #
 #                                                                      New object with CACHE_EXT set #        #
 #                                                   New object each time (undef CACHE_SIZE) #        #        #
@@ -232,40 +232,40 @@ sub file_TT_cache_new {
 
 ###----------------------------------------------------------------###
 
-sub file_CET_new {
+sub file_Alloy_new {
     my $out = '';
-    my $t = CGI::Ex::Template->new(@config1);
+    my $t = Template::Alloy->new(@config1);
     $t->process($filename, $swap, \$out);
     return $out;
 }
 
-sub str_CET_new {
+sub str_Alloy_new {
     my $out = '';
-    my $t = CGI::Ex::Template->new(@config1);
+    my $t = Template::Alloy->new(@config1);
     $t->process($str_ref, $swap, \$out);
     return $out;
 }
 
-sub file_CET {
+sub file_Alloy {
     my $out = '';
     $cet->process($filename, $swap, \$out);
     return $out;
 }
 
-sub str_CET {
+sub str_Alloy {
     my $out = '';
     $cet->process($str_ref, $swap, \$out);
     return $out;
 }
 
-sub str_CET_swap {
+sub str_Alloy_swap {
     my $txt = $cet->swap($str_ref, $swap);
     return $txt;
 }
 
-sub file_CET_cache_new {
+sub file_Alloy_cache_new {
     my $out = '';
-    my $t = CGI::Ex::Template->new(@config2);
+    my $t = Template::Alloy->new(@config2);
     $t->process($filename, $swap, \$out);
     return $out;
 }
@@ -293,21 +293,21 @@ foreach my $test_name (@run) {
     print $fh $txt;
     close $fh;
 
-    #debug file_CET(), str_TT();
+    #debug file_Alloy(), str_TT();
     #debug $cet->parse_tree($file);
 
     ### check out put - and also allow for caching
     for (1..2) {
-        if (file_CET() ne str_TT()) {
+        if (file_Alloy() ne str_TT()) {
             debug $cet->parse_tree($str_ref);
-            debug file_CET(), str_TT();
-            die "file_CET didn't match";
+            debug file_Alloy(), str_TT();
+            die "file_Alloy didn't match";
         }
-        die "file_TT didn't match "            if file_TT()      ne str_TT();
-        die "str_CET didn't match "            if str_CET()      ne str_TT();
-#        die "str_CET_swap didn't match "       if str_CET_swap() ne str_TT();
-        die "file_CET_cache_new didn't match " if file_CET_cache_new() ne str_TT();
-        die "file_TT_cache_new didn't match " if file_TT_cache_new() ne str_TT();
+        die "file_TT didn't match "              if file_TT()        ne str_TT();
+        die "str_Alloy didn't match "            if str_Alloy()      ne str_TT();
+#        die "str_Alloy_swap didn't match "       if str_Alloy_swap() ne str_TT();
+        die "file_Alloy_cache_new didn't match " if file_Alloy_cache_new() ne str_TT();
+        die "file_TT_cache_new didn't match "    if file_TT_cache_new()    ne str_TT();
     }
 
     next if test_taint;
@@ -321,12 +321,12 @@ foreach my $test_name (@run) {
         str_TT      => \&str_TT,
         file_TT_c_n => \&file_TT_cache_new,
 
-        file_CT_n   => \&file_CET_new,
-#        str_CT_n    => \&str_CET_new,
-        file_CT     => \&file_CET,
-        str_CT      => \&str_CET,
-#        str_CT_sw   => \&str_CET_swap,
-        file_CT_c_n => \&file_CET_cache_new,
+        file_Alloy_n   => \&file_Alloy_new,
+#        str_Alloy_n    => \&str_Alloy_new,
+        file_Alloy     => \&file_Alloy,
+        str_Alloy      => \&str_Alloy,
+#        str_Alloy_sw   => \&str_Alloy_swap,
+        file_Alloy_c_n => \&file_Alloy_cache_new,
     }) };
     if (! $r) {
         debug "$@";
@@ -340,14 +340,14 @@ foreach my $test_name (@run) {
 
     eval {
         my $hash = {
-            '1 cached_in_memory           ' => ['file_CT',     'file_TT'],
-            '2 new_object                 ' => ['file_CT_n',   'file_TT_n'],
-            '3 cached_on_file (new_object)' => ['file_CT_c_n', 'file_TT_c_n'],
-            '4 string reference           ' => ['str_CT',      'str_TT'],
-            '5 CT new vs TT in mem        ' => ['file_CT_n',   'file_TT'],
-            '6 CT in mem vs TT new        ' => ['file_CT',     'file_TT_n'],
-            '7 CT in mem vs CT new        ' => ['file_CT',     'file_CT_n'],
-            '8 TT in mem vs TT new        ' => ['file_TT',     'file_TT_n'],
+            '1 cached_in_memory           ' => ['file_Alloy',     'file_TT'],
+            '2 new_object                 ' => ['file_Alloy_n',   'file_TT_n'],
+            '3 cached_on_file (new_object)' => ['file_Alloy_c_n', 'file_TT_c_n'],
+            '4 string reference           ' => ['str_Alloy',      'str_TT'],
+            '5 Alloy new vs TT in mem     ' => ['file_Alloy_n',   'file_TT'],
+            '6 Alloy in mem vs TT new     ' => ['file_Alloy',     'file_TT_n'],
+            '7 Alloy in mem vs Alloy new  ' => ['file_Alloy',     'file_Alloy_n'],
+            '8 TT in mem vs TT new        ' => ['file_TT',        'file_TT_n'],
         };
         foreach my $type (sort keys %$hash) {
             my ($key1, $key2) = @{ $hash->{$type} };
@@ -356,7 +356,7 @@ foreach my $test_name (@run) {
             my $ct_s = $ct->iters / ($ct->cpu_a || 1);
             my $tt_s = $tt->iters / ($tt->cpu_a || 1);
             my $p = int(100 * ($ct_s - $tt_s) / ($tt_s || 1));
-            print "$type - CT is $p% faster than TT\n";
+            print "$type - Alloy is $p% faster than TT\n";
 
             $output .= sprintf('#  %3s%%  ', $p) if $type =~ /^[1234]/;
 
@@ -371,7 +371,7 @@ foreach my $test_name (@run) {
     debug "$@"
         if $@;
 
-    $output .= "# ".sprintf("%.1f", $r->{'file_CT'}->iters / ($r->{'file_CT'}->cpu_a || 1))."/s #\n";
+    $output .= "# ".sprintf("%.1f", $r->{'file_Alloy'}->iters / ($r->{'file_Alloy'}->cpu_a || 1))."/s #\n";
 #    $output .= "#\n";
 
     foreach my $row (values %cumulative) {
