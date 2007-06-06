@@ -27,7 +27,7 @@ use warnings;
 use Template::Alloy::Parse qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
 use Template::Alloy qw(@CONFIG_COMPILETIME $QR_OP_ASSIGN);
 
-our $VERSION = '2.13';
+our $VERSION = $Template::Alloy::VERSION;
 
 ###----------------------------------------------------------------###
 
