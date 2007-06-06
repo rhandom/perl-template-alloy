@@ -38,6 +38,9 @@ if (! fork) {
     $module = 'Template::Alloy';
     $name   = 'Template::Alloy - bare';
 } elsif (! fork) {
+    $module = 'Template::Alloy::XS';
+    $name   = 'Template::Alloy::XS - bare';
+} elsif (! fork) {
     $module = 'Template';
     $name   = 'Template::Parser::CET';
     require Template::Parser::CET;

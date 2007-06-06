@@ -4,14 +4,14 @@
 use strict;
 use POSIX qw(tmpnam);
 use File::Path qw(rmtree);
-use CGI::Ex::Template;
-#use CGI::Ex::Template_60;
+use Template::Alloy;
+#use Template::Alloy_60;
 
 my $tt_cache_dir = tmpnam;
 END { rmtree $tt_cache_dir };
 mkdir $tt_cache_dir, 0755;
 
-my $cet = CGI::Ex::Template->new(ABSOLUTE => 1);
+my $cet = Template::Alloy->new(ABSOLUTE => 1);
 #use Template;
 #my $cet = Template->new(ABSOLUTE => 1);
 
