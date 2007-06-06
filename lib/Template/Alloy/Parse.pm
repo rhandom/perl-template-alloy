@@ -106,7 +106,7 @@ our $QR_AQ_SPACE  = '(?: \\s+ | \$ | (?=;) )';
 our $_escapes = {n => "\n", r => "\r", t => "\t", '"' => '"', '\\' => '\\', '' => ''};
 
 sub parse_tree {
-    my $syntax = $_[0]->{'SYNTAX'} || 'alloy';
+    my $syntax = $_[0]->{'SYNTAX'} || 'cet';
     my $meth   = $Template::Alloy::SYNTAX->{$syntax} || $_[0]->throw('parse', "Unknown SYNTAX \"$syntax\"");
     return $meth->(@_);
 }
