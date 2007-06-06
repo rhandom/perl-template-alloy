@@ -487,6 +487,21 @@ Prints
 
 =item
 
+Added AUTO_EVAL configuration item.
+
+Default false.  If true, will automatically call eval filter
+on double quoted strings.
+
+=item
+
+Added SHOW_UNDEFINED_INTERP configuration item.
+
+Default false.  If true, will leave in place interpolated
+values that weren't defined.  You can then use the
+Velocity notation $!foo to not show these values.
+
+=item
+
 Added Virtual Object Namespaces. (TT3)
 
 The Text, List, and Hash types give direct access
