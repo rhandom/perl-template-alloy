@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-7_template_02_view.t - Test the ability to handle views in CGI::Ex::Template
+02_view.t - Test the ability to handle views in Template::Alloy
 
 =cut
 
@@ -28,7 +28,7 @@
 
 use vars qw($module $is_tt $compile_perl);
 BEGIN {
-    $module = 'CGI::Ex::Template';
+    $module = 'Template::Alloy';
     if (grep {/tt/i} @ARGV) {
         $module = 'Template';
     }

@@ -55,7 +55,7 @@ sub AUTOLOAD {
 our $QR_PRIVATE = qr/^[_.]/;
 
 our $SYNTAX = {
-    cet      => sub { shift->parse_tree_tt3(@_) },
+    alloy    => sub { shift->parse_tree_tt3(@_) },
     ht       => sub { my $self = shift; local $self->{'V2EQUALS'} = 0; local $self->{'EXPR'} = 0; $self->parse_tree_hte(@_) },
     hte      => sub { my $self = shift; local $self->{'V2EQUALS'} = 0; $self->parse_tree_hte(@_) },
     tt3      => sub { shift->parse_tree_tt3(@_) },
@@ -382,7 +382,7 @@ sub load_template {
         if (! defined($self->{'CACHE_STR_REFS'}) || $self->{'CACHE_STR_REFS'}) {
             require Digest::MD5;
             my $sum   = Digest::MD5::md5_hex($$file);
-            my $_file = 'CET_str_ref_cache/'.substr($sum,0,3).'/'.$sum;
+            my $_file = 'Alloy_str_ref_cache/'.substr($sum,0,3).'/'.$sum;
             return $self->{'_documents'}->{$_file} if $self->{'_documents'}->{$_file}; # no-ttl necessary
             $doc->{'_filename'} = $_file;
         } else {
@@ -638,7 +638,7 @@ sub play_expr {
                 $ref = $LIST_OPS->{$name}->([$ref], $args ? map { $self->play_expr($_) } @$args : ());
 
             } elsif (my $filter = $self->{'FILTERS'}->{$name}    # filter configured in Template args
-                     || $FILTER_OPS->{$name}                     # predefined filters in CET
+                     || $FILTER_OPS->{$name}                     # predefined filters in Alloy
                      || (UNIVERSAL::isa($name, 'CODE') && $name) # looks like a filter sub passed in the stash
                      || $self->list_filters->{$name}) {          # filter defined in Template::Filters
 
@@ -813,14 +813,14 @@ sub play_variable {
                 $ref = $LIST_OPS->{$name}->([$ref], $args ? @$args : ());
 
             } elsif (my $filter = $self->{'FILTERS'}->{$name}    # filter configured in Template args
-                     || $FILTER_OPS->{$name}                     # predefined filters in CET
+                     || $FILTER_OPS->{$name}                     # predefined filters in Alloy
                      || (UNIVERSAL::isa($name, 'CODE') && $name) # looks like a filter sub passed in the stash
                      || $self->list_filters->{$name}) {          # filter defined in Template::Filters
 
                 if (UNIVERSAL::isa($filter, 'CODE')) {
                     $ref = eval { $filter->($ref) }; # non-dynamic filter - no args
                     if (my $err = $@) {
-                        $self->throw('filter', $err) if ref($err) !~ /Template::Exception$/;
+                        $self->throw('filter', $err) if ! ref($err) !~ /Template::Exception$/;
                         die $err;
                     }
                 } elsif (! UNIVERSAL::isa($filter, 'ARRAY')) {

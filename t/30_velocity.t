@@ -2,13 +2,13 @@
 
 =head1 NAME
 
-7_template_05_velocity.t - Test the ability to parse and play VTL (Velocity Template Language)
+05_velocity.t - Test the ability to parse and play VTL (Velocity Template Language)
 
 =cut
 
 use vars qw($module $compile_perl);
 BEGIN {
-    $module = 'CGI::Ex::Template';
+    $module = 'Template::Alloy';
 };
 
 use strict;

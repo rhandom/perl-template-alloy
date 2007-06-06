@@ -2,13 +2,13 @@
 
 =head1 NAME
 
-7_template_04_text_tmpl.t - Test the ability to parse and play Text::Tmpl
+04_text_tmpl.t - Test the ability to parse and play Text::Tmpl
 
 =cut
 
 use vars qw($module $is_tt $compile_perl);
 BEGIN {
-    $module = 'CGI::Ex::Template';
+    $module = 'Template::Alloy';
     if (grep {/tt|tmpl/i} @ARGV) {
         $module = 'Text::Tmpl';
     }
