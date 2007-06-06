@@ -81,7 +81,7 @@ sub include {
     my $out = ''; # have temp item to allow clear to correctly clear
     eval { $t->_process($ref, $t->_vars, \$out) };
     if (my $err = $@) {
-        die $err if ref($err) !~ /Template::Exception$/ || $err->type !~ /return/;
+        die $err if ! UNIVERSAL::can($err, 'type') || $err->type !~ /return/;
     }
 
     return $out;
@@ -126,7 +126,7 @@ sub define_vmethod { shift->_template->define_vmethod(@_) }
 sub throw {
     my ($self, $type, $info) = @_;
 
-    if (ref($type) =~ /Template::Exception$/) {
+    if (UNIVERSAL::can($err, 'type')) {
 	die $type;
     } elsif (defined $info) {
 	$self->_template->throw($type, $info);
