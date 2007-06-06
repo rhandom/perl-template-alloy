@@ -358,7 +358,7 @@ sub _process {
 
     ### handle exceptions
     if (my $err = $@) {
-        $err = $self->exception('undef', $err) if ref($err) !~ /Template::Exception$/;
+        $err = $self->exception('undef', $err) if ! UNIVERSAL::can($err, 'type');
         $err->doc($doc) if $doc && $err->can('doc') && ! $err->doc;
         die $err if ! $self->{'_top_level'} || $err->type !~ /stop|return/;
     }
@@ -458,7 +458,7 @@ sub load_template {
             if ($err) {
                 ### cache the negative error
                 if (! defined($self->{'NEGATIVE_STAT_TTL'}) || $self->{'NEGATIVE_STAT_TTL'}) {
-                    $err = $self->exception('undef', $err) if ref($err) !~ /Template::Exception$/;
+                    $err = $self->exception('undef', $err) if ! UNIVERSAL::can($err, 'type');
                     $self->{'_not_found'}->{$file} = {
                         cache_time => time,
                         exception  => $self->exception($err->type, $err->info." (cached)"),
@@ -645,7 +645,7 @@ sub play_expr {
                 if (UNIVERSAL::isa($filter, 'CODE')) {
                     $ref = eval { $filter->($ref) }; # non-dynamic filter - no args
                     if (my $err = $@) {
-                        $self->throw('filter', $err) if ref($err) !~ /Template::Exception$/;
+                        $self->throw('filter', $err) if ! UNIVERSAL::can($err, 'type');
                         die $err;
                     }
                 } elsif (! UNIVERSAL::isa($filter, 'ARRAY')) {
@@ -657,18 +657,18 @@ sub play_expr {
                         if ($filter->[1]) { # it is a "dynamic filter" that will return a sub
                             ($sub, my $err) = $sub->($self->context, $args ? map { $self->play_expr($_) } @$args : ());
                             if (! $sub && $err) {
-                                $self->throw('filter', $err) if ref($err) !~ /Template::Exception$/;
+                                $self->throw('filter', $err) if ! UNIVERSAL::can($err, 'type');
                                 die $err;
                             } elsif (! UNIVERSAL::isa($sub, 'CODE')) {
                                 $self->throw('filter', "invalid FILTER for '$name' (not a CODE ref)")
-                                    if ref($sub) !~ /Template::Exception$/;
+                                    if ! UNIVERSAL::can($sub, 'type');
                                 die $sub;
                             }
                         }
                         $ref = $sub->($ref);
                     };
                     if (my $err = $@) {
-                        $self->throw('filter', $err) if ref($err) !~ /Template::Exception$/;
+                        $self->throw('filter', $err) if ! UNIVERSAL::can($err, 'type');
                         die $err;
                     }
                 } else { # this looks like our vmethods turned into "filters" (a filter stored under a name)
@@ -820,7 +820,7 @@ sub play_variable {
                 if (UNIVERSAL::isa($filter, 'CODE')) {
                     $ref = eval { $filter->($ref) }; # non-dynamic filter - no args
                     if (my $err = $@) {
-                        $self->throw('filter', $err) if ! ref($err) !~ /Template::Exception$/;
+                        $self->throw('filter', $err) if ! UNIVERSAL::can($err, 'type');
                         die $err;
                     }
                 } elsif (! UNIVERSAL::isa($filter, 'ARRAY')) {
@@ -832,18 +832,18 @@ sub play_variable {
                         if ($filter->[1]) { # it is a "dynamic filter" that will return a sub
                             ($sub, my $err) = $sub->($self->context, $args ? @$args : ());
                             if (! $sub && $err) {
-                                $self->throw('filter', $err) if ref($err) !~ /Template::Exception$/;
+                                $self->throw('filter', $err) if ! UNIVERSAL::can($err, 'type');
                                 die $err;
                             } elsif (! UNIVERSAL::isa($sub, 'CODE')) {
                                 $self->throw('filter', "invalid FILTER for '$name' (not a CODE ref)")
-                                    if ref($sub) !~ /Template::Exception$/;
+                                    if ! UNIVERSAL::can($sub, 'type');
                                 die $sub;
                             }
                         }
                         $ref = $sub->($ref);
                     };
                     if (my $err = $@) {
-                        $self->throw('filter', $err) if ref($err) !~ /Template::Exception$/;
+                        $self->throw('filter', $err) if ! UNIVERSAL::can($err, 'type');
                         die $err;
                     }
                 } else { # this looks like our vmethods turned into "filters" (a filter stored under a name)
@@ -1185,7 +1185,7 @@ sub exception {
     my $self = shift;
     my $type = shift;
     my $info = shift;
-    return $type if ref($type) =~ /Template::Exception$/;
+    return $type if UNIVERSAL::can($type, 'type');
     if (ref($info) eq 'ARRAY') {
         my $hash = ref($info->[-1]) eq 'HASH' ? pop(@$info) : {};
         if (@$info >= 2 || scalar keys %$hash) {

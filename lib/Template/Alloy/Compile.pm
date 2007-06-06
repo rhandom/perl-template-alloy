@@ -1,8 +1,8 @@
-package CGI::Ex::Template::Compile;
+package Template::Alloy::Compile;
 
 =head1 NAME
 
-CGI::Ex::Template::Compile - Transform CET AST to Perl
+Template::Alloy::Compile - Transform Alloy AST to Perl
 
 =head1 DESCRIPTION
 
@@ -18,9 +18,9 @@ This module may be distributed under the same terms as Perl itself.
 
 use strict;
 use warnings;
-use CGI::Ex::Dump qw(debug);
+use Template::Alloy;
 
-our $VERSION = '2.13';
+our $VERSION = $Template::Alloy::VERSION;
 our $INDENT  = ' ' x 4;
 our $PERL_COMPILE_EXT = '.pl';
 our $DIRECTIVES = {
@@ -480,9 +480,9 @@ sub _compile_play_named_args {
     die "Invalid node name \"$directive\"" if $directive !~ /^\w+$/;
 
     $$str_ref .= "
-${indent}require CGI::Ex::Template::Play;
+${indent}require Template::Alloy::Play;
 ${indent}\$var = ".$self->compile_expr_flat($node->[3]).";
-${indent}\$CGI::Ex::Template::Play::DIRECTIVES->{'$directive'}->(\$self, \$var, ['$directive', $node->[1], $node->[2]], \$out_ref);";
+${indent}\$Template::Alloy::Play::DIRECTIVES->{'$directive'}->(\$self, \$var, ['$directive', $node->[1], $node->[2]], \$out_ref);";
 
     return;
 }
@@ -733,7 +733,7 @@ ${indent}${INDENT}${INDENT}\$self->throw('loop', 'Scalar value used in LOOP') if
 ${indent}${INDENT}${INDENT}local \$self->{'_vars'} = (! \$global) ? (\$ref || {}) : (ref(\$ref) eq 'HASH') ? {%{ \$self->{'_vars'} }, %\$ref} : \$self->{'_vars'};
 ${indent}${INDENT}${INDENT}\@{ \$self->{'_vars'} }{qw(__counter__ __first__ __last__ __inner__ __odd__)}
 ${indent}${INDENT}${INDENT}${INDENT}= (++\$i, (\$i == 1 ? 1 : 0), (\$i == \@\$items ? 1 : 0), (\$i == 1 || \$i == \@\$items ? 0 : 1), (\$i % 2) ? 1 : 0)
-${indent}${INDENT}${INDENT}${INDENT}${INDENT}if \$self->{'LOOP_CONTEXT_VARS'} && ! \$CGI::Ex::Template::QR_PRIVATE;$code
+${indent}${INDENT}${INDENT}${INDENT}${INDENT}if \$self->{'LOOP_CONTEXT_VARS'} && ! \$Template::Alloy::QR_PRIVATE;$code
 ${indent}${INDENT}}
 ${indent}}";
 }
@@ -766,7 +766,7 @@ ${indent}${INDENT}my \$copy = \$self_copy->{'_vars'};
 ${indent}${INDENT}local \$self_copy->{'_vars'}= {%\$copy};
 
 ${indent}${INDENT}local \$self_copy->{'_macro_recurse'} = \$self_copy->{'_macro_recurse'} || 0;
-${indent}${INDENT}my \$max = \$self_copy->{'MAX_MACRO_RECURSE'} || \$CGI::Ex::Template::MAX_MACRO_RECURSE;
+${indent}${INDENT}my \$max = \$self_copy->{'MAX_MACRO_RECURSE'} || \$Template::Alloy::MAX_MACRO_RECURSE;
 ${indent}${INDENT}\$self_copy->throw('macro_recurse', \"MAX_MACRO_RECURSE \$max reached\")
 ${indent}${INDENT}${INDENT}if ++\$self_copy->{'_macro_recurse'} > \$max;
 ";
@@ -826,7 +826,7 @@ sub compile_PERL{
 
     $$str_ref .= "
 ${indent}\$self->throw('perl', 'EVAL_PERL not set') if ! \$self->{'EVAL_PERL'};
-${indent}require CGI::Ex::Template::Play;
+${indent}require Template::Alloy::Play;
 ${indent}\$var = do {
 ${indent}${INDENT}my \$out = '';
 ${indent}${INDENT}my \$out_ref = \\\$out;$code
@@ -836,11 +836,11 @@ ${indent}#\$var = \$1 if \$var =~ /^(.+)\$/s; # blatant untaint
 
 ${indent}my \$err;
 ${indent}eval {
-${indent}${INDENT}package CGI::Ex::Template::Perl;
+${indent}${INDENT}package Template::Alloy::Perl;
 ${indent}${INDENT}my \$context = \$self->context;
 ${indent}${INDENT}my \$stash   = \$context->stash;
 ${indent}${INDENT}local *PERLOUT;
-${indent}${INDENT}tie *PERLOUT, 'CGI::Ex::Template::EvalPerlHandle', \$out_ref;
+${indent}${INDENT}tie *PERLOUT, 'Template::Alloy::EvalPerlHandle', \$out_ref;
 ${indent}${INDENT}my \$old_fh = select PERLOUT;
 ${indent}${INDENT}eval \$var;
 ${indent}${INDENT}\$err = \$\@;
@@ -848,7 +848,7 @@ ${indent}${INDENT}select \$old_fh;
 ${indent}};
 ${indent}\$err ||= \$\@;
 ${indent}if (\$err) {
-${indent}${INDENT}\$self->throw('undef', \$err) if ref(\$err) !~ /Template::Exception\$/;
+${indent}${INDENT}\$self->throw('undef', \$err) if ! UNIVERSAL::can(\$err, 'type');
 ${indent}${INDENT}die \$err;
 ${indent}}";
 
@@ -877,7 +877,7 @@ sub compile_SET {
 
         $$str_ref .= "\n$indent\$var = ";
 
-        if ($CGI::Ex::Template::OP_DISPATCH->{$op}) {
+        if ($Template::Alloy::OP_DISPATCH->{$op}) {
             $op =~ /^([^\w\s\$]+)=$/ || die "Not sure how to handle that op $op during SET";
             my $short = ($1 eq '_' || $1 eq '~') ? '.' : $1;
             $$str_ref .= 'do { no warnings; ';
@@ -900,7 +900,7 @@ ${indent}}"
             $self->compile_expr($val, $str_ref, $indent);
         }
 
-        if ($CGI::Ex::Template::OP_DISPATCH->{$op}) {
+        if ($Template::Alloy::OP_DISPATCH->{$op}) {
             $$str_ref .= ' }';
         }
         $$str_ref .= ";\n$indent";
@@ -1017,7 +1017,7 @@ ${indent}if (\$err) {";
     }
     if (@names) {
         $$str_ref .= "
-${indent}${INDENT}\$err = \$self->exception('undef', \$err) if ref(\$err) !~ /Template::Exception\$/;
+${indent}${INDENT}\$err = \$self->exception('undef', \$err) if ! UNIVERSAL::can(\$err, 'type');
 ${indent}${INDENT}my \$type = \$err->type;
 ${indent}${INDENT}die \$err if \$type =~ /stop|return/;
 ${indent}${INDENT}local \$self->{'_vars'}->{'error'} = \$err;
@@ -1151,7 +1151,7 @@ sub compile_WHILE {
     my $code = $self->compile_tree($node->[4], "$indent$INDENT");
 
     $$str_ref .= "
-${indent}my \$count = \$CGI::Ex::Template::WHILE_MAX;
+${indent}my \$count = \$Template::Alloy::WHILE_MAX;
 ${indent}WHILE: while (--\$count > 0) {
 ${indent}my \$var = ";
     $self->compile_expr($node->[3], $str_ref, $indent);
@@ -1178,8 +1178,8 @@ ${indent}for my \$file (reverse("
 .join(",${indent}${INDENT}", map {"\$self->play_expr(".$self->compile_expr_flat($_).")"} @files).")) {
 ${indent}${INDENT}local \$self->{'_vars'}->{'content'} = \$var;
 ${indent}${INDENT}\$var = '';
-${indent}${INDENT}require CGI::Ex::Template::Play;
-${indent}\$CGI::Ex::Template::Play::DIRECTIVES->{'INCLUDE'}->(\$self, [$named, \$file], ['$node->[0]', $node->[1], $node->[2]], \\\$var);
+${indent}${INDENT}require Template::Alloy::Play;
+${indent}\$Template::Alloy::Play::DIRECTIVES->{'INCLUDE'}->(\$self, [$named, \$file], ['$node->[0]', $node->[1], $node->[2]], \\\$var);
 ${indent}}
 ${indent}\$\$out_ref .= \$var if defined \$var;";
 

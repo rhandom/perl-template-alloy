@@ -392,7 +392,7 @@ sub process {
 
         ### catch errors with ERROR config
         if (my $err = $@) {
-            $err = $self->exception('undef', $err) if ref($err) !~ /Template::Exception$/;
+            $err = $self->exception('undef', $err) if ! UNIVERSAL::can($err, 'type');
             die $err if $err->type =~ /stop|return/;
             my $catch = $self->{'ERRORS'} || $self->{'ERROR'} || die $err;
             $catch = {default => $catch} if ! ref $catch;
@@ -440,7 +440,7 @@ sub process {
 
     };
     if (my $err = $@) {
-        $err = $self->exception('undef', $err) if ref($err) !~ /Template::Exception$/;
+        $err = $self->exception('undef', $err) if ! UNIVERSAL::can($err, 'type');
         if ($err->type !~ /stop|return|next|last|break/) {
             $self->{'error'} = $err;
             return;

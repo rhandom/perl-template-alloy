@@ -1,16 +1,16 @@
-package CGI::Ex::Template::Velocity;
+package Template::Alloy::Velocity;
 
 =head1 NAME
 
-CGI::Ex::Template::Tmpl - provide Text::Tmpl support
+Template::Alloy::Tmpl - provide Text::Tmpl support
 
 =cut
 
 use strict;
 use warnings;
-use CGI::Ex::Dump qw(debug);
+use Template::Alloy;
 
-our $VERSION = '2.13';
+our $VERSION = $Template::Alloy::VERSION;
 our $error;
 
 sub parse_tree_velocity {
@@ -31,12 +31,12 @@ sub parse_tree_velocity {
     local $self->{'_start_tag'} = (! $self->{'INTERPOLATE'}) ? $self->{'START_TAG'} : qr{(?: $self->{'START_TAG'} | (\$))}sx;
     local $self->{'_end_tag'}; # changes over time
 
-    local @{ $CGI::Ex::Template::Parse::ALIASES }{qw(PARSE   INCLUDE _INCLUDE ELSEIF)}
+    local @{ $Template::Alloy::Parse::ALIASES }{qw(PARSE   INCLUDE _INCLUDE ELSEIF)}
                                                 = qw(PROCESS INSERT  INCLUDE  ELSIF);
-    my $dirs    = $CGI::Ex::Template::Parse::DIRECTIVES;
-    my $aliases = $CGI::Ex::Template::Parse::ALIASES;
+    my $dirs    = $Template::Alloy::Parse::DIRECTIVES;
+    my $aliases = $Template::Alloy::Parse::ALIASES;
     local @{ $dirs }{ keys %$aliases } = values %$aliases; # temporarily add to the table
-    local @{ $self }{@CGI::Ex::Template::CONFIG_COMPILETIME} = @{ $self }{@CGI::Ex::Template::CONFIG_COMPILETIME};
+    local @{ $self }{@Template::Alloy::CONFIG_COMPILETIME} = @{ $self }{@Template::Alloy::CONFIG_COMPILETIME};
 
     my @tree;             # the parsed tree
     my $pointer = \@tree; # pointer to current tree to handle nested blocks
@@ -114,11 +114,11 @@ sub parse_tree_velocity {
                     local $self->{'_operator_precedence'} = 0; # allow operators
                     local $self->{'_end_tag'} = qr{\}};
                     $ref = $self->parse_expr($str_ref);
-                    $$str_ref =~ m{ \G \s* $CGI::Ex::Template::Parse::QR_COMMENTS \} }gcxo
+                    $$str_ref =~ m{ \G \s* $Template::Alloy::Parse::QR_COMMENTS \} }gcxo
                         || $self->throw('parse', 'Missing close }', undef, pos($$str_ref));
                 } else {
                     local $self->{'_operator_precedence'} = 1; # no operators
-                    local $CGI::Ex::Template::Parse::QR_COMMENTS = qr{};
+                    local $Template::Alloy::Parse::QR_COMMENTS = qr{};
                     $ref = $self->parse_expr($str_ref);
                 }
                 $self->throw('parse', "Error while parsing for interpolated string", undef, pos($$str_ref))
@@ -160,7 +160,7 @@ sub parse_tree_velocity {
                 if ($$str_ref =~ m{ \G \( }gcx) {
                     local $self->{'_operator_precedence'} = 0; # reset precedence
                     $args = $self->parse_args($str_ref, {is_parened => 1});
-                    $$str_ref =~ m{ \G \s* $CGI::Ex::Template::Parse::QR_COMMENTS \) }gcxo
+                    $$str_ref =~ m{ \G \s* $Template::Alloy::Parse::QR_COMMENTS \) }gcxo
                         || $self->throw('parse.missing.paren', "Missing close \) in directive args", undef, pos($$str_ref));
                 }
                 $node = ['GET', $mark, pos($$str_ref), [$name, $args]];
@@ -322,7 +322,7 @@ __END__
 Provides for extra or extended features that may not be as commonly used.
 This module should not normally be used by itself.
 
-See the CGI::Ex::Template documentation for configuration and other parameters.
+See the Template::Alloy documentation for configuration and other parameters.
 
 http://velocity.apache.org/engine/devel/vtl-reference-guide.html
 http://www.javaworld.com/javaworld/jw-12-2001/jw-1228-velocity.html?page=4
@@ -334,19 +334,19 @@ http://www.javaworld.com/javaworld/jw-12-2001/jw-1228-velocity.html?page=4
 =item
 
 The magic velocity property lookups don't exist.  You must use the actual
-method name, CET will not try to guess it for you.
+method name, Alloy will not try to guess it for you.
 
 =item
 
 Escaping of variables is consistent.  The velocity spec is not.  The
 velocity spec says that "\\$email" will return "\\$email" if email is
 not defined and it will return "\foo" if email is equal to "foo".  The
-slash behavior magically changes according to the spec.  In CET the
+slash behavior magically changes according to the spec.  In Alloy the
 "\\$email" would be "\$email" if email is not defined.
 
 =item
 
-You can set items to null (undefined) in CET.  According to the velocity spec
+You can set items to null (undefined) in Alloy.  According to the velocity spec
 you have to configure Velocity to do this.  To get the other behavior, you
 would need to do "#if($questionable)#set($foo=$questionable)#end".  The default
 Velocity spec way provides no way for checking null return values.
@@ -354,7 +354,7 @@ Velocity spec way provides no way for checking null return values.
 =item
 
 There currently isn't a "literal" directive.  The VTL spec doesn't mention
-#literal, but the user-guide does.  In CET you can use the following:
+#literal, but the user-guide does.  In Alloy you can use the following:
 
     #get('#foreach($a in [1..3]) $a #end')
 
@@ -368,8 +368,8 @@ There is no $velocityCount .  Use $loop.count .
 
 =item
 
-In CET, excess whitespace outside of the directive matters.  In the VTL user-guide
-it mentions that all excess whitespace is gobbled up.  CET supports the TT chomp
+In Alloy, excess whitespace outside of the directive matters.  In the VTL user-guide
+it mentions that all excess whitespace is gobbled up.  Alloy supports the TT chomp
 operators.  These operators are placed just inside the open and close parenthesis
 of directives as in the following:
 
@@ -377,7 +377,7 @@ of directives as in the following:
 
 =item
 
-In CET, / division is always floating point.  If you want integer division, use "div".
+In Alloy, / division is always floating point.  If you want integer division, use "div".
 
 =item
 
@@ -387,7 +387,7 @@ Perl doesn't support negative ranges.  However, arrays do have reverse method.
 
 =item
 
-In CET arguments to macros are passed by value, not by name.
+In Alloy arguments to macros are passed by value, not by name.
 
 =back
 

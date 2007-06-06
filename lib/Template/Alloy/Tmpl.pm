@@ -1,15 +1,15 @@
-package CGI::Ex::Template::Tmpl;
+package Template::Alloy::Tmpl;
 
 =head1 NAME
 
-CGI::Ex::Template::Tmpl - provide Text::Tmpl support
+Template::Alloy::Tmpl - provide Text::Tmpl support
 
 =head1 DESCRIPTION
 
 Provides for extra or extended features that may not be as commonly used.
 This module should not normally be used by itself.
 
-See the CGI::Ex::Template documentation for configuration and other parameters.
+See the Template::Alloy documentation for configuration and other parameters.
 
 =head1 AUTHOR
 
@@ -23,14 +23,15 @@ This module may be distributed under the same terms as Perl itself.
 
 use strict;
 use warnings;
+use Template::Alloy;
 
-our $VERSION = '2.13';
+our $VERSION = $template::Alloy::VERSION;
 our $error;
 
 sub parse_tree_tmpl {
     my $self = shift;
 
-    local @{ $CGI::Ex::Template::Parse::ALIASES }{qw(ECHO INCLUDE IFN    ENDCOMMENT ENDIF ENDIFN ENDLOOP)}
+    local @{ $Template::Alloy::Parse::ALIASES }{qw(ECHO INCLUDE IFN    ENDCOMMENT ENDIF ENDIFN ENDLOOP)}
                                                 = qw(GET  PROCESS UNLESS END        END   END    END);
     local $self->{'ABSOLUTE'}   = defined($self->{'ABSOLUTE'}) ? $self->{'ABSOLUTE'} : 1;
     local $self->{'RELATIVE'}   = defined($self->{'RELATIVE'}) ? $self->{'RELATIVE'} : 1;
@@ -54,7 +55,7 @@ sub set_delimiters {
     $self->{'END_TAG'}   = quotemeta(shift || $self->throw('set', 'missing end_tag'));
 }
 
-sub strerror { $CGI::Ex::Template::Tmpl::error }
+sub strerror { $Template::Alloy::Tmpl::error }
 
 sub set_strip { my $self = shift; $self->{'POST_CHOMP'} = $_[0] ? '-' : '+'; 1 }
 
@@ -75,7 +76,7 @@ sub parse_file {
     my $vars = $self->{'_vars'} || {};
 
     local $self->{'SYNTAX'} = $self->{'SYNTAX'} || 'tmpl';
-    local $CGI::Ex::Template::QR_PRIVATE = undef;
+    local $Template::Alloy::QR_PRIVATE = undef;
 
     $error = undef;
 

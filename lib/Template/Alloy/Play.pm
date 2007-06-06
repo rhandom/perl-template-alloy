@@ -253,7 +253,7 @@ sub play_FILTER {
     ### play the block
     my $out = '';
     eval { $self->play_tree($sub_tree, \$out) };
-    die $@ if $@ && ref($@) !~ /Template::Exception$/;
+    die $@ if $@ && ! UNIVERSAL::can($@, 'type'); # TODO - shouldn't they all die ?
 
     my $var = [[undef, '~', $out], 0, '|', @$filter]; # make a temporary var out of it
 
@@ -516,7 +516,7 @@ sub play_PERL {
 
 
     if ($err) {
-        $self->throw('undef', $err) if ref($err) !~ /Template::Exception$/;
+        $self->throw('undef', $err) if ! UNIVERSAL::can($err, 'type');
         die $err;
     }
 
@@ -580,7 +580,7 @@ sub play_PROCESS {
 
             ### handle exceptions
             if (my $err = $@) {
-                $err = $self->exception('undef', $err) if ref($err) !~ /Template::Exception$/;
+                $err = $self->exception('undef', $err) if ! UNIVERSAL::can($err, 'type');
                 $err->doc($doc) if $doc && $err->can('doc') && ! $err->doc;
             }
 
@@ -589,7 +589,7 @@ sub play_PROCESS {
         ### append any output
         $$out_ref .= $out;
         if (my $err = $@) {
-            die $err if ref($err) !~ /Template::Exception$/ || $err->type !~ /return/;
+            die $err if ! UNIVERSAL::can($err, 'type') || $err->type !~ /return/;
         }
     }
 
@@ -623,7 +623,7 @@ sub play_RAWPERL {
     $$out_ref .= $output;
 
     if ($err) {
-        $self->throw('undef', $err) if ref($err) !~ /Template::Exception$/;
+        $self->throw('undef', $err) if ! UNIVERSAL::can($err, 'type');
         die $err;
     }
 
@@ -723,7 +723,7 @@ sub play_TRY {
         $self->throw('parse.missing', "Missing CATCH block", $node);
     }
     if ($err) {
-        $err = $self->exception('undef', $err) if ref($err) !~ /Template::Exception$/;
+        $err = $self->exception('undef', $err) if ! UNIVERSAL::can($err, 'type');
         if ($err->type =~ /stop|return/) {
             $$out_ref .= $out;
             die $err;
