@@ -12,7 +12,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => 168;
+use Test::More tests => 198;
 use Data::Dumper qw(Dumper);
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
@@ -107,8 +107,30 @@ process_ok('#set($value = $foo * $bar)$value' => '32', {foo => 8, bar => 4});
 process_ok('#set($value = $foo / $bar)$value' => '2',  {foo => 8, bar => 4});
 process_ok('#set($value = $foo % $bar)$value' => '0',  {foo => 8, bar => 4});
 
+process_ok('#set($!value = $foo + 1)$value' => '',     {foo => 8, bar => 4}); # error because $!value is not a valid variable name in directives
+
 ###----------------------------------------------------------------###
-print "### COMMENT ######################################### $is_compile_perl\n";
+print "### QUOTED STRINGS ################################## $is_compile_perl\n";
+
+process_ok('#set($value = "($foo)")$value' => '(bar)',                {foo => 'bar'});
+process_ok('#set($value = "(#get($foo))")$value' => '(bar)',          {foo => 'bar'});
+process_ok('#set($value = "($foo)")$value' => '(bar)',                {foo => 'bar', tt_config => [AUTO_EVAL => 0]});
+process_ok('#set($value = "(#get($foo))")$value' => '(#get(bar))',    {foo => 'bar', tt_config => [AUTO_EVAL => 0]});
+process_ok('#set($value = \'($foo)\')$value' => '($foo)',             {foo => 'bar'});
+process_ok('#set($value = \'(#get($foo))\')$value' => '(#get($foo))', {foo => 'bar'});
+
+process_ok('#set($value = "($foo)")$value' => '($foo)',               {});
+process_ok('#set($value = "(#get($foo))")$value' => '()',             {});
+process_ok('#set($value = "($foo)")$value' => '($foo)',               {tt_config => [AUTO_EVAL => 0]});
+process_ok('#set($value = "(#get($foo))")$value' => '(#get($foo))',   {tt_config => [AUTO_EVAL => 0]});
+
+process_ok('#set($value = "($!foo)")$value' => '()',                  {});
+process_ok('#set($value = "(#get($!foo))")$value' => '',              {}); # error because $!foo is not a valid variable name in directives
+process_ok('#set($value = "($!foo)")$value' => '()',                  {tt_config => [AUTO_EVAL => 0]});
+process_ok('#set($value = "(#get($!foo))")$value' => '(#get())',      {tt_config => [AUTO_EVAL => 0]});
+
+###----------------------------------------------------------------###
+print "### COMMENTS ######################################## $is_compile_perl\n";
 
 process_ok("Foo##interesting\nBar" => 'FooBar');
 process_ok("Foo##interesting\n\nBar" => "Foo\nBar");
