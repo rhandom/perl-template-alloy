@@ -8,30 +8,24 @@ package Template::Alloy;
 
 use strict;
 use warnings;
-use base qw(Exporter);
 use Template::Alloy::Exception;
 use Template::Alloy::VMethod qw($SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
 
-our $VERSION   = '1.001';
-our @EXPORT_OK = qw(@CONFIG_COMPILETIME @CONFIG_RUNTIME
-                    $QR_OP $QR_OP_ASSIGN $QR_OP_PREFIX $QR_PRIVATE
-                    $OP $OP_ASSIGN $OP_PREFIX $OP_POSTFIX $OP_DISPATCH);
-
-###----------------------------------------------------------------###
-
+our $VERSION  = '1.001';
 our $AUTOLOAD;
 our $AUTOROLE = {
-    TT       => [qw(parse_tree_tt3 process)],
     Compile  => [qw(load_perl compile_template compile_tree compile_expr compile_expr_flat compile_operator)],
     HTE      => [qw(parse_tree_hte param output register_function clear_param query new_file new_scalar_ref new_array_ref new_filehandle)],
-    Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse dump_parse_expr)],
+    Operator => [qw(play_operator define_operator)],
+    Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse dump_parse_expr define_directive define_syntax)],
     Play     => [qw(play_tree list_plugins)],
+    TT       => [qw(parse_tree_tt3 process)],
     Tmpl     => [qw(parse_tree_tmpl set_delimiters set_strip set_value set_values parse_string set_dir parse_file loop_iteration fetch_loop_iteration)],
     Velocity => [qw(parse_tree_velocity merge)],
+    VMethod  => [qw(define_vmethod)],
 };
 our $AUTOLOOKUP = { map { my $type = $_; map { ($_ => $type) } @{ $AUTOROLE->{$type} } } keys %$AUTOROLE };
 
-sub DESTROY {}
 sub AUTOLOAD {
     my $self = shift;
     my $meth = ($AUTOLOAD && $AUTOLOAD =~ /::(\w+)$/) ? $1 : $self->throw('autoload', "Invalid method $AUTOLOAD");
@@ -50,95 +44,11 @@ sub AUTOLOAD {
 
     return $self->$meth(@_);
 }
+sub DESTROY {}
 
 ###----------------------------------------------------------------###
 
 our $QR_PRIVATE = qr/^[_.]/;
-
-our $SYNTAX = {
-    alloy    => sub { shift->parse_tree_tt3(@_) },
-    ht       => sub { my $self = shift; local $self->{'V2EQUALS'} = 0; local $self->{'EXPR'} = 0; $self->parse_tree_hte(@_) },
-    hte      => sub { my $self = shift; local $self->{'V2EQUALS'} = 0; $self->parse_tree_hte(@_) },
-    tt3      => sub { shift->parse_tree_tt3(@_) },
-    tt2      => sub { my $self = shift; local $self->{'V2PIPE'} = 1; $self->parse_tree_tt3(@_) },
-    tt1      => sub { my $self = shift; local $self->{'V2PIPE'} = 1; local $self->{'V1DOLLAR'} = 1; $self->parse_tree_tt3(@_) },
-    tmpl     => sub { shift->parse_tree_tmpl(@_) },
-    velocity => sub { shift->parse_tree_velocity(@_) },
-};
-
-### setup the operator parsing
-our $OPERATORS = [
-    # type      precedence symbols              action (undef means play_operator will handle)
-    ['prefix',  99,        ['\\'],              undef],
-    ['postfix', 98,        ['++'],              undef],
-    ['postfix', 98,        ['--'],              undef],
-    ['prefix',  97,        ['++'],              undef],
-    ['prefix',  97,        ['--'],              undef],
-    ['right',   96,        ['**', 'pow'],       sub { no warnings;     $_[0] ** $_[1]  } ],
-    ['prefix',  93,        ['!'],               sub { no warnings;   ! $_[0]           } ],
-    ['prefix',  93,        ['-'],               sub { no warnings; @_ == 1 ? 0 - $_[0] : $_[0] - $_[1] } ],
-    ['left',    90,        ['*'],               sub { no warnings;     $_[0] *  $_[1]  } ],
-    ['left',    90,        ['/'],               sub { no warnings;     $_[0] /  $_[1]  } ],
-    ['left',    90,        ['div', 'DIV'],      sub { no warnings; int($_[0] /  $_[1]) } ],
-    ['left',    90,        ['%', 'mod', 'MOD'], sub { no warnings;     $_[0] %  $_[1]  } ],
-    ['left',    85,        ['+'],               sub { no warnings;     $_[0] +  $_[1]  } ],
-    ['left',    85,        ['-'],               sub { no warnings; @_ == 1 ? 0 - $_[0] : $_[0] - $_[1] } ],
-    ['left',    85,        ['~', '_'],          undef],
-    ['none',    80,        ['<'],               sub { no warnings; $_[0] <  $_[1]  } ],
-    ['none',    80,        ['>'],               sub { no warnings; $_[0] >  $_[1]  } ],
-    ['none',    80,        ['<='],              sub { no warnings; $_[0] <= $_[1]  } ],
-    ['none',    80,        ['>='],              sub { no warnings; $_[0] >= $_[1]  } ],
-    ['none',    80,        ['lt'],              sub { no warnings; $_[0] lt $_[1]  } ],
-    ['none',    80,        ['gt'],              sub { no warnings; $_[0] gt $_[1]  } ],
-    ['none',    80,        ['le'],              sub { no warnings; $_[0] le $_[1]  } ],
-    ['none',    80,        ['ge'],              sub { no warnings; $_[0] ge $_[1]  } ],
-    ['none',    75,        ['=='],              sub { no warnings; $_[0] == $_[1]  } ],
-    ['none',    75,        ['eq'],              sub { no warnings; $_[0] eq $_[1]  } ],
-    ['none',    75,        ['!='],              sub { no warnings; $_[0] != $_[1]  } ],
-    ['none',    75,        ['ne'],              sub { no warnings; $_[0] ne $_[1]  } ],
-    ['none',    75,        ['<=>'],             sub { no warnings; $_[0] <=> $_[1] } ],
-    ['none',    75,        ['cmp'],             sub { no warnings; $_[0] cmp $_[1] } ],
-    ['left',    70,        ['&&'],              undef],
-    ['right',   65,        ['||'],              undef],
-    ['right',   65,        ['//'],              undef],
-    ['none',    60,        ['..'],              sub { no warnings; $_[0] .. $_[1]  } ],
-    ['ternary', 55,        ['?', ':'],          undef],
-    ['assign',  53,        ['+='],              undef],
-    ['assign',  53,        ['-='],              undef],
-    ['assign',  53,        ['*='],              undef],
-    ['assign',  53,        ['/='],              undef],
-    ['assign',  53,        ['%='],              undef],
-    ['assign',  53,        ['**='],             undef],
-    ['assign',  53,        ['~=', '_='],        undef],
-    ['assign',  53,        ['//='],             undef],
-    ['assign',  52,        ['='],               undef],
-    ['prefix',  50,        ['not', 'NOT'],      sub { no warnings; ! $_[0]         } ],
-    ['left',    45,        ['and', 'AND'],      undef],
-    ['right',   40,        ['or',  'OR' ],      undef],
-    ['right',   40,        ['err', 'ERR'],      undef],
-];
-our ($QR_OP, $QR_OP_PREFIX, $QR_OP_ASSIGN, $OP, $OP_PREFIX, $OP_DISPATCH, $OP_ASSIGN, $OP_POSTFIX, $OP_TERNARY);
-sub _op_qr { # no mixed \w\W operators
-    my %used;
-    my $chrs = join '|', reverse sort map {quotemeta $_} grep {++$used{$_} < 2} grep {! /\{\}|\[\]/} grep {/^\W{2,}$/} @_;
-    my $chr  = join '',          sort map {quotemeta $_} grep {++$used{$_} < 2} grep {/^\W$/}     @_;
-    my $word = join '|', reverse sort                    grep {++$used{$_} < 2} grep {/^\w+$/}    @_;
-    $chr = "[$chr]" if $chr;
-    $word = "\\b(?:$word)\\b" if $word;
-    return join('|', grep {length} $chrs, $chr, $word) || die "Missing operator regex";
-}
-sub _build_ops {
-    $QR_OP        = _op_qr(map {@{ $_->[2] }} grep {$_->[0] ne 'prefix'} @$OPERATORS);
-    $QR_OP_PREFIX = _op_qr(map {@{ $_->[2] }} grep {$_->[0] eq 'prefix'} @$OPERATORS);
-    $QR_OP_ASSIGN = _op_qr(map {@{ $_->[2] }} grep {$_->[0] eq 'assign'} @$OPERATORS);
-    $OP           = {map {my $ref = $_; map {$_ => $ref}      @{$ref->[2]}} grep {$_->[0] ne 'prefix' } @$OPERATORS}; # all non-prefix
-    $OP_PREFIX    = {map {my $ref = $_; map {$_ => $ref}      @{$ref->[2]}} grep {$_->[0] eq 'prefix' } @$OPERATORS};
-    $OP_DISPATCH  = {map {my $ref = $_; map {$_ => $ref->[3]} @{$ref->[2]}} grep {$_->[3]             } @$OPERATORS};
-    $OP_ASSIGN    = {map {my $ref = $_; map {$_ => 1}         @{$ref->[2]}} grep {$_->[0] eq 'assign' } @$OPERATORS};
-    $OP_POSTFIX   = {map {my $ref = $_; map {$_ => 1}         @{$ref->[2]}} grep {$_->[0] eq 'postfix'} @$OPERATORS}; # bool is postfix
-    $OP_TERNARY   = {map {my $ref = $_; map {$_ => 1}         @{$ref->[2]}} grep {$_->[0] eq 'ternary'} @$OPERATORS}; # bool is ternary
-}
-_build_ops();
 
 our $WHILE_MAX    = 1000;
 our $EXTRA_COMPILE_EXT = '.sto';
@@ -163,8 +73,7 @@ sub new {
 
   my $self  = bless $args, $class;
 
-  ### "enable" debugging - we only support DEBUG_DIRS and DEBUG_UNDEF
-  if ($self->{'DEBUG'}) {
+  if ($self->{'DEBUG'}) { # "enable" some types of tt style debugging
       $self->{'_debug_dirs'}  = 1 if $self->{'DEBUG'} =~ /^\d+$/ ? $self->{'DEBUG'} & 8 : $self->{'DEBUG'} =~ /dirs|all/;
       $self->{'_debug_undef'} = 1 if $self->{'DEBUG'} =~ /^\d+$/ ? $self->{'DEBUG'} & 2 : $self->{'DEBUG'} =~ /undef|all/;
   }
@@ -932,90 +841,6 @@ sub set_variable {
 
 ###----------------------------------------------------------------###
 
-sub play_operator {
-    my ($self, $tree) = @_;
-    ### $tree looks like [undef, '+', 4, 5]
-
-    return $OP_DISPATCH->{$tree->[1]}->(@$tree == 3 ? $self->play_expr($tree->[2]) : ($self->play_expr($tree->[2]), $self->play_expr($tree->[3])))
-        if $OP_DISPATCH->{$tree->[1]};
-
-    my $op = $tree->[1];
-
-    ### do custom and short-circuitable operators
-    if ($op eq '=') {
-        my $val = $self->play_expr($tree->[3]);
-        $self->set_variable($tree->[2], $val);
-        return $val;
-
-   } elsif ($op eq '||' || $op eq 'or' || $op eq 'OR') {
-        my $val = $self->play_expr($tree->[2]) || $self->play_expr($tree->[3]);
-        return defined($val) ? $val : '';
-
-    } elsif ($op eq '&&' || $op eq 'and' || $op eq 'AND') {
-        my $val = $self->play_expr($tree->[2]) && $self->play_expr($tree->[3]);
-        return defined($val) ? $val : '';
-
-    } elsif ($op eq '//' || $op eq 'err' || $op eq 'ERR') {
-        my $val = $self->play_expr($tree->[2]);
-        return $val if defined $val;
-        return $self->play_expr($tree->[3]);
-
-    } elsif ($op eq '?') {
-        no warnings;
-        return $self->play_expr($tree->[2]) ? $self->play_expr($tree->[3]) : $self->play_expr($tree->[4]);
-
-    } elsif ($op eq '~' || $op eq '_') {
-        no warnings;
-        my $s = '';
-        $s .= $self->play_expr($tree->[$_]) for 2 .. $#$tree;
-        return $s;
-
-    } elsif ($op eq '[]') {
-        return [map {$self->play_expr($tree->[$_])} 2 .. $#$tree];
-
-    } elsif ($op eq '{}') {
-        no warnings;
-        my @e;
-        push @e, $self->play_expr($tree->[$_]) for 2 .. $#$tree;
-        return {@e};
-
-    } elsif ($op eq '++') {
-        no warnings;
-        my $val = 0 + $self->play_expr($tree->[2]);
-        $self->set_variable($tree->[2], $val + 1);
-        return $tree->[3] ? $val : $val + 1; # ->[3] is set to 1 during parsing of postfix ops
-
-    } elsif ($op eq '--') {
-        no warnings;
-        my $val = 0 + $self->play_expr($tree->[2]);
-        $self->set_variable($tree->[2], $val - 1);
-        return $tree->[3] ? $val : $val - 1; # ->[3] is set to 1 during parsing of postfix ops
-
-    } elsif ($op eq '\\') {
-        my $var = $tree->[2];
-
-        my $ref = $self->play_expr($var, {return_ref => 1});
-        return $ref if ! ref $ref;
-        return sub { sub { $$ref } } if ref $ref eq 'SCALAR' || ref $ref eq 'REF';
-
-        my $self_copy = $self;
-        eval {require Scalar::Util; Scalar::Util::weaken($self_copy)};
-
-        my $last = ['temp deref key', $var->[-1] ? [@{ $var->[-1] }] : 0];
-        return sub { sub { # return a double sub so that the current play_expr will return a coderef
-            local $self_copy->{'_vars'}->{'temp deref key'} = $ref;
-            $last->[-1] = (ref $last->[-1] ? [@{ $last->[-1] }, @_] : [@_]) if @_;
-            return $self->play_expr($last);
-        } };
-    } elsif ($op eq 'qr') {
-        return $tree->[3] ? qr{(?$tree->[3]:$tree->[2])} : qr{$tree->[2]};
-    }
-
-    $self->throw('operator', "Un-implemented operation $op");
-}
-
-###----------------------------------------------------------------###
-
 sub _vars {
     my $self = shift;
     $self->{'_vars'} = shift if @_ == 1;
@@ -1062,8 +887,6 @@ sub slurp {
 }
 
 sub error { shift->{'error'} }
-
-###----------------------------------------------------------------###
 
 sub exception {
     my $self = shift;
@@ -1172,41 +995,6 @@ sub get_line_number_by_index {
         }
     }
     return $include_char ? ($i + 1, $index - $lines->[$i]) : $i + 1;
-}
-
-###----------------------------------------------------------------###
-### long virtual methods or filters
-### many of these vmethods have used code from Template/Stash.pm to
-### assure conformance with the TT spec.
-
-sub define_syntax {
-    my ($self, $name, $sub) = @_;
-    $SYNTAX->{$name} = $sub;
-    return 1;
-}
-
-sub define_operator {
-    my ($self, $args) = @_;
-    push @$OPERATORS, [@{ $args }{qw(type precedence symbols play_sub)}];
-    _build_ops();
-    return 1;
-}
-
-sub define_directive {
-    my ($self, $name, $args) = @_;
-    require Template::Alloy::Parse;
-    $Template::Alloy::Parse::DIRECTIVES->{$name} = [@{ $args }{qw(parse_sub play_sub is_block is_postop continues no_interp)}];
-    return 1;
-}
-
-sub define_vmethod {
-    my ($self, $type, $name, $sub) = @_;
-    if (   $type =~ /scalar|item|text/i) { $SCALAR_OPS->{$name} = $sub }
-    elsif ($type =~ /array|list/i ) { $LIST_OPS->{  $name} = $sub }
-    elsif ($type =~ /hash/i       ) { $HASH_OPS->{  $name} = $sub }
-    elsif ($type =~ /filter/i     ) { $FILTER_OPS->{$name} = $sub }
-    else { die "Invalid type vmethod type $type" }
-    return 1;
 }
 
 ###----------------------------------------------------------------###
