@@ -234,8 +234,7 @@ sub play_EVAL {
     foreach my $str (@strs) {
         $str = $self->play_expr($str);
         next if ! defined $str;
-        #$$out_ref .= $self->play_variable($str, [undef, 0, '|', 'eval', [$named]]);
-        $$out_ref .= $self->play_variable($str, [undef, 0, '|', 'eval', 0]);
+        $$out_ref .= $self->play_variable($str, [undef, 0, '|', 'eval', [$named]]);
     }
 }
 
