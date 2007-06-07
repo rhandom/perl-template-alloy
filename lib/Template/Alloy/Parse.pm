@@ -2,17 +2,7 @@ package Template::Alloy::Parse;
 
 =head1 NAME
 
-Template::Alloy::Parse - Common parsing routines for creating AST from templates
-
-=head1 DESCRIPTION
-
-=head1 AUTHOR
-
-Paul Seamons <paul at seamons dot com>
-
-=head1 LICENSE
-
-This module may be distributed under the same terms as Perl itself.
+Template::Alloy::Parse - Common parsing role for creating AST from templates
 
 =cut
 
@@ -24,8 +14,10 @@ use Template::Alloy::Operator qw($QR_OP $QR_OP_ASSIGN $QR_OP_PREFIX
                                  $OP $OP_ASSIGN $OP_PREFIX $OP_POSTFIX);
 
 our $VERSION   = $Template::Alloy::VERSION;
-our @EXPORT_OK = qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
+our @EXPORT_OK = qw(define_directive define_syntax
+                    $ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
 
+sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
 ###----------------------------------------------------------------###
 
@@ -135,22 +127,6 @@ sub parse_tree {
     my $syntax = $_[0]->{'SYNTAX'} || 'alloy';
     my $meth   = $SYNTAX->{$syntax} || $_[0]->throw('parse', "Unknown SYNTAX \"$syntax\"");
     return $meth->(@_);
-}
-
-###----------------------------------------------------------------###
-
-sub dump_parse {
-    my $obj = UNIVERSAL::isa($_[0], 'Template::Alloy') ? shift : Template::Alloy->new;
-    my $str = shift;
-    require Data::Dumper;
-    return Data::Dumper::Dumper($obj->parse_tree(\$str));
-}
-
-sub dump_parse_expr {
-    my $obj = UNIVERSAL::isa($_[0], 'Template::Alloy') ? shift : Template::Alloy->new;
-    my $str = shift;
-    require Data::Dumper;
-    return Data::Dumper::Dumper($obj->parse_expr(\$str));
 }
 
 ###----------------------------------------------------------------###
@@ -497,7 +473,7 @@ sub parse_expr {
             }
 
             ### add the operator to the tree
-            my $var2 =  $self->parse_expr($str_ref);
+            my $var2 = $self->parse_expr($str_ref);
             $self->throw('parse', 'Missing variable after "'.$op.'"', undef, pos($$str_ref)) if ! defined $var2;
             push (@{ $tree ||= [] }, $op, $var2);
             $found->{$OP->{$op}->[1]}->{$op} = 1; # found->{precedence}->{op}
@@ -1016,4 +992,161 @@ sub parse_WRAPPER { $DIRECTIVES->{'PROCESS'}->[0]->(@_) }
 
 ###----------------------------------------------------------------###
 
+sub dump_parse_tree {
+    my $self = shift;
+    $self = $self->new if ! ref $self;
+    my $str = shift;
+    my $ref = ref($str) ? $str : \$str;
+    my $sub;
+    my $nest;
+    $sub = sub {
+        my ($tree, $indent) = @_;
+        my $out = "[\n";
+        foreach my $node (@$tree) {
+            if (! ref($node) || (! $node->[4] && ! $node->[5])) {
+                $out .= "$indent    ".$self->ast_string($node).",\n";
+                next;
+            }
+            $out .= "$indent    " . $nest->($node, "$indent    ");
+        }
+        $out .= "$indent]";
+    };
+    $nest = sub {
+        my ($node, $indent) = @_;
+        my $out = $self->ast_string([@{$node}[0..3]]);
+        chop $out;
+        if ($node->[4]) {
+            $out .= ", ";
+            $out .= $sub->($node->[4], "$indent");
+        }
+        if ($node->[5]) {
+            $out .= ", ". $nest->($node->[5], "$indent") . $indent;
+        } elsif (@$node >= 6) {
+            $out .= ", ". $self->ast_string($node->[5]);
+        }
+        if (@$node >= 7) { $out.= ", ". $self->ast_string($node->[6]) };
+        $out .= "],\n";
+        return $out;
+    };
+
+    return $sub->($self->parse_tree($ref), '') ."\n";
+}
+
+sub dump_parse_expr {
+    my $self = shift;
+    $self = $self->new if ! ref $self;
+    my $str = shift;
+    my $ref = ref($str) ? $str : \$str;
+    return $self->ast_string($self->parse_expr($ref));
+}
+
+###----------------------------------------------------------------###
+
 1;
+
+__END__
+
+=head1 DESCRIPTION
+
+=head1 ROLE METHODS
+
+=over 4
+
+=item parse_expr
+
+Used to parse a variable, an expression, a literal string, or a
+number.  It returns a parsed variable tree.  Samples of parsed
+variables can be found in the VARIABLE PARSE TREE section.
+
+=item C<dump_parse_tree>
+
+This method allows for returning a string of perl code representing
+the AST of the parsed tree.
+
+It is mainly used for testing.
+
+=item C<dump_parse_expr>
+
+This method allows for returning a Data::Dumper dump of a parsed
+variable.  It is mainly used for testing.
+
+=item C<parse_*>
+
+Methods by these names are used by parse_tree to parse the template.
+These are the grammar.  They are used by all of the various template
+syntaxes Unless otherwise mentioned, these methods are not exposed via
+the role.
+
+=back
+
+=head1 VARIABLE PARSE TREE
+
+Template::Alloy parses templates into an tree of operations (an AST
+or abstract syntax tree).  Even variable access is parsed into a tree.
+This is done in a manner somewhat similar to the way that TT operates
+except that nested variables such as foo.bar|baz contain the '.' or
+'|' in between each name level.  Operators are parsed and stored as
+part of the variable (it may be more appropriate to say we are parsing
+a term or an expression).
+
+The following table shows a variable or expression and the corresponding parsed tree
+(this is what the parse_expr method would return).
+
+    one                [ 'one',  0 ]
+    one()              [ 'one',  [] ]
+    one.two            [ 'one',  0, '.', 'two',  0 ]
+    one|two            [ 'one',  0, '|', 'two',  0 ]
+    one.$two           [ 'one',  0, '.', ['two', 0 ], 0 ]
+    one(two)           [ 'one',  [ ['two', 0] ] ]
+    one.${two().three} [ 'one',  0, '.', ['two', [], '.', 'three', 0], 0]
+    2.34               2.34
+    "one"              "one"
+    1 + 2              [ [ undef, '+', 1, 2 ], 0]
+    a + b              [ [ undef, '+', ['a', 0], ['b', 0] ], 0 ]
+    "one"|length       [ [ undef, '~', "one" ], 0, '|', 'length', 0 ]
+    "one $a two"       [ [ undef, '~', 'one ', ['a', 0], ' two' ], 0 ]
+    [0, 1, 2]          [ [ undef, '[]', 0, 1, 2 ], 0 ]
+    [0, 1, 2].size     [ [ undef, '[]', 0, 1, 2 ], 0, '.', 'size', 0 ]
+    ['a', a, $a ]      [ [ undef, '[]', 'a', ['a', 0], [['a', 0], 0] ], 0]
+    {a  => 'b'}        [ [ undef, '{}', 'a', 'b' ], 0 ]
+    {a  => 'b'}.size   [ [ undef, '{}', 'a', 'b' ], 0, '.', 'size', 0 ]
+    {$a => b}          [ [ undef, '{}', ['a', 0], ['b', 0] ], 0 ]
+    a * (b + c)        [ [ undef, '*', ['a', 0], [ [undef, '+', ['b', 0], ['c', 0]], 0 ]], 0 ]
+    (a + b)            [ [ undef, '+', ['a', 0], ['b', 0] ]], 0 ]
+    (a + b) * c        [ [ undef, '*', [ [undef, '+', ['a', 0], ['b', 0] ], 0 ], ['c', 0] ], 0 ]
+    a ? b : c          [ [ undef, '?', ['a', 0], ['b', 0], ['c', 0] ], 0 ]
+    a || b || c        [ [ undef, '||', ['a', 0], [ [undef, '||', ['b', 0], ['c', 0] ], 0 ] ], 0 ]
+    ! a                [ [ undef, '!', ['a', 0] ], 0 ]
+
+Some notes on the parsing.
+
+    Operators are parsed as part of the variable and become part of the variable tree.
+
+    Operators are stored in the variable tree using an operator identity array which
+    contains undef as the first value, the operator, and the operator arguments.  This
+    allows for quickly descending the parsed variable tree and determining that the next
+    node is an operator.
+
+    Parenthesis () can be used at any point in an expression to disambiguate precedence.
+
+    "Variables" that appear to be literal strings or literal numbers
+    are returned as the literal (no operator tree).
+
+The following perl can be typed at the command line to view the parsed variable tree:
+
+    perl -e 'use Template::Alloy; print Template::Alloy->dump_parse_expr("foo.bar + 2")."\n"'
+
+Also the following can be included in a template to view the output in a template:
+
+    [% USE cet = Template::Alloy %]
+    [%~ cet.dump_parse_expr('foo.bar + 2').replace('\s+', ' ') %]
+
+=head1 AUTHOR
+
+Paul Seamons <paul at seamons dot com>
+
+=head1 LICENSE
+
+This module may be distributed under the same terms as Perl itself.
+
+=cut
