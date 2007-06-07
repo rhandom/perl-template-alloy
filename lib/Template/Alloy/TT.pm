@@ -2,22 +2,7 @@ package Template::Alloy::TT;
 
 =head1 NAME
 
-Template::Alloy::TT - provide Template::Toolkit support
-
-=head1 DESCRIPTION
-
-Provides for extra or extended features that may not be as commonly used.
-This module should not normally be used by itself.
-
-See the Template::Alloy documentation for configuration and other parameters.
-
-=head1 AUTHOR
-
-Paul Seamons <paul at seamons dot com>
-
-=head1 LICENSE
-
-This module may be distributed under the same terms as Perl itself.
+Template::Alloy::TT - Template::Toolkit role
 
 =cut
 
@@ -29,6 +14,8 @@ use Template::Alloy::Parse qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMME
 use Template::Alloy::Operator qw($QR_OP_ASSIGN);
 
 our $VERSION = $Template::Alloy::VERSION;
+
+sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
 ###----------------------------------------------------------------###
 
@@ -331,11 +318,13 @@ sub process {
     ### get the content
     my $content;
     if (ref $in) {
-        if (UNIVERSAL::isa($in, 'SCALAR')) { # reference to a string
+        if (ref($in) eq 'SCALAR') { # reference to a string
             $content = $in;
         } elsif (UNIVERSAL::isa($in, 'CODE')) {
             $content = $in->();
             $content = \$content;
+        } elsif (ref($in) eq 'HASH') { # pre-prepared document
+            $content = $in;
         } else { # should be a file handle
             local $/ = undef;
             $content = <$in>;
@@ -518,9 +507,10 @@ sub _load_template_meta {
         ### load the meta data for the top document
         ### this is needed by some of the custom handlers such as PRE_PROCESS and POST_PROCESS
         my $content = shift;
-        my $doc     = $self->{'_template'} = $self->load_template($content) || {};
-        my $meta    = ($doc->{'_tree'} && ref($doc->{'_tree'}->[0]) && $doc->{'_tree'}->[0]->[0] eq 'META')
-            ? $doc->{'_tree'}->[0]->[3] : {};
+        my $doc     = $self->{'_template'} = ref($content) eq 'HASH' ? $content : $self->load_template($content) || {};
+        my $meta    = $doc->{'_perl'} ? $doc->{'_perl'}->{'meta'}
+            : ($doc->{'_tree'} && ref($doc->{'_tree'}->[0]) && $doc->{'_tree'}->[0]->[0] eq 'META') ? $doc->{'_tree'}->[0]->[3]
+            : {};
 
         $self->{'_template'} = $doc;
         @{ $doc }{keys %$meta} = values %$meta;
@@ -532,3 +522,582 @@ sub _load_template_meta {
 ###----------------------------------------------------------------###
 
 1;
+
+__END__
+
+=head1 DESCRIPTION
+
+The Template::Alloy::TT role provides the syntax and the interface for
+Template::Toolkit version 1, 2, and 3.  It also brings many of the
+features from the various templating systems.
+
+And it is fast.
+
+See the Template::Alloy documentation for configuration and other
+parameters.
+
+=head1 HOW IS Template::Alloy DIFFERENT FROM Template::Toolkit
+
+Alloy uses the same base template syntax and configuration items as
+TT2, but the internals of Alloy were written from scratch.
+Additionally much of the planned TT3 syntax is supported as well as
+most of that of HTML::Template::Expr.  The following is a list of some
+of the ways that the configuration and syntax of Alloy are different
+from that of TT2.  Note: items that are planned to work in TT3 are
+marked with (TT3).
+
+=over 4
+
+=item
+
+Numerical hash keys work
+
+    [% a = {1 => 2} %]
+
+=item
+
+Quoted hash key interpolation is fine
+
+    [% a = {"$foo" => 1} %]
+
+=item
+
+Multiple ranges in same constructor
+
+    [% a = [1..10, 21..30] %]
+
+=item
+
+Constructor types can call virtual methods. (TT3)
+
+    [% a = [1..10].reverse %]
+
+    [% "$foo".length %]
+
+    [% 123.length %]   # = 3
+
+    [% 123.4.length %]  # = 5
+
+    [% -123.4.length %] # = -5 ("." binds more tightly than "-")
+
+    [% (a ~ b).length %]
+
+    [% "hi".repeat(3) %] # = hihihi
+
+    [% {a => b}.size %] # = 1
+
+=item
+
+The "${" and "}" variable interpolators can contain expressions,
+not just variables.
+
+    [% [0..10].${ 1 + 2 } %] # = 4
+
+    [% {ab => 'AB'}.${ 'a' ~ 'b' } %] # = AB
+
+    [% color = qw/Red Blue/; FOR [1..4] ; color.${ loop.index % color.size } ; END %]
+      # = RedBlueRedBlue
+
+=item
+
+You can use regular expression quoting.
+
+    [% "foo".match( /(F\w+)/i ).0 %] # = foo
+
+=item
+
+Tags can be nested.
+
+    [% f = "[% (1 + 2) %]" %][% f|eval %] # = 3
+
+=item
+
+Arrays can be accessed with non-integer numbers.
+
+    [% [0..10].${ 2.3 } %] # = 3
+
+=item
+
+Reserved names are less reserved. (TT3)
+
+    [% GET GET %] # gets the variable named "GET"
+
+    [% GET $GET %] # gets the variable who's name is stored in "GET"
+
+=item
+
+Filters and SCALAR_OPS are interchangeable. (TT3)
+
+    [% a | length %]
+
+    [% b . lower %]
+
+=item
+
+Pipe "|" can be used anywhere dot "." can be and means to call
+the virtual method. (TT3)
+
+    [% a = {size => "foo"} %][% a.size %] # = foo
+
+    [% a = {size => "foo"} %][% a|size %] # = 1 (size of hash)
+
+=item
+
+Pipe "|" and "." can be mixed. (TT3)
+
+    [% "aa" | repeat(2) . length %] # = 4
+
+=item
+
+Added V2PIPE configuration item
+
+Restores the behavior of the pipe operator to be
+compatible with TT2.
+
+With V2PIPE = 1
+
+    [% PROCESS a | repeat(2) %] # = value of block or file a repeated twice
+
+With V2PIPE = 0 (default)
+
+    [% PROCESS a | repeat(2) %] # = process block or file named a ~ a
+
+=item
+
+Added V2EQUALS configuration item
+
+Allows for turning off TT2 "==" behavior.  Defaults to 1
+in TT syntaxes and to 0 in HT syntaxes.
+
+    [% CONFIG V2EQUALS => 1 %][% ('7' == '7.0') || 0 %]
+    [% CONFIG V2EQUALS => 0 %][% ('7' == '7.0') || 0 %]
+
+Prints
+
+    0
+    1
+
+=item
+
+Added AUTO_EVAL configuration item.
+
+Default false.  If true, will automatically call eval filter
+on double quoted strings.
+
+=item
+
+Added SHOW_UNDEFINED_INTERP configuration item.
+
+Default false.  If true, will leave in place interpolated
+values that weren't defined.  You can then use the
+Velocity notation $!foo to not show these values.
+
+=item
+
+Added Virtual Object Namespaces. (TT3)
+
+The Text, List, and Hash types give direct access
+to virtual methods.
+
+    [% a = "foobar" %][% Text.length(a) %] # = 6
+
+    [% a = [1 .. 10] %][% List.size(a) %] # = 10
+
+    [% a = {a=>"A", b=>"B"} ; Hash.size(a) %] = 2
+
+    [% foo = {a => 1, b => 2}
+       | Hash.keys
+       | List.join(", ") %] # = a, b
+
+=item
+
+Added "fmt" scalar, list, and hash virtual methods.
+
+    [% list.fmt("%s", ", ") %]
+
+    [% hash.fmt("%s => %s", "\n") %]
+
+=item
+
+Added missing HTML::Template::Expr vmethods
+
+The following vmethods were added - they correspond to the
+perl functions of the same name.
+
+    abs
+    atan2
+    cos
+    exp
+    hex
+    lc
+    log
+    oct
+    sin
+    sprintf
+    sqrt
+    srand
+    uc
+
+=item
+
+Allow all Scalar vmethods to behave as top level functions.
+
+    [% sprintf("%d %d", 7, 8) %] # = "7 8"
+
+The following are equivalent in Alloy:
+
+    [% "abc".length %]
+    [% length("abc") %]
+
+This feature may be disabling by setting the
+VMETHOD_FUNCTIONS configuration item to 0.
+
+This is similar to how HTML::Template::Expr operates, but
+now you can use this functionality in TT templates as well.
+
+=item
+
+Whitespace is less meaningful. (TT3)
+
+    [% 2-1 %] # = 1 (fails in TT2)
+
+=item
+
+Added pow operator.
+
+    [% 2 ** 3 %] [% 2 pow 3 %] # = 8 8
+
+=item
+
+Added string comparison operators (gt ge lt le cmp)
+
+    [% IF "a" lt "b" %]a is less[% END %]
+
+=item
+
+Added numeric comparison operator (<=>)
+
+This can be used to make up for the fact that TT2 made == the
+same as eq (which will hopefully change - use eq when you mean eq).
+
+    [% IF ! (a <=> b) %]a == b[% END %]
+
+    [% IF (a <=> b) %]a != b[% END %]
+
+=item
+
+Added self modifiers (+=, -=, *=, /=, %=, **=, ~=). (TT3)
+
+    [% a = 2;  a *= 3  ; a %] # = 6
+    [% a = 2; (a *= 3) ; a %] # = 66
+
+=item
+
+Added pre and post increment and decrement (++ --). (TT3)
+
+    [% ++a ; ++a %] # = 12
+    [% a-- ; a-- %] # = 0-1
+
+=item
+
+Added qw// contructor. (TT3)
+
+    [% a = qw(a b c); a.1 %] # = b
+
+    [% qw/a b c/.2 %] # = c
+
+=item
+
+Added regex contructor. (TT3)
+
+    [% "FOO".match(/(foo)/i).0 %] # = FOO
+
+    [% a = /(foo)/i; "FOO".match(a).0 %] # = FOO
+
+=item
+
+Allow for scientific notation. (TT3)
+
+    [% a = 1.2e-20 %]
+
+    [% 123.fmt('%.3e') %] # = 1.230e+02
+
+=item
+
+Allow for hexidecimal input. (TT3)
+
+    [% a = 0xff0000 %][% a %] # = 16711680
+
+    [% a = 0xff2 / 0xd; a.fmt('%x') %] # = 13a
+
+=item
+
+FOREACH variables can be nested.
+
+    [% FOREACH f.b = [1..10] ; f.b ; END %]
+
+Note that nested variables are subject to scoping issues.
+f.b will not be reset to its value before the FOREACH.
+
+=item
+
+Post operative directives can be nested. (TT3)
+
+Andy Wardley calls this side-by-side effect notation.
+
+    [% one IF two IF three %]
+
+    same as
+
+    [% IF three %][% IF two %][% one %][% END %][% END %]
+
+
+    [% a = [[1..3], [5..7]] %][% i FOREACH i = j FOREACH j = a %] # = 123567
+
+=item
+
+Semi-colons on directives in the same tag are optional. (TT3)
+
+    [% SET a = 1
+       GET a
+     %]
+
+    [% FOREACH i = [1 .. 10]
+         i
+       END %]
+
+Note: a semi-colon is still required in front of any block directive
+that can be used as a post-operative directive.
+
+    [% 1 IF 0
+       2 %]   # prints 2
+
+    [% 1; IF 0
+       2
+       END %] # prints 1
+
+Note2: This behavior can be disabled by setting the SEMICOLONS
+configuration item to a true value.  If SEMICOLONS is true, then
+a SEMICOLON must be set after any directive that isn't followed
+by a post-operative directive.
+
+=item
+
+CATCH blocks can be empty.
+
+TT2 requires them to contain something.
+
+=item
+
+Added a DUMP directive.
+
+Used for Data::Dumpering the passed variable or expression.
+
+   [% DUMP a.a %]
+
+=item
+
+Added CONFIG directive.
+
+   [% CONFIG
+        ANYCASE   => 1
+        PRE_CHOMP => '-'
+   %]
+
+=item
+
+Configuration options can use lowercase names instead
+of the all uppercase names that TT2 uses.
+
+    my $t = Template::Alloy->new({
+        anycase     => 1,
+        interpolate => 1,
+    });
+
+=item
+
+Added LOOP directive (works the same as LOOP in HTML::Template.
+
+   [%- var = [{key => 'a'}, {key => 'b'}] %]
+   [%- LOOP var %]
+     ([% key %])
+   [%- END %]
+
+   Prints
+
+     (a)
+     (b)
+
+=item
+
+Alloy can parse HTML::Template and HTML::Template::Expr documents
+as well as TT2 and TT3 documents.
+
+=item
+
+Added SYNTAX configuration.  The SYNTAX configuration can be
+used to change what template syntax will be used for parsing
+included templates or eval'ed strings.
+
+   [% CONFIG SYNTAX => 'hte' %]
+   [% var = '<TMPL_VAR EXPR="sprintf('%s', 'hello world')">' %]
+   [% var | eval %]
+
+=item
+
+Alloy does not generate Perl code.
+
+It generates an "opcode" tree.  The opcode tree is an arrayref
+of scalars and array refs nested as deeply as possible.  This "simple"
+structure could be shared TT implementations in other languages
+via JSON or YAML.
+
+=item
+
+Alloy uses storable for its compiled templates.
+
+If EVAL_PERL is off, Alloy will not eval_string on ANY piece of information.
+
+=item
+
+There is eval_filter and MACRO recursion protection
+
+You can control the nested nature of eval_filter and MACRO
+recursion using the MAX_EVAL_RECURSE and MAX_MACRO_RECURSE
+configuration items.
+
+=item
+
+There is no context.
+
+Alloy provides a context object that mimics the Template::Context
+interface for use by some TT filters, eval perl blocks, views,
+and plugins.
+
+=item
+
+There is no stash.
+
+Well there is but it isn't an object.
+
+Alloy only supports the variables passed in VARIABLES, PRE_DEFINE, and
+those passed to the process method.  Alloy provides a stash object that
+mimics the Template::Stash interface for use by some TT filters, eval
+perl blocks, and plugins.
+
+=item
+
+There is no provider.
+
+Alloy uses the load_parsed_tree method to get and cache templates.
+
+=item
+
+There is no parser/grammar.
+
+Alloy has its own built-in recursive regex based parser and grammar system.
+
+Alloy can actually be substituted in place of the native Template::Parser and
+Template::Grammar in TT by using the Template::Parser::Alloy module.  This
+module uses the output of parse_tree to generate a TT style compiled perl
+document.
+
+=item
+
+The DEBUG directive is more limited.
+
+It only understands DEBUG_DIRS (8) and DEBUG_UNDEF (2).
+
+=item
+
+Alloy has better line information
+
+When debug dirs is on, directives on different lines separated
+by colons show the line they are on rather than a general line range.
+
+Parse errors actually know what line and character they occured at.
+
+=back
+
+=head1 UNSUPPORTED TT2 CONFIGURATION
+
+=over 4
+
+=item LOAD_TEMPLATES
+
+Template::Alloy has its own mechanism for loading and storing
+compiled templates.  TT would use a Template::Provider that would
+return a Template::Document.  The closest thing in Template::Alloy
+is the load_parsed_template method.  There is no immediate plan to
+support the TT behavior.
+
+=item LOAD_PLUGINS
+
+Template::Alloy uses its own mechanism for loading plugins.  TT
+would use a Template::Plugins object to load plugins requested via the
+USE directive.  The functionality for doing this in Template::Alloy
+is contained in the list_plugins method and the play_USE method.  There
+is no immediate plan to support the TT behavior.
+
+Full support is offered for the PLUGINS and LOAD_PERL configuration items.
+
+Also note that Template::Alloy only natively supports the Iterator plugin.
+Any of the other plugins requested will need to provided by installing
+Template::Toolkit or the appropriate plugin module.
+
+=item LOAD_FILTERS
+
+Template::Alloy uses its own mechanism for loading filters.  TT
+would use the Template::Filters object to load filters requested via the
+FILTER directive.  The functionality for doing this in Template::Alloy
+is contained in the list_filters method and the play_expr method.
+
+Full support is offered for the FILTERS configuration item.
+
+=item TOLERANT
+
+This option is used by the LOAD_TEMPLATES and LOAD_PLUGINS options and
+is not applicable in Template::Alloy.
+
+=item SERVICE
+
+Template::Alloy has no concept of service (theoretically the Template::Alloy
+is the "service").
+
+=item CONTEXT
+
+Template::Alloy provides its own pseudo context object to plugins,
+filters, and perl blocks.  The Template::Alloy model doesn't really
+allow for a separate context.  Template::Alloy IS the context.
+
+=item STASH
+
+Template::Alloy manages its own stash of variables.  A pseudo stash
+object is available via the pseudo context object for use in plugins,
+filters, and perl blocks.
+
+=item PARSER
+
+Template::Alloy has its own built in parser.  The closest similarity is
+the parse_tree method.  The output of parse_tree is an optree that is
+later run by execute_tree.  Alloy provides a backend to the Template::Parser::Alloy
+module which can be used to replace the default parser when using
+the standard Template::Toolkit library.
+
+=item GRAMMAR
+
+Template::Alloy maintains its own grammar.  The grammar is defined
+in the parse_tree method and the callbacks listed in the global
+$DIRECTIVES hashref.
+
+=back
+
+=head1 AUTHOR
+
+Paul Seamons <paul at seamons dot com>
+
+=head1 LICENSE
+
+This module may be distributed under the same terms as Perl itself.
+
+=cut
