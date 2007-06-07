@@ -326,6 +326,9 @@ sub vmethod_url {
 sub filter_eval {
     my $context = shift;
     my $args    = pop || {};
+    my %ARGS;
+    @ARGS{ map {uc} keys %$args } = values %$args;
+    foreach (keys %ARGS) { delete $ARGS{$_} if ! $Template::Alloy::EVAL_CONFIG->{$_} }
 
     return sub {
         ### prevent recursion
@@ -334,9 +337,8 @@ sub filter_eval {
         $context->throw('eval_recurse', "MAX_EVAL_RECURSE $Template::Alloy::MAX_EVAL_RECURSE reached")
             if ++$t->{'_eval_recurse'} > ($t->{'MAX_EVAL_RECURSE'} || $Template::Alloy::MAX_EVAL_RECURSE);
 
-
         my $text = shift;
-        local @{ $t }{ map {uc} keys %$args } = values %$args;
+        local @{ $t }{ keys %ARGS } = values %ARGS;
         return $context->process(\$text);
     };
 }
