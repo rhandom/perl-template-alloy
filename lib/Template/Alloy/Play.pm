@@ -669,12 +669,7 @@ sub play_SWITCH {
         for my $test (@$val2) { # find matching values
             next if ! defined $val && defined $test;
             next if defined $val && ! defined $test;
-            if ($val ne $test) { # check string-wise first - then numerical
-                next if $val  !~ m{ ^ -? $QR_NUM $ }ox;
-                next if $test !~ m{ ^ -? $QR_NUM $ }ox;
-                next if $val != $test;
-            }
-
+            next if $val ne $test;
             my $body_ref = $node->[4] ||= [];
             $self->play_tree($body_ref, $out_ref);
             return;
