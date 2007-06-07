@@ -193,6 +193,15 @@ Add more POD and examples for all of the various syntaxes.
 
 =item
 
+Allow module assimilation - allow for using Template::Alloy
+without rewriting existing code.  Along the lines of:
+
+    use Template::Alloy
+        'HTML::Template' => 'ht',
+        'Template'       => 'tt3';
+
+=item
+
 Allow dispatch to different syntaxes based on file extension.
 
 =item
