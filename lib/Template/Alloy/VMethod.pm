@@ -378,6 +378,26 @@ those provided by Template::Toolkit.  We will try to keep
 Template::Alloy's in sync.  Template::Alloy also provides several
 extra methods that are needed for HTML::Template::Expr support.
 
+=head1 ROLE METHODS
+
+=over 4
+
+=item define_vmethod
+
+Defines a vmethod.  See L<Template::Alloy> for more details.
+
+=item C<vmethod_*>
+
+Methods by these names implement virtual methods that are more complex
+than oneliners.  These methods are not exposed via the role.
+
+=item C<filter_*>
+
+Methods by these names implement filters that are more complex than
+one liners.  These methods are not exposed via the role.
+
+=cut
+
 =head1 VIRTUAL METHOD LIST
 
 The following is the list of builtin virtual methods and filters that
