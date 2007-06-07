@@ -4,7 +4,7 @@ Template::Alloy - Fast and lightweight TT2/3 template engine
 
 =head1 SYNOPSIS
 
-    ### Template::Toolkit style usage
+=head2 Template::Toolkit style usage
 
     my $t = Template::Alloy->new(
         INCLUDE_PATH => ['/path/to/templates'],
@@ -28,7 +28,7 @@ Template::Alloy - Fast and lightweight TT2/3 template engine
     ### Alloy uses the same syntax and configuration as Template::Toolkit
 
 
-    ### HTML::Template style usage
+=head2 HTML::Template::Expr style usage
 
     my $t = Template::Alloy->new(
         filename => 'my/template.ht',
@@ -52,7 +52,59 @@ Template::Alloy - Fast and lightweight TT2/3 template engine
 
     ### Alloy can also use the same syntax and configuration as HTML::Template
 
+=head2 Text::Tmpl style usage
+
+    my $t = Template::Alloy->new;
+
+    my $swap = {
+        key1 => 'val1',
+        key2 => 'val2',
+        code => sub { 42 },
+        hash => {a => 'b'},
+    };
+
+    $t->set_delimiters('#[', ']#');
+    $t->set_strip(0);
+    $t->set_values($swap);
+    $t->set_dir('/path/to/templates');
+
+    my $out = $t->parse_file('my/template.tmpl');
+
+    my $str = "Foo #[echo $key1]# Bar";
+    my $out = $t->parse_string($str);
+
+
+    ### Alloy uses the same syntax and configuration as Text::Tmpl
+
+=head2 Velocity (VTL) style usage
+
+    my $t = Template::Alloy->new;
+
+    my $swap = {
+        key1 => 'val1',
+        key2 => 'val2',
+        code => sub { 42 },
+        hash => {a => 'b'},
+    };
+
+    my $out = $t->merge('my/template.vtl', $swap);
+
+    my $str = "#set($foo 1 + 3) ($foo) ($bar) ($!baz)";
+    my $out = $t->merge(\$str, $swap);
+
 =head1 DESCRIPTION
+
+"An alloy is a homogeneous mixture of two or more elements"
+(http://en.wikipedia.org/wiki/Alloy).
+
+Template::Alloy represents the mixing of features and capabilities
+from all of the major mini-language based template systems (support
+for non-mini-language based systems will happen eventually).  With
+Template::Alloy you can use your favorite template interface and syntax
+and get features from each of the other major template systems.  And
+Template::Alloy is fast - whether your using mod_perl, cgi, or running
+from the commandline.  There is even Template::Alloy::XS for getting
+a little more speed when that is necessary.
 
 Template::Alloy happened by accident (accidentally on purpose).  The
 Template::Alloy (Alloy hereafter) was originally a part of the CGI::Ex
@@ -61,46 +113,94 @@ variables in TT2 style tags "[% foo.bar %]".  That was all the
 original Template::Alloy did.  This was fine and dandy for a couple
 of years.  In winter of 2005-2006 Alloy was revamped to add a few
 features.  One thing led to another and soon Alloy provided for most of
-the features of TT2 as well as some from TT3.  Template::Alloy is a
-full-featured implementation of the Template::Toolkit language.
+the features of TT2 as well as some from TT3.  Template::Alloy now
+provides a full-featured implementation of the Template::Toolkit language.
 
-As of version 2.13, Template::Alloy also provides near full
-compatibility with HTML::Template (HT), HTML::Template::JIT (HTJ), and
-HTML::Template::Expr (HTE).  Version 2.13 introduced the SYNTAX
-configuration allowing for inclusion of TT style templates in HT and
-vice versa.  It also provided the HTML::Template output and param
-methods which allow Alloy to provide the HTML::Template interface.  It
-was possible to add this extra functionality because Template::Alloy
-employs an open architecture.
+After a move to a new company that was using HTML::Template::Expr and
+Text::Tmpl templates, support was investigated and interfaces for
+HTML::Template, HTML::Template::Expr, Text::Tmpl, and Velocity (VTL).
+All of the various engines offer the same features - just using different
+syntaxes and interfaces.
 
-Template::Alloy uses a recursive regex based grammar (early versions
-before the 2.10 release did not).  This allows for the embedding of
-opening and closing tags inside other tags (as in [% a = "[% 1 + 2 %]"
-; a|eval %]).  The individual methods such as parse_expr and play_expr
-may be used by external applications to add TT style variable parsing
-to other applications.
-
-Template::Alloy is fast but Template::Alloy::XS is even faster.
-If Template::Alloy isn't fast enough for you, the XS version has key
-methods coded in C and provides a noticable improvement over the
-non-XS version.  Alloy by itself is generally faster than TT, HT, and HTE.
-The XS version is nearly always faster - even than HTJ.  Alloy also uses less
-memory than TT and HTE, and only a little more than HT.  (This is all
-as of version 2.13 in May 2007 - those other modules will undoubtedly
-receive updates that will improve their performance).
+Template::Toolkit brought the most to the table.  HTML::Template
+brought the LOOP directive.  HTML::Template::Expr brough more vmethods
+and using vmethods as top level functions.  Text::Tmpl brought the
+COMMENT directive and encouraged speed matching (Text::Tmpl is almost
+entirely C based and is very fast).  The Velocity engine brought
+AUTO_EVAL and SHOW_UNDEFINED_INTERP.
 
 Most of the standard Template::Toolkit documentation covering
 directives, variables, configuration, plugins, filters, syntax, and
 vmethods should apply to Alloy just fine (This pod tries to explain
-everything - but there is too much).  The section on differences
-between Alloy and TT will explain what too look out for.
+everything - but there is too much).  See L<Template::Alloy::TT> for
+a listing of the differences between Alloy and TT.
 
-Additionally, most of the standard HTML::Template and
+Most of the standard HTML::Template and
 HTML::Template::Expr documentation covering methods, variables,
 expressions, and syntax will apply to Alloy just fine as well.
 
+Most of the standard Text::Tmpl documentation applies, as does
+the documentation covering Velocity (VTL).
+
 So should you use Template::Alloy ?  Well, try it out.  It may
 give you no visible improvement.  Or it could.
+
+=head1 BACKEND
+
+Template::Alloy uses a recursive regex based grammar (early versions
+during the CGI::Ex::Template phase did not).  This allows for the
+embedding of opening and closing tags inside other tags (as in [% a =
+"[% 1 + 2 %]" ; a|eval %]).  The individual methods such as parse_expr
+and play_expr may be used by external applications to add TT style
+variable parsing to other applications.
+
+The regex parser returns an AST (abstract syntax tree) of the text,
+directives, variables, and expressions.  All of the different template
+syntaxes compile to the same AST format.  The AST is composed only of
+scalars and arrayrefs and is suitable for sending to JavaScript via
+JSON or sharing with other languages.  The parse_tree method is used
+for returning this AST.
+
+Once at the AST stage, there are two modes of operation.  Alloy can
+either operate directly on the AST using the Play role, or it can
+compile the AST to perl code via the Compile role, and then execute
+the code.  To use the perl code route, you must set the COMPILE_PERL
+flag to 1.  If you are running in a cached environment such as
+mod_perl, this is the fastest option.  If you are running in a
+non-cached environment, the Playing or the AST is generally faster.
+The AST method is also more secure as cached AST won't ever eval
+"perl" (assuming PERL blocks are disabled).
+
+=head1 TODO
+
+=over 4
+
+=item
+
+Add more POD and examples for all of the various syntaxes.
+
+=item
+
+Allow dispatch to different syntaxes based on file extension.
+
+=item
+
+Cleanup operator API to allow for easier full customization of
+operators.
+
+=item
+
+Give better examples of overriding directives, syntax, and operators.
+
+=item
+
+Include ASP style.
+
+=item
+
+Include HTML::Parser variants such as TAL and Seamstress.
+
+=back
 
 =head1 PUBLIC METHODS
 
@@ -123,9 +223,8 @@ not parsed until the output or process methods are called.
 
 =item C<process>
 
-This is the main method call for starting processing.  Any errors that result in the
+This is the TT interface for starting processing.  Any errors that result in the
 template processing being stopped will be stored and available via the ->error method.
-This is the TT compatible method - see the output method for HT compatibility.
 
     my $t = Template::Alloy->new;
     $t->process($in, $swap, $out)
@@ -328,602 +427,17 @@ You will get:
    You've been foo'ed (ralph, 7)
 
 Future revisions of this document will include more samples.
+This is an experimental feature and the api will probably change.
 
-=back
+=item C<dump_parse_tree>
 
-=head1 TODO
+This method allows for returning a Data::Dumper dump of a parsed
+template.  It is mainly used for testing.
 
-Move module to its own namespace.
+=item C<dump_parse_expr>
 
-Cleanup operator API to allow for easier full customization of
-operators.
-
-Give better examples of overriding directives, syntax, and operators.
-
-Add more functions to the XS version.
-
-Find other syntaxes to include.
-
-=head1 HOW IS Template::Alloy DIFFERENT from Template::Toolkit
-
-Alloy uses the same base template syntax and configuration items as TT2,
-but the internals of Alloy were written from scratch.  Additionally much
-of the planned TT3 syntax is supported as well as most of that of
-HTML::Template::Expr.  The following is a list of some of the ways
-that the configuration and syntax of Alloy are different from that of
-TT2.  Note: items that are planned to work in TT3 are marked with
-(TT3).
-
-=over 4
-
-=item
-
-Numerical hash keys work
-
-    [% a = {1 => 2} %]
-
-=item
-
-Quoted hash key interpolation is fine
-
-    [% a = {"$foo" => 1} %]
-
-=item
-
-Multiple ranges in same constructor
-
-    [% a = [1..10, 21..30] %]
-
-=item
-
-Constructor types can call virtual methods. (TT3)
-
-    [% a = [1..10].reverse %]
-
-    [% "$foo".length %]
-
-    [% 123.length %]   # = 3
-
-    [% 123.4.length %]  # = 5
-
-    [% -123.4.length %] # = -5 ("." binds more tightly than "-")
-
-    [% (a ~ b).length %]
-
-    [% "hi".repeat(3) %] # = hihihi
-
-    [% {a => b}.size %] # = 1
-
-=item
-
-The "${" and "}" variable interpolators can contain expressions,
-not just variables.
-
-    [% [0..10].${ 1 + 2 } %] # = 4
-
-    [% {ab => 'AB'}.${ 'a' ~ 'b' } %] # = AB
-
-    [% color = qw/Red Blue/; FOR [1..4] ; color.${ loop.index % color.size } ; END %]
-      # = RedBlueRedBlue
-
-=item
-
-You can use regular expression quoting.
-
-    [% "foo".match( /(F\w+)/i ).0 %] # = foo
-
-=item
-
-Tags can be nested.
-
-    [% f = "[% (1 + 2) %]" %][% f|eval %] # = 3
-
-=item
-
-Arrays can be accessed with non-integer numbers.
-
-    [% [0..10].${ 2.3 } %] # = 3
-
-=item
-
-Reserved names are less reserved. (TT3)
-
-    [% GET GET %] # gets the variable named "GET"
-
-    [% GET $GET %] # gets the variable who's name is stored in "GET"
-
-=item
-
-Filters and SCALAR_OPS are interchangeable. (TT3)
-
-    [% a | length %]
-
-    [% b . lower %]
-
-=item
-
-Pipe "|" can be used anywhere dot "." can be and means to call
-the virtual method. (TT3)
-
-    [% a = {size => "foo"} %][% a.size %] # = foo
-
-    [% a = {size => "foo"} %][% a|size %] # = 1 (size of hash)
-
-=item
-
-Pipe "|" and "." can be mixed. (TT3)
-
-    [% "aa" | repeat(2) . length %] # = 4
-
-=item
-
-Added V2PIPE configuration item
-
-Restores the behavior of the pipe operator to be
-compatible with TT2.
-
-With V2PIPE = 1
-
-    [% PROCESS a | repeat(2) %] # = value of block or file a repeated twice
-
-With V2PIPE = 0 (default)
-
-    [% PROCESS a | repeat(2) %] # = process block or file named a ~ a
-
-=item
-
-Added V2EQUALS configuration item
-
-Allows for turning off TT2 "==" behavior.  Defaults to 1
-in TT syntaxes and to 0 in HT syntaxes.
-
-    [% CONFIG V2EQUALS => 1 %][% ('7' == '7.0') || 0 %]
-    [% CONFIG V2EQUALS => 0 %][% ('7' == '7.0') || 0 %]
-
-Prints
-
-    0
-    1
-
-=item
-
-Added AUTO_EVAL configuration item.
-
-Default false.  If true, will automatically call eval filter
-on double quoted strings.
-
-=item
-
-Added SHOW_UNDEFINED_INTERP configuration item.
-
-Default false.  If true, will leave in place interpolated
-values that weren't defined.  You can then use the
-Velocity notation $!foo to not show these values.
-
-=item
-
-Added Virtual Object Namespaces. (TT3)
-
-The Text, List, and Hash types give direct access
-to virtual methods.
-
-    [% a = "foobar" %][% Text.length(a) %] # = 6
-
-    [% a = [1 .. 10] %][% List.size(a) %] # = 10
-
-    [% a = {a=>"A", b=>"B"} ; Hash.size(a) %] = 2
-
-    [% foo = {a => 1, b => 2}
-       | Hash.keys
-       | List.join(", ") %] # = a, b
-
-=item
-
-Added "fmt" scalar, list, and hash virtual methods.
-
-    [% list.fmt("%s", ", ") %]
-
-    [% hash.fmt("%s => %s", "\n") %]
-
-=item
-
-Added missing HTML::Template::Expr vmethods
-
-The following vmethods were added - they correspond to the
-perl functions of the same name.
-
-    abs
-    atan2
-    cos
-    exp
-    hex
-    lc
-    log
-    oct
-    sin
-    sprintf
-    sqrt
-    srand
-    uc
-
-=item
-
-Allow all Scalar vmethods to behave as top level functions.
-
-    [% sprintf("%d %d", 7, 8) %] # = "7 8"
-
-The following are equivalent in Alloy:
-
-    [% "abc".length %]
-    [% length("abc") %]
-
-This feature may be disabling by setting the
-VMETHOD_FUNCTIONS configuration item to 0.
-
-This is similar to how HTML::Template::Expr operates, but
-now you can use this functionality in TT templates as well.
-
-=item
-
-Whitespace is less meaningful. (TT3)
-
-    [% 2-1 %] # = 1 (fails in TT2)
-
-=item
-
-Added pow operator.
-
-    [% 2 ** 3 %] [% 2 pow 3 %] # = 8 8
-
-=item
-
-Added string comparison operators (gt ge lt le cmp)
-
-    [% IF "a" lt "b" %]a is less[% END %]
-
-=item
-
-Added numeric comparison operator (<=>)
-
-This can be used to make up for the fact that TT2 made == the
-same as eq (which will hopefully change - use eq when you mean eq).
-
-    [% IF ! (a <=> b) %]a == b[% END %]
-
-    [% IF (a <=> b) %]a != b[% END %]
-
-=item
-
-Added self modifiers (+=, -=, *=, /=, %=, **=, ~=). (TT3)
-
-    [% a = 2;  a *= 3  ; a %] # = 6
-    [% a = 2; (a *= 3) ; a %] # = 66
-
-=item
-
-Added pre and post increment and decrement (++ --). (TT3)
-
-    [% ++a ; ++a %] # = 12
-    [% a-- ; a-- %] # = 0-1
-
-=item
-
-Added qw// contructor. (TT3)
-
-    [% a = qw(a b c); a.1 %] # = b
-
-    [% qw/a b c/.2 %] # = c
-
-=item
-
-Added regex contructor. (TT3)
-
-    [% "FOO".match(/(foo)/i).0 %] # = FOO
-
-    [% a = /(foo)/i; "FOO".match(a).0 %] # = FOO
-
-=item
-
-Allow for scientific notation. (TT3)
-
-    [% a = 1.2e-20 %]
-
-    [% 123.fmt('%.3e') %] # = 1.230e+02
-
-=item
-
-Allow for hexidecimal input. (TT3)
-
-    [% a = 0xff0000 %][% a %] # = 16711680
-
-    [% a = 0xff2 / 0xd; a.fmt('%x') %] # = 13a
-
-=item
-
-FOREACH variables can be nested.
-
-    [% FOREACH f.b = [1..10] ; f.b ; END %]
-
-Note that nested variables are subject to scoping issues.
-f.b will not be reset to its value before the FOREACH.
-
-=item
-
-Post operative directives can be nested. (TT3)
-
-Andy Wardley calls this side-by-side effect notation.
-
-    [% one IF two IF three %]
-
-    same as
-
-    [% IF three %][% IF two %][% one %][% END %][% END %]
-
-
-    [% a = [[1..3], [5..7]] %][% i FOREACH i = j FOREACH j = a %] # = 123567
-
-=item
-
-Semi-colons on directives in the same tag are optional. (TT3)
-
-    [% SET a = 1
-       GET a
-     %]
-
-    [% FOREACH i = [1 .. 10]
-         i
-       END %]
-
-Note: a semi-colon is still required in front of any block directive
-that can be used as a post-operative directive.
-
-    [% 1 IF 0
-       2 %]   # prints 2
-
-    [% 1; IF 0
-       2
-       END %] # prints 1
-
-Note2: This behavior can be disabled by setting the SEMICOLONS
-configuration item to a true value.  If SEMICOLONS is true, then
-a SEMICOLON must be set after any directive that isn't followed
-by a post-operative directive.
-
-=item
-
-CATCH blocks can be empty.
-
-TT2 requires them to contain something.
-
-=item
-
-Added a DUMP directive.
-
-Used for Data::Dumpering the passed variable or expression.
-
-   [% DUMP a.a %]
-
-=item
-
-Added CONFIG directive.
-
-   [% CONFIG
-        ANYCASE   => 1
-        PRE_CHOMP => '-'
-   %]
-
-=item
-
-Configuration options can use lowercase names instead
-of the all uppercase names that TT2 uses.
-
-    my $t = Template::Alloy->new({
-        anycase     => 1,
-        interpolate => 1,
-    });
-
-=item
-
-Added LOOP directive (works the same as LOOP in HTML::Template.
-
-   [%- var = [{key => 'a'}, {key => 'b'}] %]
-   [%- LOOP var %]
-     ([% key %])
-   [%- END %]
-
-   Prints
-
-     (a)
-     (b)
-
-=item
-
-Alloy can parse HTML::Template and HTML::Template::Expr documents
-as well as TT2 and TT3 documents.
-
-=item
-
-Added SYNTAX configuration.  The SYNTAX configuration can be
-used to change what template syntax will be used for parsing
-included templates or eval'ed strings.
-
-   [% CONFIG SYNTAX => 'hte' %]
-   [% var = '<TMPL_VAR EXPR="sprintf('%s', 'hello world')">' %]
-   [% var | eval %]
-
-=item
-
-Alloy does not generate Perl code.
-
-It generates an "opcode" tree.  The opcode tree is an arrayref
-of scalars and array refs nested as deeply as possible.  This "simple"
-structure could be shared TT implementations in other languages
-via JSON or YAML.
-
-=item
-
-Alloy uses storable for its compiled templates.
-
-If EVAL_PERL is off, Alloy will not eval_string on ANY piece of information.
-
-=item
-
-There is eval_filter and MACRO recursion protection
-
-You can control the nested nature of eval_filter and MACRO
-recursion using the MAX_EVAL_RECURSE and MAX_MACRO_RECURSE
-configuration items.
-
-=item
-
-There is no context.
-
-Alloy provides a context object that mimics the Template::Context
-interface for use by some TT filters, eval perl blocks, views,
-and plugins.
-
-=item
-
-There is no stash.
-
-Well there is but it isn't an object.
-
-Alloy only supports the variables passed in VARIABLES, PRE_DEFINE, and
-those passed to the process method.  Alloy provides a stash object that
-mimics the Template::Stash interface for use by some TT filters, eval
-perl blocks, and plugins.
-
-=item
-
-There is no provider.
-
-Alloy uses the load_parsed_tree method to get and cache templates.
-
-=item
-
-There is no parser/grammar.
-
-Alloy has its own built-in recursive regex based parser and grammar system.
-
-Alloy can actually be substituted in place of the native Template::Parser and
-Template::Grammar in TT by using the Template::Parser::Alloy module.  This
-module uses the output of parse_tree to generate a TT style compiled perl
-document.
-
-=item
-
-The DEBUG directive is more limited.
-
-It only understands DEBUG_DIRS (8) and DEBUG_UNDEF (2).
-
-=item
-
-Alloy has better line information
-
-When debug dirs is on, directives on different lines separated
-by colons show the line they are on rather than a general line range.
-
-Parse errors actually know what line and character they occured at.
-
-=back
-
-=head1 HOW IS Template::Alloy DIFFERENT from HTML::Template
-
-Alloy can use the same base template syntax and configuration items as HTE
-and HT.  The internals of Alloy were written to support TT3, but were
-general enough to be extended to support HTML::Template as well.  The result
-is HTML::Template::Expr compatible syntax, with Alloy speed and a wide range
-of additional features.
-
-The TMPL_VAR, TMPL_IF, TMPL_ELSE, TMPL_UNLESS, TMPL_LOOP, and TMPL_INCLUDE
-all work identically to HTML::Template.
-
-=over 4
-
-=item
-
-Added support for other TT3 directives and for TT style "dot notation."
-
-    <TMPL_SET a = "bar">
-    <TMPL_SET b = [1 .. 25]>
-    <TMPL_SET foo = PROCESS 'filename.tt'>
-
-    <TMPL_GET foo>  # similar to <TMPL_VAR NAME="foo">
-    <TMPL_GET b.3>
-    <TMPL_GET my.nested.chained.variable.1>
-    <TMPL_GET my_var | html>
-
-    <TMPL_USE foo = DBI(db => ...)>
-    <TMPL_CALL foo.connect>
-
-Any of the TT directives can be used in HTML::Template documents.
-
-For many die-hard HTML::Template fans, it is probably quite scary to
-be providing all of the TT functionality.  All of the extended
-TT functionality can be disabled by setting the NO_TT configuration
-item.  The NO_TT configuration is automatically set if the SYNTAX is
-set to "ht" and the output method is called.
-
-=item
-
-There is an ELSIF!!!
-
-    <TMPL_IF foo>
-      FOO
-    <TMPL_ELSIF bar>
-      BAR
-    <TMPL_ELSE>
-      Done then
-    </TMPL_IF>
-
-=item
-
-Added CHOMP capabilities (PRE_CHOMP and POST_CHOMP)
-
-    Foo
-    <~TMPL_VAR EXPR="1+2"~>
-    Bar
-
-    Prints Foo3Bar
-
-=item
-
-Added INTERPOLATE capability
-
-    <TMPL_SET foo = 'FOO'>
-    <TMPL_CONFIG INTERPOLATE => 1>
-    $foo <TMPL_GET foo> ${ 1 + 2 }
-
-    Prints
-
-    FOO FOO 3
-
-=item
-
-Allow for HTML::Template templates to include TT style templates.
-
-    <TMPL_CONFIG SYNTAX => 'tt3'>
-    <TMPL_INCLUDE "filename.tt">
-
-=item
-
-Allow for Expr parsing to follow proper precedence rules.
-
-   <TMPL_VAR EXPR="1 + 2 * 3">
-
-   Properly prints 7.
-
-=item
-
-Uses all of the caching and opcode tree optimations provided by
-Template::Alloy and Template::Alloy::XS.
-
-=item
-
-Alloy does not provide the query method from HTML::Template.  This
-is because parsing of the document is delayed until the output
-method is called, and because Alloy supports TT style chained
-variables which often are not resolvable until run time.
+This method allows for returning a Data::Dumper dump of a parsed
+variable.  It is mainly used for testing.
 
 =back
 
@@ -1229,12 +743,22 @@ Note: virtual methods can only be used on hash contructs in Alloy, not in TT.
 
 Note: this works in Alloy and is planned for TT3.
 
+=head1 VIRTUAL METHODS
+
+Virtual methods (vmethods) are a TT feature that allow for operating on the
+swapped template variables.
+
+This document shows some samples of using vmethods.  For a full
+listing of available virtual methods, see L<Template::Alloy::VMethod>.
+
 =head1 EXPRESSIONS
 
 Expressions are one or more variables or literals joined together with
 operators.  An expression can be used anywhere a variable can be used
 with the exception of the variable name in the SET directive, and the
 filename of PROCESS, INCLUDE, WRAPPER, and INSERT.
+
+For a full listing of operators, see L<Template::Alloy::Operator>.
 
 The following section shows some samples of expressions.  For a full
 list of available operators, please see the section titled OPERATORS.
@@ -1248,585 +772,19 @@ list of available operators, please see the section titled OPERATORS.
     [% y = 3 %]
     [% x * (y - 1) %]     Prints 4
 
-=head1 VIRTUAL METHODS
-
-The following is the list of builtin virtual methods and filters that
-can be called on each type of data.
-
-In Template::Alloy, the "|" operator can be used to call virtual
-methods just the same way that the "." operator can.  The main
-difference between the two is that on access to hashrefs or objects,
-the "|" means to always call the virtual method or filter rather than
-looking in the hashref for a key by that name, or trying to call that
-method on the object.  This is similar to how TT3 will function.
-
-Virtual methods are also made available via Virtual Objects which
-are discussed in a later section.
-
-=head2 SCALAR VIRTUAL METHODS AND FILTERS
-
-The following is the list of builtin virtual methods and filters that
-can be called on scalar data types.  In Alloy and TT3, filters and
-virtual methods are more closely related than in TT2.  In general
-anywhere a virtual method can be used a filter can be used also - and
-likewise all scalar virtual methods can be used as filters.
-
-In addition to the filters listed below, Alloy will automatically load
-Template::Filters and use them if Template::Toolkit is installed.
-
-In addition to the scalar virtual methods, any scalar will be
-automatically converted to a single item list if a list virtual method
-is called on it.
-
-Scalar virtual methods are also available through the "Text" virtual
-object (except for true filters such as eval and redirect).
-
-All scalar virtual methods are available as top level functions as well.
-This is not true of TT2.  In Template::Alloy the following are equivalent:
-
-    [% "abc".length %]
-    [% length("abc") %]
-
-You may set VMETHOD_FUNCTIONS to 0 to disable this behavior.
-
-=over 4
-
-=item '0'
-
-    [% item = 'foo' %][% item.0 %] Returns foo.
-
-Allows for scalars to mask as arrays (scalars already will, but this
-allows for more direct access).
-
-=item abs
-
-    [% -1.abs %] Returns the absolute value
-
-=item atan2
-
-    [% pi = 4 * 1.atan2(1) %]
-
-Returns the arctangent.  The item itself represents Y, the passed argument represents X.
-
-=item chunk
-
-    [% item.chunk(60).join("\n") %] Split string up into a list of chunks of text 60 chars wide.
-
-=item collapse
-
-    [% item.collapse %] Strip leading and trailing whitespace and collapse all other space to one space.
-
-=item cos
-
-    [% item.cos %] Returns the cosine of the item.
-
-=item defined
-
-    [% item.defined %] Always true - because the undef sub translates all undefs to ''.
-
-=item eval
-
-    [% item.eval %]
-
-Process the string as though it was a template.  This will start the parsing
-engine and will use the same configuration as the current process.  Alloy is several times
-faster at doing this than TT is and is considered acceptable.
-
-This is a filter and is not available via the Text virtual object.
-
-=item evaltt
-
-    Same as the eval filter.
-
-=item exp
-
-    [% 1.exp %] Something like 2.71828182845905
-
-Returns "e" to the power of the item.
-
-=item file
-
-    Same as the redirect filter.
-
-=item fmt
-
-    [% item.fmt('%d') %]
-    [% item.fmt('%6s') %]
-    [% item.fmt('%*s', 6) %]
-
-Similar to format.  Returns a string formatted with the passed pattern.  Default pattern is %s.
-Opposite from of the sprintf vmethod.
-
-=item format
-
-    [% item.format('%d') %]
-    [% item.format('%6s') %]
-    [% item.format('%*s', 6) %]
-
-Print the string out in the specified format.  It is similar to
-the "fmt" virtual method, except that the item is split on newline and each line is
-processed separately.
-
-=item hash
-
-    [% item.hash %] Returns a one item hash with a key of "value" and a value of the item.
-
-
-=item hex
-
-    [% "FF".hex %]
-
-Returns the decimal value of the passed hex numbers.  Note that you
-may also just use [% 0xFF %].
-
-=item html
-
-    [% item.html %] Performs a very basic html encoding (swaps out &, <, > and " for the html entities)
-
-=item indent
-
-    [% item.indent(3) %] Indent that number of spaces.
-
-    [% item.indent("Foo: ") %] Add the string "Foo: " to the beginning of every line.
-
-=item int
-
-    [% item.int %] Return the integer portion of the value (0 if none).
-
-=item lc
-
-Same as the lower vmethod.  Returns the lower cased version of the item.
-
-=item lcfirst
-
-    [% item.lcfirst %] Capitalize the leading letter.
-
-=item length
-
-    [% item.length %] Return the length of the string.
-
-=item list
-
-    [% item.list %] Returns a list with a single value of the item.
-
-=item log
-
-    [% 8.exp.log %] Equal to 8.
-
-Returns the natural log base "e" of the item.
-
-=item lower
-
-    [% item.lower %] Return a lower-casified string.
-
-=item match
-
-    [% item.match("(\w+) (\w+)") %] Return a list of items matching the pattern.
-
-    [% item.match("(\w+) (\w+)", 1) %] Same as before - but match globally.
-
-In Template::Alloy and TT3 you can use regular expressions notation as well.
-
-    [% item.match( /(\w+) (\w+)/ ) %] Same as before.
-
-    [% item.match( m{(\w+) (\w+)} ) %] Same as before.
-
-=item null
-
-    [% item.null %] Do nothing.
-
-=item oct
-
-    [% "377".oct %]
-
-Returns the decimal value of the octal string.  On recent versions of perl you
-may also pass numbers starting with 0x which will be interpreted as hexidecimal,
-and starting with 0b which will be interpreted as binary.
-
-=item rand
-
-    [% item = 10; item.rand %] Returns a number greater or equal to 0 but less than 10.
-    [% 1.rand %]
-
-Note: This filter is not available as of TT2.15.
-
-=item remove
-
-    [% item.remove("\s+") %] Same as replace - but is global and replaces with nothing.
-
-=item redirect
-
-    [% item.redirect("output_file.html") %]
-
-Writes the contents out to the specified file.  The filename
-must be relative to the OUTPUT_PATH configuration variable and the OUTPUT_PATH variable must be set.
-
-This is a filter and is not available via the Text virtual object.
-
-=item repeat
-
-    [% item.repeat(3) %] Repeat the item 3 times
-
-    [% item.repeat(3, ' | ') %] Repeat the item 3 times separated with ' | '
-
-=item replace
-
-    [% item.replace("\s+", "&nbsp;") %] Globally replace all space with &nbsp;
-
-    [% item.replace("foo", "bar", 0) %] Replace only the first instance of foo with bar.
-
-    [% item.replace("(\w+)", "($1)") %] Surround all words with parenthesis.
-
-In Template::Alloy and TT3 you may also use normal regular expression notation.
-
-    [% item.replace(/(\w+)/, "($1)") %] Same as before.
-
-=item search
-
-    [% item.search("(\w+)") %] Tests if the given pattern is in the string.
-
-In Template::Alloy and TT3 you may also use normal regular expression notation.
-
-    [% item.search(/(\w+)/, "($1)") %] Same as before.
-
-=item sin
-
-    [% item.sin %] Returns the sine of the item.
-
-=item size
-
-    [% item.size %] Always returns 1.
-
-=item split
-
-    [% item.split %] Returns an arrayref from the item split on " "
-
-    [% item.split("\s+") %] Returns an arrayref from the item split on /\s+/
-
-    [% item.split("\s+", 3) %] Returns an arrayref from the item split on /\s+/ splitting until 3 elements are found.
-
-In Template::Alloy and TT3 you may also use normal regular expression notation.
-
-    [% item.split( /\s+/, 3 ) %] Same as before.
-
-=item sprintf
-
-    [% item = "%d %d" %]
-    [% item.sprintf(7, 8) %]
-
-Uses the pattern stored in self, and passes it to sprintf with the passed arguments.
-Opposite from the fmt vmethod.
-
-=item sqrt
-
-    [% item.sqrt %]
-
-Returns the square root of the number.
-
-=item srand
-
-Calls the perl srand function to set the interal random seed.  This
-will affect future calls to the rand vmethod.
-
-=item stderr
-
-    [% item.stderr %] Print the item to the current STDERR handle.
-
-=item substr
-
-    [% item.substr(i) %] Returns a substring of item starting at i and going to the end of the string.
-
-    [% item.substr(i, n) %] Returns a substring of item starting at i and going n characters.
-
-=item trim
-
-    [% item.trim %] Strips leading and trailing whitespace.
-
-=item uc
-
-Same as the upper command.  Returns upper cased string.
-
-=item ucfirst
-
-    [% item.ucfirst %] Lower-case the leading letter.
-
-=item upper
-
-    [% item.upper %] Return a upper cased string.
-
-=item uri
-
-    [% item.uri %] Perform a very basic URI encoding.
-
-=item url
-
-    [% item.url %] Perform a URI encoding - but some characters such
-                   as : and / are left intact.
-
-=back
-
-=head2 LIST VIRTUAL METHODS
-
-The following methods can be called on an arrayref type data structures (scalar
-types will automatically promote to a single element list and call these methods
-if needed):
-
-Additionally, list virtual methods can be accessed via the List
-Virtual Object.
-
-=over 4
-
-=item fmt
-
-    [% mylist.fmt('%s', ', ') %]
-    [% mylist.fmt('%6s', ', ') %]
-    [% mylist.fmt('%*s', ', ', 6) %]
-
-Passed a pattern and an string to join on.  Returns a string of the values of the list
-formatted with the passed pattern and joined with the passed string.
-Default pattern is %s and the default join string is a space.
-
-=item first
-
-    [% mylist.first(3) %]  Returns a list of the first 3 items in the list.
-
-=item grep
-
-    [% mylist.grep("^\w+\.\w+$") %] Returns a list of all items matching the pattern.
-
-=item hash
-
-    [% mylist.hash %] Returns a hashref with the array indexes as keys and the values as values.
-
-=item join
-
-    [% mylist.join %] Joins on space.
-    [% mylist.join(", ") Joins on the passed argument.
-
-=item last
-
-    [% mylist.last(3) %]  Returns a list of the last 3 items in the list.
-
-=item list
-
-    [% mylist.list %] Returns a reference to the list.
-
-=item max
-
-    [% mylist.max %] Returns the last item in the array.
-
-=item merge
-
-    [% mylist.merge(list2) %] Returns a new list with all defined items from list2 added.
-
-=item nsort
-
-    [% mylist.nsort %] Returns the numerically sorted items of the list.  If the items are
-    hashrefs, a key containing the field to sort on can be passed.
-
-=item pop
-
-    [% mylist.pop %] Removes and returns the last element from the arrayref (the stash is modified).
-
-=item push
-
-    [% mylist.push(23) %] Adds an element to the end of the arrayref (the stash is modified).
-
-=item pick
-
-    [% mylist.pick %] Returns a random item from the list.
-    [% ['a' .. 'z'].pick %]
-
-An additional numeric argument is how many items to return.
-
-    [% ['a' .. 'z'].pick(8).join('') %]
-
-Note: This filter is not available as of TT2.15.
-
-=item reverse
-
-    [% mylist.reverse %] Returns the list in reverse order.
-
-=item shift
-
-    [% mylist.shift %] Removes and returns the first element of the arrayref (the stash is modified).
-
-=item size
-
-    [% mylist.size %] Returns the number of elements in the array.
-
-=item slice
-
-    [% mylist.slice(i, n) %] Returns a list from the arrayref beginning at index i and continuing for n items.
-
-=item sort
-
-    [% mylist.sort %] Returns the alphabetically sorted items of the list.  If the items are
-    hashrefs, a key containing the field to sort on can be passed.
-
-=item splice
-
-    [% mylist.splice(i, n) %] Removes items from array beginning at i and continuing for n items.
-
-    [% mylist.splice(i, n, list2) %] Same as before, but replaces removed items with the items
-    from list2.
-
-=item unique
-
-    [% mylist.unique %] Return a list of the unique items in the array.
-
-=item unshift
-
-    [% mylist.unshift(23) %] Adds an item to the beginning of the arrayref.
-
-=back 4
-
-=head2 HASH VIRTUAL METHODS
-
-The following methods can be called on hash type data structures:
-
-Additionally, list virtual methods can be accessed via the Hash
-Virtual Object.
-
-=over 4
-
-=item fmt
-
-    [% myhash.fmt('%s => %s', "\n") %]
-    [% myhash.fmt('%4s => %5s', "\n") %]
-    [% myhash.fmt('%*s => %*s', "\n", 4, 5) %]
-
-Passed a pattern and an string to join on.  Returns a string of the key/value pairs
-of the hash formatted with the passed pattern and joined with the passed string.
-Default pattern is "%s\t%s" and the default join string is a newline.
-
-=item defined
-
-    [% myhash.defined('a') %]  Checks if a is defined in the hash.
-
-=item delete
-
-    [% myhash.delete('a') %]  Deletes the item from the hash.
-
-Unlink Perl the value is not returned.  Multiple values may be passed
-and represent the keys to be deleted.
-
-=item each
-
-    [% myhash.each.join(", ") %]  Turns the contents of the hash into a list - subject
-    to change as TT is changing the operations of each and list.
-
-=item exists
-
-    [% myhash.exists('a') %]  Checks if a is in the hash.
-
-=item hash
-
-    [% myhash.hash %]  Returns a reference to the hash.
-
-=item import
-
-    [% myhash.import(hash2) %]  Overlays the keys of hash2 over the keys of myhash.
-
-=item item
-
-    [% myhash.item(key) %] Returns the hashes value for that key.
-
-=item items
-
-    [% myhash.items %] Returns a list of the key and values (flattened hash)
-
-=item keys
-
-    [% myhash.keys.join(', ') %] Returns an arrayref of the keys of the hash.
-
-=item list
-
-    [% myhash.list %] Returns an arrayref with the hash as a single value (subject to change).
-
-=item pairs
-
-    [% myhash.pairs %] Returns an arrayref of hashrefs where each hash contains {key => $key, value => $value}
-    for each value of the hash.
-
-=item nsort
-
-    [% myhash.nsort.join(", ") %] Returns a numerically sorted list of the keys.
-
-=item size
-
-    [% myhash.size %] Returns the number of key/value pairs in the hash.
-
-=item sort
-
-    [% myhash.sort.join(", ") Returns an alphabetically sorted list.
-
-=item values
-
-    [% myhash.values.join(', ') %] Returns an arrayref of the values of the hash.
-
-=back
-
-=head1 VIRTUAL OBJECTS
-
-TT3 has a concept of Text, List, and Hash virtual objects which provide
-direct access to the scalar, list, and hash virtual methods.  In the TT3
-engine this will allow for more concise generated code.  Because Alloy does
-not generated perl code to be executed later, Alloy provides for these virtual
-objects but does so as more of a namespace (using the methods does not
-provide a speed optimization in your template - just may help clarify things).
-
-    [% a = "foo"; a.length %] => 3
-
-    [% a = "foo"; Text.length(a) %] => 3
-
-    [% a = Text.new("foo"); a.length %] => 3
-
-
-    [% a = [1 .. 30]; a.size %] => 30
-
-    [% a = [1 .. 30]; List.size(a) %] => 30
-
-    [% a = List.new(1 .. 30); a.size %] => 30
-
-
-    [% a = {a => 1, b => 2}; a.size %] => 2
-
-    [% a = {a => 1, b => 2}; Hash.size(a) %] => 2
-
-    [% a = Hash.new({a => 1, b => 2}); a.size %] => 2
-
-    [% a = Hash.new(a => 1, b => 2); a.size %] => 2
-
-    [% a = Hash.new(a = 1, b = 2); a.size %] => 2
-
-    [% a = Hash.new('a', 1, 'b', 2); a.size %] => 2
-
-One limitation is that if you pass a key named "Text",
-"List", or "Hash" in your variable stash - the corresponding
-virtual object will be hidden.
-
-Additionally, you can use all of the Virtual object methods with
-the pipe operator.
-
-    [% {a => 1, b => 2}
-       | Hash.keys
-       | List.join(", ") %] => a, b
-
-Again, there aren't any speed optimizations to using the virtual
-objects in Alloy, but it can help clarify the intent in some cases.
-
-Note: these aren't really objects.  All of the "virtual objects" are
-references to the $SCALAR_OPS, $LIST_OPS, and $HASH_OPS hashes
-found in the $VOBJS hash of Template::Alloy.
-
-=head1 DIRECTIVES (TT Style)
+=head1 DIRECTIVES
 
 This section contains the alphabetical list of DIRECTIVES available in
-the TT language.  DIRECTIVES are the "functions" and control
-structures of the Template Toolkit mini-language.  For further
-discussion and examples beyond what is listed below, please refer to
-the TT directives documentation.
+Alloy.  DIRECTIVES are the "functions" and control structures that
+work in the various mini-languages.  For further discussion and
+examples beyond what is listed below, please refer to the TT
+directives documentation or to the appropriate documentation
+for the particular directive.
+
+The examples given in this section are done using the
+Template::Toolkit syntax, but can be done in any of the various
+syntaxes.  See L<Template::Alloy::TT>, L<Template::Alloy::HTE>,
+L<Template::Alloy::Tmpl>, and L<Template::Alloy::Velocity>.
 
     [% IF 1 %]One[% END %]
     [% FOREACH a = [1 .. 3] %]
@@ -1835,14 +793,15 @@ the TT directives documentation.
 
     [% SET a = 1 %][% SET a = 2 %][% GET a %]
 
-Multiple directives can be inside the same set of '[%' and '%]' tags
-as long as they are separated by space or semi-colons (;).  Any block
-directive that can also be used as a post-operative directive (such as
-IF, WHILE, FOREACH, UNLESS, FILTER, and WRAPPER) must be separated
-from preceding directives with a semi-colon if it is being used as a
-block directive.  It is more safe to always use a semi-colon.  Note:
-separating by space is only available in Alloy but is a planned TT3
-feature.
+In TT multiple directives can be inside the same set of '[%' and '%]'
+tags as long as they are separated by space or semi-colons (;) (The
+Alloy version of Tmpl allows multiple also - but none of the other
+syntaxes do).  Any block directive that can also be used as a
+post-operative directive (such as IF, WHILE, FOREACH, UNLESS, FILTER,
+and WRAPPER) must be separated from preceding directives with a
+semi-colon if it is being used as a block directive.  It is more safe
+to always use a semi-colon.  Note: separating by space is only
+available in Alloy but is a planned TT3 feature.
 
     [% SET a = 1 ; SET a = 2 ; GET a %]
     [% SET a = 1
@@ -1918,6 +877,17 @@ Clears any of the content currently generated in the innermost block
 or template.  This can be useful when used in conjunction with the TRY
 statement to clear generated content if an error occurs later.
 
+=item C<COMMENT>
+
+Will comment out any text found between open and close tags.  Note, that
+the intermediate items are still parsed and END tags must align - but the
+parsed content will be discarded.
+
+    [% COMMENT %]
+       This text won't be shown.
+       [% IF 1 %]And this won't either.[% END %]
+    [% END %]
+
 =item C<CONFIG>
 
 Allow for changing the value of some compile time and runtime configuration
@@ -1931,12 +901,17 @@ options.
 The following compile time configuration options may be set:
 
     ANYCASE
+    AUTO_EVAL
+    CACHE_STR_REFS
     INTERPOLATE
-    PRE_CHOMP
     POST_CHOMP
+    PRE_CHOMP
+    SEMICOLONS
+    SHOW_UNDEFINED_INTERP
+    SYNTAX
     V1DOLLAR
-    V2PIPE
     V2EQUALS
+    V2PIPE
 
 The following runtime configuration options may be set:
 
@@ -1996,6 +971,23 @@ Used with the IF directive.  See the L</"IF"> directive.
 =item C<END>
 
 Used to end a block directive.
+
+=item C<EVAL>
+
+Same as the EVALUATE directive.
+
+=item C<EVALUATE>
+
+Introduced by the Velocity templating language.  Parses and processes the
+contents of the passed item.  This is similar to the eval filter, but
+Velocity needs a directive.  Named arguments may be used for
+reconfiguring the parser.  Any of the items that can be passed to
+the CONFIG directive may be passed here.
+
+    [% EVALUATE "[% 1 + 3 %]" %]
+
+    [% foo = "bar" %]
+    [% EVALUATE "<TMPL_VAR foo>" SYNTAX => 'ht' %]
 
 =item C<FILTER>
 
@@ -2582,12 +1574,12 @@ is case sensitive and will not scan the @INC dirs for a matching
 file).
 
     # The LOAD_PERL directive should be set to 1
-    [% USE cet = Template::Alloy %]
-    [%~ cet.dump_parse_expr('2 * 3').replace('\s+', ' ') %]
+    [% USE ta = Template::Alloy %]
+    [%~ ta.dump_parse_expr('2 * 3') %]
 
 Would print:
 
-    $VAR1 = [ [ undef, '*', '2', '3' ], 0 ];
+    [[undef, '*', 2, 3], 0];
 
 See the PLUGIN_BASE, and PLUGINS configuration items.
 
@@ -2751,300 +1743,6 @@ false.
 
     <TMPL_VAR foo DEFAULT="Foo was false">
 
-=head1 OPERATORS
-
-The following operators are available in Template::Alloy.  Except
-where noted these are the same operators available in TT.  They are
-listed in the order of their precedence (the higher the precedence the
-tighter it binds).
-
-=over 4
-
-=item C<.>
-
-The dot operator.  Allows for accessing sub-members, methods, or
-virtual methods of nested data structures.
-
-    my $obj->process(\$content, {a => {b => [0, {c => [34, 57]}]}}, \$output);
-
-    [% a.b.1.c.0 %] => 34
-
-Note: on access to hashrefs, any hash keys that match the sub key name
-will be used before a virtual method of the same name.  For example if
-a passed hash contained pair with a keyname "defined" and a value of
-"2", then any calls to hash.defined(another_keyname) would always
-return 2 rather than using the vmethod named "defined."  To get around
-this limitation use the "|" operator (listed next).  Also - on objects
-the "." will always try and call the method by that name.  To always
-call the vmethod - use "|".
-
-=item C<|>
-
-The pipe operator.  Similar to the dot operator.  Allows for
-explicit calling of virtual methods and filters (filters are "merged"
-with virtual methods in Template::Alloy and TT3) when accessing
-hashrefs and objects.  See the note for the "." operator.
-
-The pipe character is similar to TT2 in that it can be used in place
-of a directive as an alias for FILTER.  It similar to TT3 in that it
-can be used for virtual method access.  This duality is one source of
-difference between Template::Alloy and TT2 compatibility.  Templates
-that have directives that end with a variable name that then use the
-"|" directive to apply a filter will be broken as the "|" will be
-applied to the variable name.
-
-The following two cases will do the same thing.
-
-    [% foo | html %]
-
-    [% foo FILTER html %]
-
-Though they do the same thing, internally, foo|html is stored as a
-single variable while "foo FILTER html" is stored as the variable foo
-which is then passed to the FILTER html.
-
-A TT2 sample that would break in Template::Alloy or TT3 is:
-
-    [% PROCESS foo a = b | html %]
-
-Under TT2 the content returned by "PROCESS foo a = b" would all be
-passed to the html filter.  Under Template::Alloy and TT3, b would
-be passed to the html filter before assigning it to the variable "a"
-before the template foo was processed.
-
-A simple fix is to do any of the following:
-
-    [% PROCESS foo a = b FILTER html %]
-
-    [% | html %][% PROCESS foo a = b %][% END %]
-
-    [% FILTER html %][% PROCESS foo a = b %][% END %]
-
-This shouldn't be too much hardship and offers the great return of disambiguating
-virtual method access.
-
-=item C<\>
-
-Unary.  The reference operator.  Not well publicized in TT.  Stores a reference
-to a variable for use later.  Can also be used to "alias" long names.
-
-    [% f = 7 ; foo = \f ; f = 8 ; foo %] => 8
-
-    [% foo = \f.g.h.i.j.k; f.g.h.i.j.k = 7; foo %] => 7
-
-    [% f = "abcd"; foo = \f.replace("ab", "-AB-") ; foo %] => -AB-cd
-
-    [% f = "abcd"; foo = \f.replace("bc") ; foo("-BC-") %] => a-BC-d
-
-    [% f = "abcd"; foo = \f.replace ; foo("cd", "-CD-") %] => ab-CD-
-
-=item C<++ -->
-
-Pre and post increment and decrement.  My be used as either a prefix
-or postfix operator.
-
-    [% ++a %][% ++a %] => 12
-
-    [% a++ %][% a++ %] => 01
-
-    [% --a %][% --a %] => -1-2
-
-    [% a-- %][% a-- %] => 0-1
-
-=item C<**  ^  pow>
-
-Right associative binary.  X raised to the Y power.  This isn't available in TT 2.15.
-
-    [% 2 ** 3 %] => 8
-
-=item C<!>
-
-Prefix not.  Negation of the value.
-
-=item C<->
-
-Prefix minus.  Returns the value multiplied by -1.
-
-    [% a = 1 ; b = -a ; b %] => -1
-
-=item C<*>
-
-Left associative binary. Multiplication.
-
-=item C</  div  DIV>
-
-Left associative binary. Division.  Note that / is floating point division, but div and
-DIV are integer division.
-
-   [% 10  /  4 %] => 2.5
-   [% 10 div 4 %] => 2
-
-=item C<%  mod  MOD>
-
-Left associative binary. Modulus.
-
-   [% 15 % 8 %] => 7
-
-=item C<+>
-
-Left associative binary.  Addition.
-
-=item C<->
-
-Left associative binary.  Minus.
-
-=item C<_  ~>
-
-Left associative binary.  String concatenation.
-
-    [% "a" ~ "b" %] => ab
-
-=item C<< <  >  <=  >= >>
-
-Non associative binary.  Numerical comparators.
-
-=item C<lt  gt  le  ge>
-
-Non associative binary.  String comparators.
-
-=item C<eq>
-
-Non associative binary.  String equality test.
-
-=item C<==>
-
-Non associative binary. In TT syntaxes the V2EQUALS configuration
-item defaults to true which means this operator will operate
-the same as the "eq" operator.  Setting V2EQUALS to 0 will
-change this operator to mean numeric equality.  You could also use [% ! (a <=> b) %]
-but that is a bit messy.
-
-The HTML::Template syntaxes default V2EQUALS to 0 which means
-that it will test for numeric equality just as you would normally
-expect.
-
-In either case - you should always use "eq" when you mean "eq".
-The V2EQUALS will most likely eventually default to 0.
-
-=item C<ne>
-
-Non associative binary.  String non-equality test.
-
-=item C<!=>
-
-Non associative binary. In TT syntaxes the V2EQUALS configuration
-item defaults to true which means this operator will operate
-the same as the "ne" operator.  Setting V2EQUALS to 0 will
-change this operator to mean numeric non-equality.
-You could also use [% (a <=> b) %] but that is a bit messy.
-
-The HTML::Template syntaxes default V2EQUALS to 0 which means
-that it will test for numeric non-equality just as you would
-normally expect.
-
-In either case - you should always use "ne" when you mean "ne".
-The V2EQUALS will most likely eventually default to 0.
-
-=item C<< <=> >>
-
-Non associative binary.  Numeric comparison operator.  Returns -1 if the first argument is
-less than the second, 0 if they are equal, and 1 if the first argument is greater.
-
-=item C<< cmp >>
-
-Non associative binary.  String comparison operator.  Returns -1 if the first argument is
-less than the second, 0 if they are equal, and 1 if the first argument is greater.
-
-=item C<&&>
-
-Left associative binary.  And.  All values must be true.  If all values are true, the last
-value is returned as the truth value.
-
-    [% 2 && 3 && 4 %] => 4
-
-=item C<||>
-
-Right associative binary.  Or.  The first true value is returned.
-
-    [% 0 || '' || 7 %] => 7
-
-Note: perl is left associative on this operator - but it doesn't matter because
-|| has its own precedence level.  Setting it to right allows for Alloy to short
-circuit earlier in the expression optree (left is (((1,2), 3), 4) while right
-is (1, (2, (3, 4))).
-
-=item C<..>
-
-Non associative binary.  Range creator.  Returns an arrayref containing the values
-between and including the first and last arguments.
-
-    [% t = [1 .. 5] %] => variable t contains an array with 1,2,3,4, and 5
-
-It is possible to place multiple ranges in the same [] constructor.  This is not available in TT.
-
-    [% t = [1..3, 6..8] %] => variable t contains an array with 1,2,3,6,7,8
-
-The .. operator is the only operator that returns a list of items.
-
-=item C<? :>
-
-Ternary - right associative.  Can be nested with other ?: pairs.
-
-    [% 1 ? 2 : 3 %] => 2
-    [% 0 ? 2 : 3 %] => 3
-
-=item C<*= += -= /= **= %= ~=>
-
-Self-modifying assignment - right associative.  Sets the left hand side
-to the operation of the left hand side and right (clear as mud).
-In order to not conflict with SET, FOREACH and other operations, this
-operator is only available in parenthesis.
-
-   [% a = 2 %][%  a += 3  %] --- [% a %]    => --- 5   # is handled by SET
-   [% a = 2 %][% (a += 3) %] --- [% a %]    => 5 --- 5
-
-=item C<=>
-
-Assignment - right associative.  Sets the left-hand side to the value of the righthand side.  In order
-to not conflict with SET, FOREACH and other operations, this operator is only
-available in parenthesis.  Returns the value of the righthand side.
-
-   [%  a = 1  %] --- [% a %]    => --- 1   # is handled by SET
-   [% (a = 1) %] --- [% a %]    => 1 --- 1
-
-=item C<not  NOT>
-
-Prefix. Lower precedence version of the '!' operator.
-
-=item C<and  AND>
-
-Left associative. Lower precedence version of the '&&' operator.
-
-=item C<or OR>
-
-Right associative. Lower precedence version of the '||' operator.
-
-=item C<{}>
-
-This operator is not used in TT.  It is used internally
-by Template::Alloy to delay the creation of a hash until the
-execution of the compiled template.
-
-=item C<[]>
-
-This operator is not used in TT.  It is used internally
-by Template::Alloy to delay the creation of an array until the
-execution of the compiled template.
-
-=item C<qr>
-
-This operator is not used in TT.  It is used internally
-by Template::Alloy to store a regular expression and its options.
-It will return a compiled Regexp object when compiled.
-
-=back
-
-
 =head1 CHOMPING
 
 Chomping refers to the handling of whitespace immediately before and
@@ -3126,15 +1824,17 @@ Would print:
 
     Hello.Hi.Howdy.
 
-=head1 CONFIGURATION (TT STYLE)
+=head1 CONFIGURATION
 
-The following TT2 configuration variables are supported (in
+The following configuration variables are supported (in
 alphabetical order).  Note: for further discussion you can refer to
 the TT config documentation.
 
-Items may be passed in upper or lower case.
+Items may be passed in upper or lower case.  If lower case names
+are passed they will be resolved to uppercase during the "new"
+method.
 
-These variables should be passed to the "new" constructor.
+All of the variables in this section can be passed to the "new" constructor.
 
     my $obj = Template::Alloy->new(
         VARIABLES  => \%hash_of_variables,
@@ -3143,7 +1843,6 @@ These variables should be passed to the "new" constructor.
         POST_CHOMP => "=",
         PRE_CHOMP  => "-",
     );
-
 
 =over 4
 
@@ -3161,7 +1860,14 @@ Allow directive matching to be case insensitive.
 
 Boolean.  Default 1.  Clear blocks that were set during the process method.
 
+=item AUTO_EVAL
+
+Boolean.  Default 0 (default 1 in Velocity syntax).  If set to true,
+double quoted strings will automatically be passed to the eval filter.
+
 =item BLOCKS
+
+Only available via when using the process interface.
 
 A hashref of blocks that can be used by the process method.
 
@@ -3181,15 +1887,50 @@ Undefined means to allow all templates to cache.  A value of 0 will
 force no caching.  The cache mechanism will clear templates that have
 not been used recently.
 
+=item CACHE_STR_REFS
+
+Default 1.  If set, any string refs will have an MD5 sum taken that
+will then be used for caching the document - both in memory and on
+the file system (if configured).  This will give a significant speed
+boost.  Note that this affects strings passed to the EVALUATE directive
+or eval filters as well.  It may be set using the CONFIG directive.
+
 =item COMPILE_DIR
 
 Base directory to store compiled templates.  Default undef. Compiled
 templates will only be stored if one of COMPILE_DIR and COMPILE_EXT is
 set.
 
+If set, the AST of parsed documents will be cached.  If COMPILE_PERL is
+set, the compiled perl code will also be stored.
+
 =item COMPILE_EXT
 
 Extension to add to stored compiled template filenames.  Default undef.
+
+If set, the AST of parsed documents will be cached.  If COMPILE_PERL is
+set, the compiled perl code will also be stored.
+
+=item COMPILE_PERL
+
+Default false.
+
+If set to 1 or 2, will translate the normal AST into a perl 5 code document.
+This document can then be executed directly, cached in memory, or cached
+on the file system depending upon the configuration items set.
+
+If set to 1, a perl code document will always be generated.
+
+If set to 2, a perl code document will only be generated if an AST has
+already been cached for the document.  This should give a speed benefit and
+avoid extra compilation unless the document has been used more than once.
+
+If Alloy is running in a cached environment such as mod_perl, then using
+compile_perl can offer some speed benefit and makes Alloy faster than Text::Tmpl
+and as fast as HTML::Template::Compiled (but Alloy has more features).
+
+If you are not running in a cached environment, such as from commandline, or from
+CGI, it is generally faster to only run from the AST (with COMPILE_PERL => 0).
 
 =item CONSTANTS
 
@@ -3404,7 +2145,8 @@ with the appropriate values from the variable cache (if INTERPOLATE is on).
 
 Indicates if the USE directive can fall back and try and load a perl module
 if the indicated module was not found in the PLUGIN_BASE path.  See the
-USE directive.
+USE directive.  This configuration has no bearing on the COMPILE_PERL
+directive used to indicate using compiled perl documents.
 
 =item MAX_EVAL_RECURSE (Alloy only)
 
@@ -3447,6 +2189,11 @@ the system for modifications.  Setting this number higher will allow for
 fewer file system accesses.  Setting it to a negative number will allow
 for the file system to be checked every hit.
 
+=item NO_INCLUDES
+
+Default false.  If true, calls to INCLUDE, PROCESS, WRAPPER and INSERT
+will fail.  This option is also available when using the process method.
+
 =item OUTPUT
 
 Alternate way of passing in the output location for processed templates.
@@ -3485,6 +2232,8 @@ See the section on chomping for more information.
 
 =item POST_PROCESS
 
+Only available via when using the process interface.
+
 A list of templates to be processed and appended to the content
 after the main template.  During this processing the "template"
 namespace will contain the name of the main file being processed.
@@ -3502,6 +2251,8 @@ Same as the VARIABLES configuration item.
 
 =item PRE_PROCESS
 
+Only available via when using the process interface.
+
 A list of templates to be processed before and pre-pended to the content
 before the main template.  During this processing the "template"
 namespace will contain the name of the main file being processed.
@@ -3509,6 +2260,8 @@ namespace will contain the name of the main file being processed.
 This is useful for adding a global header to all templates.
 
 =item PROCESS
+
+Only available via when using the process interface.
 
 Specify a file to use as the template rather than the one passed in
 to the ->process method.
@@ -3529,6 +2282,34 @@ Boolean.  Default fast.  If true, then the syntax will require that
 semi-colons separate multiple directives in the same tag.  This is
 useful for keeping the syntax a little more clean as well as trouble
 shooting some errors.
+
+=item SHOW_UNDEFINED_INTERP (Not in TT)
+
+Default false (default true in Velocity).  If INTERPOLATE is true,
+interpolated dollar variables that return undef will be removed.  With
+SHOW_UNDEFINED_INTERP set, undef values will leave the variable there.
+
+    [% CONFIG INTERPOLATE => 1 %]
+    [% SET foo = 1 %][% SET bar %]
+    ($foo)($bar) ($!foo)($!bar)
+
+Would print:
+
+    (1)() (1)()
+
+But the following:
+
+    [% CONFIG INTERPOLATE => 1, SHOW_UNDEFINED_INTERP => 1 %]
+    [% SET foo = 1 %][% SET bar %]
+    ($foo)($bar) ($!foo)($!bar)
+
+Would print:
+
+    (1)($bar) (1)()
+
+Note that you can use an exclamation point directly after the
+the dollar to make the variable silent.  This is similar to how
+Velocity works.
 
 =item START_TAG
 
@@ -3556,12 +2337,12 @@ The syntax may be passed in upper or lower case.
 
 The available choices are:
 
-    cet - Template::Alloy style - the same as TT3
-    tt3 - Template::Toolkit ver3 - same as Alloy
-    tt2 - Template::Toolkit ver2 - almost the same as TT3
-    tt1 - Template::Toolkit ver1 - almost the same as TT2
-    ht  - HTML::Template - same as HTML::Template::Expr without EXPR
-    hte - HTML::Template::Expr
+    alloy - Template::Alloy style - the same as TT3
+    tt3   - Template::Toolkit ver3 - same as Alloy
+    tt2   - Template::Toolkit ver2 - almost the same as TT3
+    tt1   - Template::Toolkit ver1 - almost the same as TT2
+    ht    - HTML::Template - same as HTML::Template::Expr without EXPR
+    hte   - HTML::Template::Expr
 
 Passing in a different syntax allows for the process method
 to use a non-TT syntax and for the output method to use a non-HT
@@ -3692,6 +2473,8 @@ You may set VMETHOD_FUNCTIONS to 0 to disable this behavior.
 
 =item WRAPPER
 
+Only available via when using the process interface.
+
 Operates similar to the WRAPPER directive.  The option can be given a
 single filename, or an arrayref of filenames that will be used to wrap
 the processed content.  If an arrayref is passed the filenames are
@@ -3719,7 +2502,8 @@ Many of the variables mentioned in the TT CONFIGURATION section
 apply here as well.  Unless noted, these items only apply when
 using the output method.
 
-Items may be passed in upper or lower case.
+Items may be passed in upper or lower case.  All passed items are resolved
+to upper case.
 
 These variables should be passed to the "new" constructor.
 
@@ -3735,87 +2519,87 @@ These variables should be passed to the "new" constructor.
 
 =over 4
 
-=item type
+=item TYPE
 
 Can be one of filename, filehandle, arrayref, or scalarref.  Indicates what type
 of input is in the "source" configuration item.
 
-=item source
+=item SOURCE
 
 Stores where to read the input file.  The type is specified in the "type"
 configuration item.
 
-=item filename
+=item FILENAME
 
 Indicates a filename to read the template from.  Same as putting the
 filename in the "source" item and setting "type" to "filename".
 
 Must be set to enable caching.
 
-=item filehandle
+=item FILEHANDLE
 
 Should contain an open filehandle to read the template from.  Same as
 putting the filehandle in the "source" item and setting "type" to "filehandle".
 
 Will not be cached.
 
-=item arrayref
+=item ARRAYREF
 
 Should contain an arrayref whose values are the lines of the template.  Same as
 putting the arrayref in the "source" item and setting "type" to "arrayref".
 
 Will not be cached.
 
-=item scalarref
+=item SCALARREF
 
 Should contain an reference to a scalar that contains the template.  Same as
 putting the scalar ref in the "source" item and setting "type" to "scalarref".
 
 Will not be cached.
 
-=item cache
+=item CACHE
 
 If set to one, then Alloy will use a global, in-memory document cache
 to store compiled templates in between calls.  This is generally only
 useful in a mod_perl environment.  The document is checked for a different
 modification time at each request.
 
-=item blind_cache
+=item BLIND_CACHE
 
 Same as with cache enabled, but will not check if the document has
 been modified.
 
-=item file_cache
+=item FILE_CACHE
 
 If set to 1, will cache the compiled document on the file system.  If
 true, file_cache_dir must be set.
 
-=item file_cache_dir
+=item FILE_CACHE_DIR
 
 The directory where to store cached documents when file_cache is true.
 This is similar to the TT compile_dir option.
 
-=item double_file_cache
+=item DOUBLE_FILE_CACHE
 
 Uses a combination of file_cache and cache.
 
-=item path
+=item PATH
 
 Same as INCLUDE_PATH when using the process method.
 
-=item associate
+=item ASSOCIATE
 
 May be a single CGI object or an arrayref of objects.  The params
 from these objects will be added to the params during the
 output call.
 
-=item case_sensitive
+=item CASE_SENSITIVE
 
 Allow passed variables set through the param method, or the
 associate configuration to be used case sensitively.  Default is
 off.  It is highly suggested that this be set to 1.
 
-=item loop_context_vars
+=item LOOP_CONTEXT_VARS
 
 Default false.  When true, calls to the loop directive will
 create the following variables that give information about the
@@ -3830,199 +2614,27 @@ current iteration of the loop:
 These variables are also available to LOOPs run under
 TT syntax if loop_context_vars is set and if QR_PRIVATE is set to 0.
 
-=item no_includes
-
-Default false.  If true, calls to INCLUDE, PROCESS, WRAPPER and INSERT
-will fail.  This option is also available when using the process method.
-
-=item global_vars.
+=item GLOBAL_VARS.
 
 Default true in HTE mode.  Default false in HT.  Allows top level
 variables to be used in LOOPs.  When false, only variables defined
 in the current LOOP iteration hashref will be available.
 
-=item default_escape
+=item DEFAULT_ESCAPE
 
 Controls the type of escape used on named variables in TMPL_VAR
 directives.  Can be one of HTML, URL, or JS.  The values of
 TMPL_VAR directives will be encoded with this type unless
 they specify their own type via an ESCAPE attribute.
 
-=back
+=item NO_TT
 
-=head1 UNSUPPORTED HT CONFIGURATION
+Default false in 'hte' syntax.  Default true in 'ht' syntax.  If true,
+no extended TT directives will be allowed.
 
-=over 4
-
-=item die_on_bad_params
-
-Alloy does not resolve variables until the template is output.
-
-=item force_untaint
-
-=item strict
-
-Alloy is strict on parsing HT documents.
-
-=item shared_cache, double_cache
-
-Alloy doesn't have shared caching.  Yet.
-
-=item search_path_on_include
-
-Alloy will check the full path array on each include.
-
-=item debug items
-
-The HTML::Template style options are included here, but you
-can use the TT style DEBUG and DUMP directives to do intropection.
-
-=item max_includes
-
-Alloy uses TT's recursion protection.
-
-=item filter
-
-Alloy doesn't offer these.
+The output method uses 'hte' syntax by default.
 
 =back
-
-=head1 UNSUPPORTED TT2 CONFIGURATION
-
-=over 4
-
-=item LOAD_TEMPLATES
-
-Template::Alloy has its own mechanism for loading and storing
-compiled templates.  TT would use a Template::Provider that would
-return a Template::Document.  The closest thing in Template::Alloy
-is the load_parsed_template method.  There is no immediate plan to
-support the TT behavior.
-
-=item LOAD_PLUGINS
-
-Template::Alloy uses its own mechanism for loading plugins.  TT
-would use a Template::Plugins object to load plugins requested via the
-USE directive.  The functionality for doing this in Template::Alloy
-is contained in the list_plugins method and the play_USE method.  There
-is no immediate plan to support the TT behavior.
-
-Full support is offered for the PLUGINS and LOAD_PERL configuration items.
-
-Also note that Template::Alloy only natively supports the Iterator plugin.
-Any of the other plugins requested will need to provided by installing
-Template::Toolkit or the appropriate plugin module.
-
-=item LOAD_FILTERS
-
-Template::Alloy uses its own mechanism for loading filters.  TT
-would use the Template::Filters object to load filters requested via the
-FILTER directive.  The functionality for doing this in Template::Alloy
-is contained in the list_filters method and the play_expr method.
-
-Full support is offered for the FILTERS configuration item.
-
-=item TOLERANT
-
-This option is used by the LOAD_TEMPLATES and LOAD_PLUGINS options and
-is not applicable in Template::Alloy.
-
-=item SERVICE
-
-Template::Alloy has no concept of service (theoretically the Template::Alloy
-is the "service").
-
-=item CONTEXT
-
-Template::Alloy provides its own pseudo context object to plugins,
-filters, and perl blocks.  The Template::Alloy model doesn't really
-allow for a separate context.  Template::Alloy IS the context.
-
-=item STASH
-
-Template::Alloy manages its own stash of variables.  A pseudo stash
-object is available via the pseudo context object for use in plugins,
-filters, and perl blocks.
-
-=item PARSER
-
-Template::Alloy has its own built in parser.  The closest similarity is
-the parse_tree method.  The output of parse_tree is an optree that is
-later run by execute_tree.  Alloy provides a backend to the Template::Parser::Alloy
-module which can be used to replace the default parser when using
-the standard Template::Toolkit library.
-
-=item GRAMMAR
-
-Template::Alloy maintains its own grammar.  The grammar is defined
-in the parse_tree method and the callbacks listed in the global
-$DIRECTIVES hashref.
-
-=back
-
-
-=head1 VARIABLE PARSE TREE
-
-Template::Alloy parses templates into an tree of operations (an AST
-or abstract syntax tree).  Even variable access is parsed into a tree.
-This is done in a manner somewhat similar to the way that TT operates
-except that nested variables such as foo.bar|baz contain the '.' or
-'|' in between each name level.  Operators are parsed and stored as
-part of the variable (it may be more appropriate to say we are parsing
-a term or an expression).
-
-The following table shows a variable or expression and the corresponding parsed tree
-(this is what the parse_expr method would return).
-
-    one                [ 'one',  0 ]
-    one()              [ 'one',  [] ]
-    one.two            [ 'one',  0, '.', 'two',  0 ]
-    one|two            [ 'one',  0, '|', 'two',  0 ]
-    one.$two           [ 'one',  0, '.', ['two', 0 ], 0 ]
-    one(two)           [ 'one',  [ ['two', 0] ] ]
-    one.${two().three} [ 'one',  0, '.', ['two', [], '.', 'three', 0], 0]
-    2.34               2.34
-    "one"              "one"
-    1 + 2              [ [ undef, '+', 1, 2 ], 0]
-    a + b              [ [ undef, '+', ['a', 0], ['b', 0] ], 0 ]
-    "one"|length       [ [ undef, '~', "one" ], 0, '|', 'length', 0 ]
-    "one $a two"       [ [ undef, '~', 'one ', ['a', 0], ' two' ], 0 ]
-    [0, 1, 2]          [ [ undef, '[]', 0, 1, 2 ], 0 ]
-    [0, 1, 2].size     [ [ undef, '[]', 0, 1, 2 ], 0, '.', 'size', 0 ]
-    ['a', a, $a ]      [ [ undef, '[]', 'a', ['a', 0], [['a', 0], 0] ], 0]
-    {a  => 'b'}        [ [ undef, '{}', 'a', 'b' ], 0 ]
-    {a  => 'b'}.size   [ [ undef, '{}', 'a', 'b' ], 0, '.', 'size', 0 ]
-    {$a => b}          [ [ undef, '{}', ['a', 0], ['b', 0] ], 0 ]
-    a * (b + c)        [ [ undef, '*', ['a', 0], [ [undef, '+', ['b', 0], ['c', 0]], 0 ]], 0 ]
-    (a + b)            [ [ undef, '+', ['a', 0], ['b', 0] ]], 0 ]
-    (a + b) * c        [ [ undef, '*', [ [undef, '+', ['a', 0], ['b', 0] ], 0 ], ['c', 0] ], 0 ]
-    a ? b : c          [ [ undef, '?', ['a', 0], ['b', 0], ['c', 0] ], 0 ]
-    a || b || c        [ [ undef, '||', ['a', 0], [ [undef, '||', ['b', 0], ['c', 0] ], 0 ] ], 0 ]
-    ! a                [ [ undef, '!', ['a', 0] ], 0 ]
-
-Some notes on the parsing.
-
-    Operators are parsed as part of the variable and become part of the variable tree.
-
-    Operators are stored in the variable tree using an operator identity array which
-    contains undef as the first value, the operator, and the operator arguments.  This
-    allows for quickly descending the parsed variable tree and determining that the next
-    node is an operator.
-
-    Parenthesis () can be used at any point in an expression to disambiguate precedence.
-
-    "Variables" that appear to be literal strings or literal numbers
-    are returned as the literal (no operator tree).
-
-The following perl can be typed at the command line to view the parsed variable tree:
-
-    perl -e 'use Template::Alloy; print Template::Alloy::dump_parse_expr("foo.bar + 2")."\n"'
-
-Also the following can be included in a template to view the output in a template:
-
-    [% USE cet = Template::Alloy %]
-    [%~ cet.dump_parse_expr('foo.bar + 2').replace('\s+', ' ') %]
-
 
 =head1 SEMI PUBLIC METHODS
 
@@ -4030,16 +2642,6 @@ The following list of methods are other interesting methods of Alloy that
 may be re-implemented by subclasses of Alloy.
 
 =over 4
-
-=item C<dump_parse>
-
-This method allows for returning a Data::Dumper dump of a parsed
-template.  It is mainly used for testing.
-
-=item C<dump_parse_expr>
-
-This method allows for returning a Data::Dumper dump of a parsed
-variable.  It is mainly used for testing.
 
 =item C<exception>
 
@@ -4076,37 +2678,57 @@ is used that is not natively implemented in Alloy.
 
 Returns an arrayref of modules that are under a base Namespace.
 
-  my @modules = @{ $self->list_plugins({base => 'Template::Plugins'}) }:
+    my @modules = @{ $self->list_plugins({base => 'Template::Plugins'}) }:
 
-=item C<load_parsed_tree>
+Provided by the Play role.
 
-Given a filename or a string reference will return a parsed document
+=item C<load_template>
+
+Given a filename or a string reference will return a "document" hashref
 hash that contains the parsed tree.
 
-  my $doc = $self->load_parsed_tree($file) || $self->throw('undef', "Zero length content");
+  my $doc = $self->load_template($file)
+      || $self->throw('undef', "Zero length content");
 
-=item C<parse_args>
+This method handles the in-memory caching of the document.
 
-Allow for the multitudinous ways that TT parses arguments.  This allows
-for positional as well as named arguments.  Named arguments can be separated with a "=" or "=>",
-and positional arguments should be separated by " " or ",".  This only returns an array
-of parsed variables.   To get the actual values, you must call play_expr on each value.
+=item C<load_tree>
+
+Given the "document" hashref, will either load the parsed AST from
+file (if configured to do so), or will load the content, parse the
+content using the Parse role, and will return the tree.  File based
+caching of the parsed AST happens here.
+
+=item C<load_perl>
+
+Only used if COMPILE_PERL is true (default is false).
+
+Given the "document" hashref, will either load the compiled perl from
+file (if configured to do so), or will load the AST using "load_tree",
+will compile a new perl code document using the Compile role, and will
+return the perl code.  File based caching of the compiled perl happens
+here.
 
 =item C<parse_tree>
 
-Used by load_parsed_tree.  This is the main grammar engine of the program.  It
-uses method in the $DIRECTIVES hashref to parse different DIRECTIVE TYPES.
+Parses the passed string ref with the appopriate template syntax.
+
+See L<Template::Alloy::Parse> for more details.
 
 =item C<parse_expr>
 
-Used to parse a variable, an expression, a literal string, or a number.  It
-returns a parsed variable tree.  Samples of parsed variables can be found in the VARIABLE PARSE TREE
-section.
+Parses the passed string ref for a variable or expression.
+
+See L<Template::Alloy::Parse> for more details.
+
+=item C<parse_args>
+
+See L<Template::Alloy::Parse> for more details.
 
 =item C<set_variable>
 
-Used to set a variable.  Expects a variable identity array and the value to set.  It
-will autovifiy as necessary.
+Used to set a variable.  Expects a variable identity array and the
+value to set.  It will autovifiy as necessary.
 
 =item C<throw>
 
@@ -4114,20 +2736,23 @@ Creates an exception object from the arguments and dies.
 
 =item C<undefined_any>
 
-Called during play_expr if a value is returned that is undefined.  This could
-be used to magically create variables on the fly.  This is similar to Template::Stash::undefined.
-It is suggested that undefined_get be used instead.  Default behavior returns undef.  You
-may also pass a coderef via the UNDEFINED_ANY configuration variable.  Also, you can try using
-the DEBUG => 'undef', configuration option which will throw an error on undefined variables.
+Called during play_expr if a value is returned that is undefined.
+This could be used to magically create variables on the fly.  This is
+similar to Template::Stash::undefined.  It is suggested that
+undefined_get be used instead.  Default behavior returns undef.  You
+may also pass a coderef via the UNDEFINED_ANY configuration variable.
+Also, you can try using the DEBUG => 'undef', configuration option
+which will throw an error on undefined variables.
 
 =item C<undefined_get>
 
-Called when a variable is undefined during a GET directive.  This is useful to
-see if a value that is about to get inserted into the text is undefined.  undefined_any is a little
-too general for most cases.  Also, you may pass a coderef via the UNDEFINED_GET configuration variable.
+Called when a variable is undefined during a GET directive.  This is
+useful to see if a value that is about to get inserted into the text
+is undefined.  undefined_any is a little too general for most cases.
+Also, you may pass a coderef via the UNDEFINED_GET configuration
+variable.
 
 =back
-
 
 =head1 OTHER UTILITY METHODS
 
@@ -4136,23 +2761,15 @@ shouldn't be overwritten by subclasses.
 
 =over 4
 
-=item C<apply_precedence>
-
-Allows for parsed operator array to be translated to a tree based
-upon operator precedence.
-
 =item C<context>
 
 Used to create a "pseudo" context object that allows for portability
 of TT plugins, filters, and perl blocks that need a context object.
+Uses the Template::Alloy::Context class.
 
 =item C<debug_node>
 
 Used to get debug info on a directive if DEBUG_DIRS is set.
-
-=item C<filter_*>
-
-Methods by these names implement filters that are more complex than one liners.
 
 =item C<get_line_number_by_index>
 
@@ -4162,21 +2779,16 @@ Used to turn string index position into line number
 
 Used for parsing text nodes for dollar variables when interpolate is on.
 
-=item C<parse_*>
-
-Methods by these names are used by parse_tree to parse the template.  These are the grammar.
-
-=item C<play_*>
-
-Methods by these names are used by execute_tree to execute the parsed tree.
-
 =item C<play_operator>
 
-Used to execute any found operators.  The single argument is
-an operator identy returned by the parse_expr method (if the expression
-contained an operator).  Normally you would just call play_expr
-instead and it will call play_operator if the structure
-contains an operator.
+Provided by the Operator role.  Allows for playing an operator AST.
+
+See L<Template::Alloy::Operator> for more details.
+
+=item C<apply_precedence>
+
+Provided by the Parse role.  Allows for parsed operator array to be
+translated to a tree based upon operator precedence.
 
 =item C<_process>
 
@@ -4195,12 +2807,20 @@ Used to split INCLUDE_PATH or other directives if an arrayref is not passed.
 Return a reference to the current stash of variables.  This is currently only used
 by the pseudo context object and may disappear at some point.
 
-=item C<vmethod_*>
-
-Methods by these names implement virtual methods that are more complex than oneliners.
-
 =back
 
+=head1 THANKS
+
+Thanks to Andy Wardley for creating Template::Toolkit.
+
+Thanks to Sam Tregar for creating HTML::Template.
+
+Thanks to David Lowe for creating Text::Tmpl.
+
+Thanks to the Apache Velocity guys.
+
+
+Thanks to Ben Grimm for a patch to allow passing a parsed document to the ->process method.
 
 =head1 AUTHOR
 
