@@ -2,22 +2,7 @@ package Template::Alloy::HTE;
 
 =head1 NAME
 
-Template::Alloy::HTE - provide HTML::Template and HTML::Template::Expr support
-
-=head1 DESCRIPTION
-
-Provides for extra or extended features that may not be as commonly used.
-This module should not normally be used by itself.
-
-See the Template::Alloy documentation for configuration and other parameters.
-
-=head1 AUTHOR
-
-Paul Seamons <paul at seamons dot com>
-
-=head1 LICENSE
-
-This module may be distributed under the same terms as Perl itself.
+Template::Alloy::HTE - HTML::Template and HTML::Template::Expr roles.
 
 =cut
 
@@ -28,6 +13,8 @@ use Template::Alloy;
 our $VERSION = $Template::Alloy::VERSION;
 our %DOCUMENTS; # global cache used with new(cache => 1) and output
 
+sub new { die "This class is a role for use by packages such as Template::Alloy" }
+
 ###----------------------------------------------------------------###
 ### support for few HTML::Template and HTML::Template::Expr calling syntax
 
@@ -36,7 +23,7 @@ sub register_function {
     $Template::Alloy::SCALAR_OPS->{$name} = $sub;
 }
 
-sub clear_param { shift->{'param'} = {} }
+sub clear_param { shift->{'_vars'} = {} }
 
 sub query { shift->throw('query', "Not implemented in Template::Alloy") }
 
@@ -451,3 +438,214 @@ sub output {
 ###----------------------------------------------------------------###
 
 1;
+
+__END__
+
+=head1 DESCRIPTION
+
+The Template::Alloy::HTE role provides syntax and interface support for
+the HTML::Template and HTML::Template::Expr modules.
+
+Provides for extra or extended features that may not be as commonly used.
+This module should not normally be used by itself.
+
+See the Template::Alloy documentation for configuration and other parameters.
+
+=head1 HOW IS Template::Alloy DIFFERENT FROM HTML::Template
+
+Alloy can use the same base template syntax and configuration items as HTE
+and HT.  The internals of Alloy were written to support TT3, but were
+general enough to be extended to support HTML::Template as well.  The result
+is HTML::Template::Expr compatible syntax, with Alloy speed and a wide range
+of additional features.
+
+The TMPL_VAR, TMPL_IF, TMPL_ELSE, TMPL_UNLESS, TMPL_LOOP, and TMPL_INCLUDE
+all work identically to HTML::Template.
+
+=over 4
+
+=item
+
+Added support for other TT3 directives and for TT style "dot notation."
+
+    <TMPL_SET a = "bar">
+    <TMPL_SET b = [1 .. 25]>
+    <TMPL_SET foo = PROCESS 'filename.tt'>
+
+    <TMPL_GET foo>  # similar to <TMPL_VAR NAME="foo">
+    <TMPL_GET b.3>
+    <TMPL_GET my.nested.chained.variable.1>
+    <TMPL_GET my_var | html>
+
+    <TMPL_USE foo = DBI(db => ...)>
+    <TMPL_CALL foo.connect>
+
+Any of the TT directives can be used in HTML::Template documents.
+
+For many die-hard HTML::Template fans, it is probably quite scary to
+be providing all of the TT functionality.  All of the extended
+TT functionality can be disabled by setting the NO_TT configuration
+item.  The NO_TT configuration is automatically set if the SYNTAX is
+set to "ht" and the output method is called.
+
+=item
+
+There is an ELSIF!!!
+
+    <TMPL_IF foo>
+      FOO
+    <TMPL_ELSIF bar>
+      BAR
+    <TMPL_ELSE>
+      Done then
+    </TMPL_IF>
+
+=item
+
+Added CHOMP capabilities (PRE_CHOMP and POST_CHOMP)
+
+    Foo
+    <~TMPL_VAR EXPR="1+2"~>
+    Bar
+
+    Prints Foo3Bar
+
+=item
+
+Added INTERPOLATE capability
+
+    <TMPL_SET foo = 'FOO'>
+    <TMPL_CONFIG INTERPOLATE => 1>
+    $foo <TMPL_GET foo> ${ 1 + 2 }
+
+    Prints
+
+    FOO FOO 3
+
+=item
+
+Allow for HTML::Template templates to include TT style templates.
+
+    <TMPL_CONFIG SYNTAX => 'tt3'>
+    <TMPL_INCLUDE "filename.tt">
+
+=item
+
+Allow for Expr parsing to follow proper precedence rules.
+
+   <TMPL_VAR EXPR="1 + 2 * 3">
+
+   Properly prints 7.
+
+=item
+
+Uses all of the caching and opcode tree optimations provided by
+Template::Alloy and Template::Alloy::XS.
+
+=item
+
+Alloy does not provide the query method from HTML::Template.  This
+is because parsing of the document is delayed until the output
+method is called, and because Alloy supports TT style chained
+variables which often are not resolvable until run time.
+
+=back
+
+=head1 UNSUPPORTED HT CONFIGURATION
+
+=over 4
+
+=item die_on_bad_params
+
+Alloy does not resolve variables until the template is output.
+
+=item force_untaint
+
+=item strict
+
+Alloy is strict on parsing HT documents.
+
+=item shared_cache, double_cache
+
+Alloy doesn't have shared caching.  Yet.
+
+=item search_path_on_include
+
+Alloy will check the full path array on each include.
+
+=item debug items
+
+The HTML::Template style options are included here, but you
+can use the TT style DEBUG and DUMP directives to do intropection.
+
+=item max_includes
+
+Alloy uses TT's recursion protection.
+
+=item filter
+
+Alloy doesn't offer these.
+
+=back
+
+=head1 ROLE METHODS
+
+=over 4
+
+=item C<register_function>
+
+Defines a new function for later use as text vmethod or top level function.
+
+=item C<clear_param>
+
+Empties the paramter list.
+
+=item C<query>
+
+Not supported.
+
+=item C<new_file>
+
+Creates a new object that will process the passed file.
+
+    $obj = Template::Alloy->new_file("my/file.hte");
+
+=item C<new_scalar_ref>
+
+Creates a new object that will process the passed scalar ref.
+
+    $obj = Template::Alloy->new_scalar_ref(\"some template text");
+
+=item C<new_array_ref>
+
+New object that will process the passed array (each item represents a line).
+
+    $obj = Template::Alloy->new_array_ref(\@array);
+
+=item C<new_filehandle>
+
+    $obj = Template::Alloy->new_filehandle(\*FH);
+
+=item C<parse_tree_hte>
+
+Called by parse_tree when syntax is set to ht or hte.  Parses for tags HTML::Template style.
+
+=item C<param>
+
+See L<Template::Alloy>.
+
+=item C<output>
+
+See L<Template::Alloy>.
+
+=back
+
+=head1 AUTHOR
+
+Paul Seamons <paul at seamons dot com>
+
+=head1 LICENSE
+
+This module may be distributed under the same terms as Perl itself.
+
+=cut
