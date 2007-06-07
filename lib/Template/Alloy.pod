@@ -92,6 +92,18 @@ Template::Alloy - Fast and lightweight TT2/3 template engine
     my $str = "#set($foo 1 + 3) ($foo) ($bar) ($!baz)";
     my $out = $t->merge(\$str, $swap);
 
+=head1 OTHER DOCUMENTATION
+
+  Template::Alloy::Compile  - Compile-to-perl role
+  Template::Alloy::HTE      - HTML::Template::Expr role
+  Template::Alloy::Operator - Operator role
+  Template::Alloy::Parse    - Parse-to-AST role
+  Template::Alloy::Play     - Play-AST role
+  Template::Alloy::Tmpl     - Text::Tmpl role
+  Template::Alloy::TT       - Template::Toolkit role
+  Template::Alloy::Velocity - Velocity role
+  Template::Alloy::VMethod  - Virtual methods role
+
 =head1 DESCRIPTION
 
 "An alloy is a homogeneous mixture of two or more elements"
