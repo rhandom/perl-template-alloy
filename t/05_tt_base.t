@@ -16,7 +16,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => ! $is_tt ? 1865 : 625;
+use Test::More tests => ! $is_tt ? 1863 : 625;
 use Data::Dumper qw(Dumper);
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
@@ -310,6 +310,7 @@ process_ok("[% foo %]"      => 'hi', {foo => sub {$t++; 'hi'}});
 process_ok("[% GET  foo %]" => 'hi', {foo => sub {$t++; 'hi'}});
 process_ok("[% CALL foo %]" => '',   {foo => sub {$t++; 'hi'}});
 ok($t == 3, "CALL method actually called var");
+die if $t != 3;
 
 ###----------------------------------------------------------------###
 print "### scalar vmethods ################################# $is_compile_perl\n";
@@ -983,7 +984,6 @@ process_ok("[% SWITCH 1 %][% CASE [1..10] %]bar[% END %]hi" => 'barhi');
 process_ok("[% SWITCH 11 %][% CASE [1..10] %]bar[% END %]hi" => 'hi');
 
 process_ok("[% SWITCH 1.0 %][% CASE [1..10] %]bar[% END %]hi" => 'barhi');
-process_ok("[% SWITCH '1.0' %][% CASE [1..10] %]bar[% END %]hi" => 'barhi') if ! $is_tt;
 
 ###----------------------------------------------------------------###
 print "### TRY / THROW / CATCH / FINAL ##################### $is_compile_perl\n";
