@@ -174,7 +174,7 @@ and filters that require Template::Context.
 
 =head1 TODO
 
-Flesh out the methods.
+Document all of the methods.
 
 =head1 AUTHOR
 
