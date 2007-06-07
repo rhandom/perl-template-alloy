@@ -1048,15 +1048,61 @@ __END__
 
 =head1 DESCRIPTION
 
+The Template::Alloy::Parse role is reponsible for storing the majority
+of directive parsing code, as well as for delegating to the TT, HTE,
+Tmpl, and Velocity roles for finding variables and directives.
+
 =head1 ROLE METHODS
 
 =over 4
+
+=item parse_tree
+
+Used by load_tree.  This is the main grammar engine of the program.  It
+delegates to the syntax found in $self->{'SYNTAX'} (defaults to 'alloy')
+and calls the function found in the $SYNTAX hashref.  The majority
+of these syntaxes use methods found in the $DIRECTIVES hashref
+to parse different DIRECTIVE types for each particular syntax.
+
+A template that looked like the following:
+
+    Foo
+    [%- GET foo -%]
+    [%- GET bar -%]
+    Bar
+
+would parse to the following AST:
+
+    [
+        'Foo',
+        ['GET', 6, 15, ['foo', 0]],
+        ['GET', 22, 31, ['bar', 0]],
+        'Bar',
+    ]
+
+The "GET" words represent the directive used.  The 6, 15 represent the
+beginning and ending characters of the directive in the document.  The
+remaining items are the variables necessary for running the particular
+directive.
 
 =item parse_expr
 
 Used to parse a variable, an expression, a literal string, or a
 number.  It returns a parsed variable tree.  Samples of parsed
 variables can be found in the VARIABLE PARSE TREE section.
+
+    my $str = "1 + 2 * 3";
+    my $ast = $self->parse_expr(\$str);
+    # $ast looks like [[undef, '+', 1, [[undef, '*', 2, 3], 0]], 0]
+
+=item C<parse_args>
+
+Allow for the multitudinous ways that TT parses arguments.  This
+allows for positional as well as named arguments.  Named arguments can
+be separated with a "=" or "=>", and positional arguments should be
+separated by " " or ",".  This only returns an array of parsed
+variables.  To get the actual values, you must call play_expr on each
+value.
 
 =item C<dump_parse_tree>
 
