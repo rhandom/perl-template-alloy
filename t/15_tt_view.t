@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-7_template_02_view.t - Test the ability to handle views in Template::Alloy
+02_view.t - Test the ability to handle views in Template::Alloy
 
 =cut
 
@@ -37,7 +37,6 @@ BEGIN {
 
 use strict;
 use Test::More tests => ! $is_tt ? 105 : 53;
-use Data::Dumper qw(Dumper);
 
 use_ok($module);
 
@@ -71,7 +70,7 @@ sub process_ok { # process the value and say if it was ok
         ok(0, "Line $line   \"$str\"");
         warn "# Was:\n$out\n# Should've been:\n$test\n";
         print $obj->error if $obj->can('error');
-        print Dumper $obj->parse_tree(\$str) if $obj->can('parse_tree');
+        print $obj->dump_parse_tree(\$str) if $obj->can('dump_parse_tree');
         exit;
     }
 }

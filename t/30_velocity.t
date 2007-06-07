@@ -13,7 +13,6 @@ BEGIN {
 
 use strict;
 use Test::More tests => 202;
-use Data::Dumper qw(Dumper);
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -49,9 +48,9 @@ sub process_ok { # process the value and say if it was ok
         ok(0, "Line $line   \"$str\"");
         warn "# Was:\n$out\n# Should've been:\n$test\n";
         print $obj->error if $obj->can('error') && $obj->error;
-        if ($obj->can('parse_tree')) {
+        if ($obj->can('dump_parse_tree')) {
             local $obj->{'SYNTAX'} = 'velocity';
-            print Dumper $obj->parse_tree(\$str);
+            print $obj->dump_parse_tree(\$str);
         }
         exit;
     }
