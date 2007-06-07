@@ -12,7 +12,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => 198;
+use Test::More tests => 202;
 use Data::Dumper qw(Dumper);
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
@@ -223,6 +223,30 @@ process_ok('#macro(foo $n)Hi$n#end$foo' => 'Hi$n');
 process_ok('#macro(foo $n)Hi$n#end$foo(2)' => 'Hi2');
 process_ok('#macro(foo $n)Hi$n#end#foo(2)' => 'Hi2');
 process_ok('#macro(foo $n $m)Hi($n)($m)#end#foo(2 3)' => 'Hi(2)(3)');
+
+process_ok('#macro( inner $foo )
+  inner : $foo
+#end
+
+#macro( outer $foo )
+   #set($bar = "outerlala")
+   outer : $foo
+#end
+
+#set($bar = "calltimelala")
+#outer( "#inner($bar)" )' => '  outer :  inner : calltimelala', {tt_config => [POST_CHOMP => '=', PRE_CHOMP => '~']});
+
+process_ok('#macro( inner $foo )
+  inner : $foo
+#end
+
+#macro( outer $foo )
+   #set($bar = "outerlala")
+   outer : $foo|eval
+#end
+
+#set($bar = "calltimelala")
+#outer( "#inner(\'$bar\')" )' => '  outer :  inner : outerlala', {tt_config => [POST_CHOMP => '=', PRE_CHOMP => '~']});
 
 ###----------------------------------------------------------------###
 print "### TT3 CHOMPING #################################### $is_compile_perl\n";
