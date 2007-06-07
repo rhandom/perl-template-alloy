@@ -2,17 +2,7 @@ package Template::Alloy::Compile;
 
 =head1 NAME
 
-Template::Alloy::Compile - Transform Alloy AST to Perl
-
-=head1 DESCRIPTION
-
-=head1 AUTHOR
-
-Paul Seamons <paul at seamons dot com>
-
-=head1 LICENSE
-
-This module may be distributed under the same terms as Perl itself.
+Template::Alloy::Play - Compile role - allows for compiling the AST to perl code
 
 =cut
 
@@ -70,6 +60,8 @@ our $DIRECTIVES = {
     WHILE   => \&compile_WHILE,
     WRAPPER => \&compile_WRAPPER,
 };
+
+sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
 ###----------------------------------------------------------------###
 
@@ -477,6 +469,7 @@ ${indent}\$self->set_variable(".$self->compile_expr_flat($name).", undef);";
     my $code = $self->compile_tree($sub_tree, "$indent$INDENT");
 
     $$str_ref .= "
+${indent}do {
 ${indent}my \$self_copy = \$self;
 ${indent}eval {require Scalar::Util; Scalar::Util::weaken(\$self_copy)};
 ${indent}\$var = sub {
@@ -507,7 +500,8 @@ ${indent}${INDENT}my \$out = '';
 ${indent}${INDENT}my \$out_ref = \\\$out;$code
 ${indent}${INDENT}return \$out;
 ${indent}};
-${indent}\$self->set_variable(".$self->compile_expr_flat($name).", \$var);";
+${indent}\$self->set_variable(".$self->compile_expr_flat($name).", \$var);
+${indent}};";
 
     return;
 }
@@ -880,3 +874,17 @@ ${indent}\$\$out_ref .= \$var if defined \$var;";
 ###----------------------------------------------------------------###
 
 1;
+
+__END__
+
+=head1 DESCRIPTION
+
+=head1 AUTHOR
+
+Paul Seamons <paul at seamons dot com>
+
+=head1 LICENSE
+
+This module may be distributed under the same terms as Perl itself.
+
+=cut
