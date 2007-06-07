@@ -9,7 +9,8 @@ package Template::Alloy;
 use strict;
 use warnings;
 use Template::Alloy::Exception;
-use Template::Alloy::VMethod qw($SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
+use Template::Alloy::Operator qw(play_operator define_operator);
+use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
 
 our $VERSION            = '1.001';
 our $QR_PRIVATE         = qr/^[_.]/;
@@ -25,13 +26,11 @@ our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
 our $AUTOROLE = {
     Compile  => [qw(load_perl compile_template compile_tree compile_expr compile_expr_flat)],
     HTE      => [qw(parse_tree_hte param output register_function clear_param query new_file new_scalar_ref new_array_ref new_filehandle)],
-    Operator => [qw(play_operator define_operator)],
     Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse dump_parse_expr define_directive define_syntax)],
     Play     => [qw(play_tree list_plugins)],
     TT       => [qw(parse_tree_tt3 process)],
     Tmpl     => [qw(parse_tree_tmpl set_delimiters set_strip set_value set_values parse_string set_dir parse_file loop_iteration fetch_loop_iteration)],
     Velocity => [qw(parse_tree_velocity merge)],
-    VMethod  => [qw(define_vmethod)],
 };
 our $ROLEMAP = { map { my $type = $_; map { ($_ => $type) } @{ $AUTOROLE->{$type} } } keys %$AUTOROLE };
 
