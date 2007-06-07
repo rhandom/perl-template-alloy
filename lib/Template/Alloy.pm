@@ -19,7 +19,8 @@ our $MAX_EVAL_RECURSE   = 50;
 our $MAX_MACRO_RECURSE  = 50;
 our $STAT_TTL           = 1;
 our $QR_INDEX           = '(?:\d*\.\d+ | \d+)';
-our @CONFIG_COMPILETIME = qw(SYNTAX ANYCASE INTERPOLATE PRE_CHOMP POST_CHOMP SEMICOLONS V1DOLLAR V2PIPE V2EQUALS AUTO_EVAL SHOW_UNDEFINED_INTERP);
+our @CONFIG_COMPILETIME = qw(SYNTAX CACHE_STR_REFS ANYCASE INTERPOLATE PRE_CHOMP POST_CHOMP
+                             SEMICOLONS V1DOLLAR V2PIPE V2EQUALS AUTO_EVAL SHOW_UNDEFINED_INTERP);
 our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
 our $EVAL_CONFIG        = {map {$_ => 1} @CONFIG_COMPILETIME, @CONFIG_RUNTIME};
 our $EXTRA_COMPILE_EXT  = '.sto';
@@ -193,7 +194,7 @@ sub load_template {
         $doc = $self->{'_documents'}->{$file};
         if (time - $doc->{'cache_time'} < ($self->{'STAT_TTL'} || $STAT_TTL) # don't stat more than once a second
             || $doc->{'modtime'} == (stat $doc->{'_filename'})[9]) {         # otherwise see if the file was modified
-            $doc->{'_perl'} = $self->load_perl($doc) if ! $doc->{'_perl'} && $self->{'COMPILE_PERL'};
+            $doc->{'_perl'} = $self->load_perl($doc) if ! $doc->{'_perl'} && $self->{'COMPILE_PERL'}; # second hit
             return $doc;
         }
 
@@ -265,7 +266,7 @@ sub load_template {
     }
 
     ### return perl - if they want perl - otherwise - the ast
-    if (! $doc->{'_no_perl'} && $self->{'COMPILE_PERL'}) {
+    if (! $doc->{'_no_perl'} && $self->{'COMPILE_PERL'} && ($self->{'COMPILE_PERL'} ne '2' || $self->{'_tree'})) {
         $doc->{'_perl'} = $self->load_perl($doc);
     } else {
         $doc->{'_tree'} = $self->load_tree($doc);
