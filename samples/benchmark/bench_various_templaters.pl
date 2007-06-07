@@ -202,6 +202,7 @@ my %AlloyXP_DOCUMENTS;
 my $tt   = Template->new(           INCLUDE_PATH => \@dirs, STASH => Template::Stash->new($stash_t));
 my $ttx  = Template->new(           INCLUDE_PATH => \@dirs, STASH => Template::Stash::XS->new($stash_t));
 my $ta   = Template::Alloy->new(    INCLUDE_PATH => \@dirs, VARIABLES => $stash_t);
+my $tap  = Template::Alloy->new(    INCLUDE_PATH => \@dirs, VARIABLES => $stash_t, COMPILE_PERL => 1);
 my $tax  = Template::Alloy::XS->new(INCLUDE_PATH => \@dirs, VARIABLES => $stash_t);
 my $taxp = Template::Alloy::XS->new(INCLUDE_PATH => \@dirs, VARIABLES => $stash_t, COMPILE_PERL => 1);
 
@@ -309,6 +310,10 @@ my $tests = {
         my $t = Template::Alloy->new(INCLUDE_PATH => \@dirs, VARIABLES => $stash_t, COMPILE_DIR  => $dir2);
         my $out = ''; $t->process('foo.tt', $form, \$out); $out;
     },
+    TA_P_file => sub {
+        my $t = Template::Alloy->new(INCLUDE_PATH => \@dirs, VARIABLES => $stash_t, COMPILE_DIR => $dir2, COMPILE_PERL => 1);
+        my $out = ''; $t->process('foo.tt', $form, \$out); $out;
+    },
     TA_X_file => sub {
         my $t = Template::Alloy::XS->new(INCLUDE_PATH => \@dirs, VARIABLES => $stash_t, COMPILE_DIR => $dir2);
         my $out = ''; $t->process('foo.tt', $form, \$out); $out;
@@ -337,8 +342,10 @@ my $tests = {
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HTC_file => sub {
-        my $t = HTML::Template::Compiled->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, file_cache_dir => $dir2, CASE_SENSITVE=>1);
+        my $t = HTML::Template::Compiled->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, file_cache_dir => $dir2, CASE_SENSITVE=>1, cache => 0);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
+#        $t->clear_cache; # caches in memory by default - can't disable it
+#        return $out;
     },
     TMPL_file => sub {
         my $t = Text::Tmpl->new;
@@ -374,6 +381,7 @@ my $tests = {
     TA_mem    => sub { my $out = ""; $ta->process(  'foo.tt', $form, \$out); $out },
     TA_X_mem  => sub { my $out = ""; $tax->process( 'foo.tt', $form, \$out); $out },
     TA_XP_mem => sub { my $out = ""; $taxp->process('foo.tt', $form, \$out); $out },
+    TA_P_mem  => sub { my $out = ""; $tap->process( 'foo.tt', $form, \$out); $out },
 
     TA_H_mem => sub {
         my $t = Template::Alloy->new(    filename => "foo.ht", path => \@dirs, cache => 1, CASE_SENSITVE=>1);
@@ -424,19 +432,19 @@ foreach my $name (sort keys %$tests) {
 ###----------------------------------------------------------------###
 ### and now - the tests - grouped by common capability
 
-my %mem_tests = map {($_ => $tests->{$_})} grep {/_mem$/} keys %$tests;
-my %cpl_tests = map {($_ => $tests->{$_})} grep {/_file$/} keys %$tests;
-my %str_tests = map {($_ => $tests->{$_})} grep {/_str$/} keys %$tests;
+my %mem_tests = map {my $k=$_; $k=~s/_mem$//;  $k => $tests->{$_}} grep {/_mem$/} keys %$tests;
+my %cpl_tests = map {my $k=$_; $k=~s/_file$//; $k => $tests->{$_}} grep {/_file$/} keys %$tests;
+my %str_tests = map {my $k=$_; $k=~s/_str$//;  $k => $tests->{$_}} grep {/_str$/} keys %$tests;
 
-print "------------------------------------------------------------------------\n";
+print "---STR------------------------------------------------------------------\n";
 print "From a string or scalarref tests\n";
 cmpthese timethese (-2, \%str_tests);
 
-print "------------------------------------------------------------------------\n";
+print "---FILE-----------------------------------------------------------------\n";
 print "Compiled and cached on the file system tests\n";
 cmpthese timethese (-2, \%cpl_tests);
 
-print "------------------------------------------------------------------------\n";
+print "---MEM------------------------------------------------------------------\n";
 print "Cached in memory tests\n";
 cmpthese timethese (-2, \%mem_tests);
 
@@ -450,95 +458,140 @@ __END__
 
 =head1 SAMPLE OUTPUT v2.13
 
-  AlloyH_file - Template::Alloy using HTML::Template interface - (Loaded from file)
-  AlloyH_mem - Template::Alloy using HTML::Template interface - (Compiled in memory)
-  AlloyH_str - Template::Alloy using HTML::Template interface - (From string ref)
-  AlloyXH_file - Template::Alloy::XS using HTML::Template interface - (Loaded from file)
-  AlloyXH_mem - Template::Alloy::XS using HTML::Template interface - (Compiled in memory)
-  AlloyXH_str - Template::Alloy::XS using HTML::Template interface - (From string ref)
-  AlloyX_file - Template::Alloy::XS using TT interface - (Loaded from file)
-  AlloyX_mem - Template::Alloy::XS using TT interface - (Compiled in memory)
-  AlloyX_str - Template::Alloy::XS using TT interface - (From string ref)
-  Alloy_file - Template::Alloy using TT interface - (Loaded from file)
-  Alloy_mem - Template::Alloy using TT interface - (Compiled in memory)
-  Alloy_str - Template::Alloy using TT interface - (From string ref)
-  HTE_mem - HTML::Template::Expr - (Compiled in memory)
-  HTE_str - HTML::Template::Expr - (From string ref)
-  HTJ_mem - HTML::Template::JIT - Compiled to C template - (Compiled in memory)
-  HT_file - HTML::Template - (Loaded from file)
-  HT_mem - HTML::Template - (Compiled in memory)
-  HT_str - HTML::Template - (From string ref)
-  TTXCET_str - Template::Toolkit with Stash::XS and Template::Parser::CET - (From string ref)
-  TTX_file - Template::Toolkit with Stash::XS - (Loaded from file)
-  TTX_mem - Template::Toolkit with Stash::XS - (Compiled in memory)
-  TTX_str - Template::Toolkit with Stash::XS - (From string ref)
-  TT_file - Template::Toolkit - (Loaded from file)
-  TT_mem - Template::Toolkit - (Compiled in memory)
-  TT_str - Template::Toolkit - (From string ref)
-  TextTemplate_str - Text::Template - Perl code eval based - (From string ref)
-  ------------------------------------------------------------------------
-  From a string or scalarref tests
-  Benchmark: running AlloyH_str, AlloyXH_str, AlloyX_str, Alloy_str, HTE_str, HT_str, TTXAlloy_str, TTX_str, TT_str, TextTemplate_str for at least 2 CPU seconds...
-    AlloyH_str:  2 wallclock secs ( 2.18 usr +  0.00 sys =  2.18 CPU) @ 1449.08/s (n=3159)
-   AlloyXH_str:  2 wallclock secs ( 2.00 usr +  0.01 sys =  2.01 CPU) @ 1700.00/s (n=3417)
-    AlloyX_str:  2 wallclock secs ( 2.22 usr +  0.00 sys =  2.22 CPU) @ 1584.23/s (n=3517)
-     Alloy_str:  2 wallclock secs ( 2.14 usr +  0.00 sys =  2.14 CPU) @ 1333.18/s (n=2853)
-     HTE_str:  2 wallclock secs ( 2.07 usr +  0.00 sys =  2.07 CPU) @ 922.71/s (n=1910)
-      HT_str:  2 wallclock secs ( 2.13 usr +  0.00 sys =  2.13 CPU) @ 1221.13/s (n=2601)
-  TTXCET_str:  2 wallclock secs ( 2.01 usr +  0.01 sys =  2.02 CPU) @ 534.16/s (n=1079)
-     TTX_str:  2 wallclock secs ( 2.14 usr +  0.00 sys =  2.14 CPU) @ 312.62/s (n=669)
-      TT_str:  3 wallclock secs ( 2.12 usr +  0.01 sys =  2.13 CPU) @ 300.47/s (n=640)
-  TextTemplate_str:  2 wallclock secs ( 2.13 usr +  0.02 sys =  2.15 CPU) @ 1189.77/s (n=2558)
-                     Rate TT_str TTX_str TTXCET_str HTE_str TextTemplate_str HT_str Alloy_str AlloyH_str AlloyX_str AlloyXH_str
-  TT_str            300/s     --     -4%       -44%    -67%             -75%   -75%    -77%     -79%     -81%      -82%
-  TTX_str           313/s     4%      --       -41%    -66%             -74%   -74%    -77%     -78%     -80%      -82%
-  TTXAlloy_str        534/s    78%     71%         --    -42%             -55%   -56%    -60%     -63%     -66%      -69%
-  HTE_str           923/s   207%    195%        73%      --             -22%   -24%    -31%     -36%     -42%      -46%
-  TextTemplate_str 1190/s   296%    281%       123%     29%               --    -3%    -11%     -18%     -25%      -30%
-  HT_str           1221/s   306%    291%       129%     32%               3%     --     -8%     -16%     -23%      -28%
-  Alloy_str          1333/s   344%    326%       150%     44%              12%     9%      --      -8%     -16%      -22%
-  AlloyH_str         1449/s   382%    364%       171%     57%              22%    19%      9%       --      -9%      -15%
-  AlloyX_str         1584/s   427%    407%       197%     72%              33%    30%     19%       9%       --       -7%
-  AlloyXH_str        1700/s   466%    444%       218%     84%              43%    39%     28%      17%       7%        --
-  ------------------------------------------------------------------------
-  Compiled and cached on the file system tests
-  Benchmark: running AlloyH_file, AlloyXH_file, AlloyX_file, Alloy_file, HT_file, TTX_file, TT_file for at least 2 CPU seconds...
-   AlloyH_file:  3 wallclock secs ( 2.14 usr +  0.02 sys =  2.16 CPU) @ 3106.02/s (n=6709)
-  AlloyXH_file:  2 wallclock secs ( 2.01 usr +  0.04 sys =  2.05 CPU) @ 4447.80/s (n=9118)
-   AlloyX_file:  3 wallclock secs ( 2.02 usr +  0.09 sys =  2.11 CPU) @ 3586.26/s (n=7567)
-    Alloy_file:  3 wallclock secs ( 2.16 usr +  0.05 sys =  2.21 CPU) @ 2432.13/s (n=5375)
-     HT_file:  2 wallclock secs ( 2.18 usr +  0.03 sys =  2.21 CPU) @ 1868.33/s (n=4129)
-    TTX_file:  2 wallclock secs ( 2.14 usr +  0.04 sys =  2.18 CPU) @ 820.64/s (n=1789)
-     TT_file:  2 wallclock secs ( 2.11 usr +  0.04 sys =  2.15 CPU) @ 733.02/s (n=1576)
-               Rate TT_file TTX_file HT_file Alloy_file AlloyH_file AlloyX_file AlloyXH_file
-  TT_file     733/s      --     -11%    -61%     -70%      -76%      -80%       -84%
-  TTX_file    821/s     12%       --    -56%     -66%      -74%      -77%       -82%
-  HT_file    1868/s    155%     128%      --     -23%      -40%      -48%       -58%
-  Alloy_file   2432/s    232%     196%     30%       --      -22%      -32%       -45%
-  AlloyH_file  3106/s    324%     278%     66%      28%        --      -13%       -30%
-  AlloyX_file  3586/s    389%     337%     92%      47%       15%        --       -19%
-  AlloyXH_file 4448/s    507%     442%    138%      83%       43%       24%         --
-  ------------------------------------------------------------------------
-  Cached in memory tests
-  Benchmark: running AlloyH_mem, AlloyXH_mem, AlloyX_mem, Alloy_mem, HTE_mem, HTJ_mem, HT_mem, TTX_mem, TT_mem for at least 2 CPU seconds...
-    AlloyH_mem:  2 wallclock secs ( 2.11 usr +  0.03 sys =  2.14 CPU) @ 3193.46/s (n=6834)
-   AlloyXH_mem:  2 wallclock secs ( 2.18 usr +  0.04 sys =  2.22 CPU) @ 4622.07/s (n=10261)
-    AlloyX_mem:  2 wallclock secs ( 2.02 usr +  0.10 sys =  2.12 CPU) @ 6334.43/s (n=13429)
-     Alloy_mem:  2 wallclock secs ( 2.16 usr +  0.04 sys =  2.20 CPU) @ 3946.82/s (n=8683)
-     HTE_mem:  2 wallclock secs ( 2.20 usr +  0.01 sys =  2.21 CPU) @ 1515.38/s (n=3349)
-     HTJ_mem:  2 wallclock secs ( 2.05 usr +  0.06 sys =  2.11 CPU) @ 5990.05/s (n=12639)
-      HT_mem:  2 wallclock secs ( 1.98 usr +  0.03 sys =  2.01 CPU) @ 2588.56/s (n=5203)
-     TTX_mem:  2 wallclock secs ( 2.07 usr +  0.03 sys =  2.10 CPU) @ 3254.29/s (n=6834)
-      TT_mem:  2 wallclock secs ( 2.18 usr +  0.02 sys =  2.20 CPU) @ 2217.73/s (n=4879)
-              Rate HTE_mem TT_mem HT_mem AlloyH_mem TTX_mem Alloy_mem AlloyXH_mem HTJ_mem AlloyX_mem
-  HTE_mem   1515/s      --   -32%   -41%     -53%    -53%    -62%      -67%    -75%     -76%
-  TT_mem    2218/s     46%     --   -14%     -31%    -32%    -44%      -52%    -63%     -65%
-  HT_mem    2589/s     71%    17%     --     -19%    -20%    -34%      -44%    -57%     -59%
-  AlloyH_mem  3193/s    111%    44%    23%       --     -2%    -19%      -31%    -47%     -50%
-  TTX_mem   3254/s    115%    47%    26%       2%      --    -18%      -30%    -46%     -49%
-  Alloy_mem   3947/s    160%    78%    52%      24%     21%      --      -15%    -34%     -38%
-  AlloyXH_mem 4622/s    205%   108%    79%      45%     42%     17%        --    -23%     -27%
-  HTJ_mem   5990/s    295%   170%   131%      88%     84%     52%       30%      --      -5%
-  AlloyX_mem  6334/s    318%   186%   145%      98%     95%     60%       37%      6%       --
+    HTC_file - HTML::Template::Compiled - (Loaded from file)
+    HTC_mem - HTML::Template::Compiled - (Compiled in memory)
+    HTC_str - HTML::Template::Compiled - (From string ref)
+    HTE_mem - HTML::Template::Expr - (Compiled in memory)
+    HTE_str - HTML::Template::Expr - (From string ref)
+    HTJ_mem - HTML::Template::JIT - Compiled to C template - (Compiled in memory)
+    HT_file - HTML::Template - (Loaded from file)
+    HT_mem - HTML::Template - (Compiled in memory)
+    HT_str - HTML::Template - (From string ref)
+    TA_H_XP_file - Template::Alloy::XS using HTML::Template interface - Perl code eval based - (Loaded from file)
+    TA_H_XP_mem - Template::Alloy::XS using HTML::Template interface - Perl code eval based - (Compiled in memory)
+    TA_H_XP_str - Template::Alloy::XS using HTML::Template interface - Perl code eval based - (From string ref)
+    TA_H_X_file - Template::Alloy::XS using HTML::Template interface - (Loaded from file)
+    TA_H_X_mem - Template::Alloy::XS using HTML::Template interface - (Compiled in memory)
+    TA_H_X_str - Template::Alloy::XS using HTML::Template interface - (From string ref)
+    TA_H_file - Template::Alloy using HTML::Template interface - (Loaded from file)
+    TA_H_mem - Template::Alloy using HTML::Template interface - (Compiled in memory)
+    TA_H_str - Template::Alloy using HTML::Template interface - (From string ref)
+    TA_NOCACHE_str - Template::Alloy with string ref caching off - (From string ref)
+    TA_P_file - Template::Alloy - Perl code eval based - (Loaded from file)
+    TA_P_mem - Template::Alloy - Perl code eval based - (Compiled in memory)
+    TA_XP_file - Template::Alloy::XS - Perl code eval based - (Loaded from file)
+    TA_XP_mem - Template::Alloy::XS - Perl code eval based - (Compiled in memory)
+    TA_XP_str - Template::Alloy::XS - Perl code eval based - (From string ref)
+    TA_XTMPL_file - CGI::Ex::Temmplate::XS using Text::Tmpl interface - (Loaded from file)
+    TA_X_file - Template::Alloy::XS using TT interface - (Loaded from file)
+    TA_X_mem - Template::Alloy::XS using TT interface - (Compiled in memory)
+    TA_X_str - Template::Alloy::XS using TT interface - (From string ref)
+    TA_file - Template::Alloy using TT interface - (Loaded from file)
+    TA_mem - Template::Alloy using TT interface - (Compiled in memory)
+    TA_str - Template::Alloy using TT interface - (From string ref)
+    TMPL_file - Text::Tmpl - Engine is C based - (Loaded from file)
+    TMPL_str - Text::Tmpl - Engine is C based - (From string ref)
+    TTXCET_str - Template::Toolkit with Stash::XS and Template::Parser::CET - (From string ref)
+    TTX_file - Template::Toolkit with Stash::XS - (Loaded from file)
+    TTX_mem - Template::Toolkit with Stash::XS - (Compiled in memory)
+    TTX_str - Template::Toolkit with Stash::XS - (From string ref)
+    TT_file - Template::Toolkit - (Loaded from file)
+    TT_mem - Template::Toolkit - (Compiled in memory)
+    TT_str - Template::Toolkit - (From string ref)
+    TextTemplate_str - Text::Template - Perl code eval based - (From string ref)
+    ---STR------------------------------------------------------------------
+    From a string or scalarref tests
+    Benchmark: running HT, HTC, HTE, TA, TA_H, TA_H_X, TA_H_XP, TA_NOCACHE, TA_X, TA_XP, TMPL, TT, TTX, TTXCET, TextTemplate for at least 2 CPU seconds...
+            HT:  3 wallclock secs ( 2.23 usr +  0.00 sys =  2.23 CPU) @ 1093.72/s (n=2439)
+           HTC:  3 wallclock secs ( 2.05 usr +  0.00 sys =  2.05 CPU) @ 195.12/s (n=400)
+           HTE:  3 wallclock secs ( 2.20 usr +  0.00 sys =  2.20 CPU) @ 759.09/s (n=1670)
+            TA:  3 wallclock secs ( 2.08 usr +  0.01 sys =  2.09 CPU) @ 3210.05/s (n=6709)
+          TA_H:  3 wallclock secs ( 2.15 usr +  0.00 sys =  2.15 CPU) @ 3103.26/s (n=6672)
+        TA_H_X:  1 wallclock secs ( 2.13 usr +  0.00 sys =  2.13 CPU) @ 4201.88/s (n=8950)
+       TA_H_XP:  3 wallclock secs ( 2.11 usr +  0.00 sys =  2.11 CPU) @ 4943.13/s (n=10430)
+    TA_NOCACHE:  3 wallclock secs ( 2.15 usr +  0.02 sys =  2.17 CPU) @ 1127.19/s (n=2446)
+          TA_X:  2 wallclock secs ( 2.11 usr +  0.00 sys =  2.11 CPU) @ 4861.61/s (n=10258)
+         TA_XP:  3 wallclock secs ( 2.12 usr +  0.00 sys =  2.12 CPU) @ 6620.28/s (n=14035)
+          TMPL:  3 wallclock secs ( 2.17 usr +  0.02 sys =  2.19 CPU) @ 7552.51/s (n=16540)
+            TT:  3 wallclock secs ( 2.21 usr +  0.01 sys =  2.22 CPU) @ 264.41/s (n=587)
+           TTX:  3 wallclock secs ( 2.19 usr +  0.01 sys =  2.20 CPU) @ 276.82/s (n=609)
+        TTXCET:  3 wallclock secs ( 2.12 usr +  0.00 sys =  2.12 CPU) @ 443.40/s (n=940)
+    TextTemplate:  3 wallclock secs ( 2.03 usr +  0.00 sys =  2.03 CPU) @ 1048.28/s (n=2128)
+                   Rate   HTC    TT   TTX TTXCET  HTE TextTemplate   HT TA_NOCACHE TA_H   TA TA_H_X TA_X TA_H_XP TA_XP TMPL
+    HTC           195/s    --  -26%  -30%   -56% -74%         -81% -82%       -83% -94% -94%   -95% -96%    -96%  -97% -97%
+    TT            264/s   36%    --   -4%   -40% -65%         -75% -76%       -77% -91% -92%   -94% -95%    -95%  -96% -96%
+    TTX           277/s   42%    5%    --   -38% -64%         -74% -75%       -75% -91% -91%   -93% -94%    -94%  -96% -96%
+    TTXCET        443/s  127%   68%   60%     -- -42%         -58% -59%       -61% -86% -86%   -89% -91%    -91%  -93% -94%
+    HTE           759/s  289%  187%  174%    71%   --         -28% -31%       -33% -76% -76%   -82% -84%    -85%  -89% -90%
+    TextTemplate 1048/s  437%  296%  279%   136%  38%           --  -4%        -7% -66% -67%   -75% -78%    -79%  -84% -86%
+    HT           1094/s  461%  314%  295%   147%  44%           4%   --        -3% -65% -66%   -74% -78%    -78%  -83% -86%
+    TA_NOCACHE   1127/s  478%  326%  307%   154%  48%           8%   3%         -- -64% -65%   -73% -77%    -77%  -83% -85%
+    TA_H         3103/s 1490% 1074% 1021%   600% 309%         196% 184%       175%   --  -3%   -26% -36%    -37%  -53% -59%
+    TA           3210/s 1545% 1114% 1060%   624% 323%         206% 193%       185%   3%   --   -24% -34%    -35%  -52% -57%
+    TA_H_X       4202/s 2053% 1489% 1418%   848% 454%         301% 284%       273%  35%  31%     -- -14%    -15%  -37% -44%
+    TA_X         4862/s 2392% 1739% 1656%   996% 540%         364% 345%       331%  57%  51%    16%   --     -2%  -27% -36%
+    TA_H_XP      4943/s 2433% 1769% 1686%  1015% 551%         372% 352%       339%  59%  54%    18%   2%      --  -25% -35%
+    TA_XP        6620/s 3293% 2404% 2292%  1393% 772%         532% 505%       487% 113% 106%    58%  36%     34%    -- -12%
+    TMPL         7553/s 3771% 2756% 2628%  1603% 895%         620% 591%       570% 143% 135%    80%  55%     53%   14%   --
+    ---FILE-----------------------------------------------------------------
+    Compiled and cached on the file system tests
+    Benchmark: running HT, HTC, TA, TA_H, TA_H_X, TA_H_XP, TA_P, TA_X, TA_XP, TA_XTMPL, TMPL, TT, TTX for at least 2 CPU seconds...
+            HT:  3 wallclock secs ( 2.13 usr +  0.06 sys =  2.19 CPU) @ 1715.98/s (n=3758)
+           HTC:  3 wallclock secs ( 2.15 usr +  0.01 sys =  2.16 CPU) @ 189.35/s (n=409)
+            TA:  4 wallclock secs ( 2.03 usr +  0.08 sys =  2.11 CPU) @ 2228.91/s (n=4703)
+          TA_H:  2 wallclock secs ( 1.99 usr +  0.08 sys =  2.07 CPU) @ 2163.77/s (n=4479)
+        TA_H_X:  2 wallclock secs ( 1.95 usr +  0.08 sys =  2.03 CPU) @ 2563.05/s (n=5203)
+       TA_H_XP:  3 wallclock secs ( 2.03 usr +  0.04 sys =  2.07 CPU) @ 1028.02/s (n=2128)
+          TA_P:  3 wallclock secs ( 2.15 usr +  0.06 sys =  2.21 CPU) @ 1158.82/s (n=2561)
+          TA_X:  3 wallclock secs ( 2.14 usr +  0.08 sys =  2.22 CPU) @ 3027.03/s (n=6720)
+         TA_XP:  3 wallclock secs ( 2.12 usr +  0.05 sys =  2.17 CPU) @ 1335.02/s (n=2897)
+      TA_XTMPL:  4 wallclock secs ( 2.17 usr +  0.05 sys =  2.22 CPU) @ 1049.10/s (n=2329)
+          TMPL:  2 wallclock secs ( 1.99 usr +  0.20 sys =  2.19 CPU) @ 6136.99/s (n=13440)
+            TT:  3 wallclock secs ( 2.13 usr +  0.03 sys =  2.16 CPU) @ 624.54/s (n=1349)
+           TTX:  3 wallclock secs ( 2.10 usr +  0.03 sys =  2.13 CPU) @ 741.78/s (n=1580)
+               Rate   HTC   TT  TTX TA_H_XP TA_XTMPL TA_P TA_XP   HT TA_H   TA TA_H_X TA_X TMPL
+    HTC       189/s    -- -70% -74%    -82%     -82% -84%  -86% -89% -91% -92%   -93% -94% -97%
+    TT        625/s  230%   -- -16%    -39%     -40% -46%  -53% -64% -71% -72%   -76% -79% -90%
+    TTX       742/s  292%  19%   --    -28%     -29% -36%  -44% -57% -66% -67%   -71% -75% -88%
+    TA_H_XP  1028/s  443%  65%  39%      --      -2% -11%  -23% -40% -52% -54%   -60% -66% -83%
+    TA_XTMPL 1049/s  454%  68%  41%      2%       --  -9%  -21% -39% -52% -53%   -59% -65% -83%
+    TA_P     1159/s  512%  86%  56%     13%      10%   --  -13% -32% -46% -48%   -55% -62% -81%
+    TA_XP    1335/s  605% 114%  80%     30%      27%  15%    -- -22% -38% -40%   -48% -56% -78%
+    HT       1716/s  806% 175% 131%     67%      64%  48%   29%   -- -21% -23%   -33% -43% -72%
+    TA_H     2164/s 1043% 246% 192%    110%     106%  87%   62%  26%   --  -3%   -16% -29% -65%
+    TA       2229/s 1077% 257% 200%    117%     112%  92%   67%  30%   3%   --   -13% -26% -64%
+    TA_H_X   2563/s 1254% 310% 246%    149%     144% 121%   92%  49%  18%  15%     -- -15% -58%
+    TA_X     3027/s 1499% 385% 308%    194%     189% 161%  127%  76%  40%  36%    18%   -- -51%
+    TMPL     6137/s 3141% 883% 727%    497%     485% 430%  360% 258% 184% 175%   139% 103%   --
+    ---MEM------------------------------------------------------------------
+    Cached in memory tests
+    Benchmark: running HT, HTC, HTE, HTJ, TA, TA_H, TA_H_X, TA_H_XP, TA_P, TA_X, TA_XP, TT, TTX for at least 2 CPU seconds...
+            HT:  3 wallclock secs ( 2.08 usr +  0.03 sys =  2.11 CPU) @ 2428.91/s (n=5125)
+           HTC:  3 wallclock secs ( 2.07 usr +  0.01 sys =  2.08 CPU) @ 7590.38/s (n=15788)
+           HTE:  3 wallclock secs ( 2.07 usr +  0.03 sys =  2.10 CPU) @ 1379.52/s (n=2897)
+           HTJ:  1 wallclock secs ( 2.08 usr +  0.09 sys =  2.17 CPU) @ 5272.35/s (n=11441)
+            TA:  3 wallclock secs ( 1.99 usr +  0.05 sys =  2.04 CPU) @ 3432.84/s (n=7003)
+          TA_H:  4 wallclock secs ( 2.18 usr +  0.04 sys =  2.22 CPU) @ 3078.38/s (n=6834)
+        TA_H_X:  3 wallclock secs ( 2.05 usr +  0.03 sys =  2.08 CPU) @ 4047.12/s (n=8418)
+       TA_H_XP:  3 wallclock secs ( 2.04 usr +  0.04 sys =  2.08 CPU) @ 4923.08/s (n=10240)
+          TA_P:  3 wallclock secs ( 2.12 usr +  0.03 sys =  2.15 CPU) @ 4148.84/s (n=8920)
+          TA_X:  3 wallclock secs ( 2.17 usr +  0.05 sys =  2.22 CPU) @ 5228.83/s (n=11608)
+         TA_XP:  3 wallclock secs ( 2.09 usr +  0.04 sys =  2.13 CPU) @ 7544.60/s (n=16070)
+            TT:  3 wallclock secs ( 2.15 usr +  0.04 sys =  2.19 CPU) @ 2034.25/s (n=4455)
+           TTX:  3 wallclock secs ( 2.14 usr +  0.01 sys =  2.15 CPU) @ 2983.26/s (n=6414)
+              Rate  HTE   TT   HT  TTX TA_H   TA TA_H_X TA_P TA_H_XP TA_X  HTJ TA_XP  HTC
+    HTE     1380/s   -- -32% -43% -54% -55% -60%   -66% -67%    -72% -74% -74%  -82% -82%
+    TT      2034/s  47%   -- -16% -32% -34% -41%   -50% -51%    -59% -61% -61%  -73% -73%
+    HT      2429/s  76%  19%   -- -19% -21% -29%   -40% -41%    -51% -54% -54%  -68% -68%
+    TTX     2983/s 116%  47%  23%   --  -3% -13%   -26% -28%    -39% -43% -43%  -60% -61%
+    TA_H    3078/s 123%  51%  27%   3%   -- -10%   -24% -26%    -37% -41% -42%  -59% -59%
+    TA      3433/s 149%  69%  41%  15%  12%   --   -15% -17%    -30% -34% -35%  -54% -55%
+    TA_H_X  4047/s 193%  99%  67%  36%  31%  18%     --  -2%    -18% -23% -23%  -46% -47%
+    TA_P    4149/s 201% 104%  71%  39%  35%  21%     3%   --    -16% -21% -21%  -45% -45%
+    TA_H_XP 4923/s 257% 142% 103%  65%  60%  43%    22%  19%      --  -6%  -7%  -35% -35%
+    TA_X    5229/s 279% 157% 115%  75%  70%  52%    29%  26%      6%   --  -1%  -31% -31%
+    HTJ     5272/s 282% 159% 117%  77%  71%  54%    30%  27%      7%   1%   --  -30% -31%
+    TA_XP   7545/s 447% 271% 211% 153% 145% 120%    86%  82%     53%  44%  43%    --  -1%
+    HTC     7590/s 450% 273% 213% 154% 147% 121%    88%  83%     54%  45%  44%    1%   --
 
 =cut
