@@ -220,8 +220,6 @@ Essentially, all operators are stored in RPN notation with
 a leading "undef" to disabiguate operators in a normal
 Alloy expression AST.
 
-See L<Template::Alloy> for more details.
-
 =item define_operator
 
 Used for defining new operators.
