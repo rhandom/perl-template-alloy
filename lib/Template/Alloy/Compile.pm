@@ -332,7 +332,7 @@ sub compile_EVAL {
 ${indent}foreach (".join(",\n", map {$self->compile_expr_flat($_)} @strs).") {
 ${indent}${INDENT}my \$str = \$self->play_expr(\$_);
 ${indent}${INDENT}next if ! defined \$str;
-${indent}${INDENT}\$\$out_ref .= \$self->play_expr([[undef, '-data-', \$str], 0, '|', 'eval', [".$self->compile_expr_flat($named)."]]);
+${indent}${INDENT}\$\$out_ref .= \$self->play_expr([[undef, '-temp-', \$str], 0, '|', 'eval', [".$self->compile_expr_flat($named)."]]);
 ${indent}}";
 }
 
@@ -356,7 +356,7 @@ ${indent}${INDENT}my \$out = '';
 ${indent}${INDENT}my \$out_ref = \\\$out;"
 .$self->compile_tree($node->[4], "$indent$INDENT")."
 
-${indent}\$out = \$self->play_expr([[undef, '-data-', \$out], 0, '|', \@\$filter]);
+${indent}\$out = \$self->play_expr([[undef, '-temp-', \$out], 0, '|', \@\$filter]);
 ${indent}${INDENT}\$out;
 ${indent}};
 ${indent}\$\$out_ref .= \$var if defined \$var;";

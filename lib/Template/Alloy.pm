@@ -353,7 +353,7 @@ sub play_expr {
     if (ref $name) {
         if (! defined $name->[0]) { # operator
             return $self->play_operator($name) if wantarray && $name->[1] eq '..';
-            $ref = ($name->[1] eq '-data-') ? $name->[2] : $self->play_operator($name);
+            $ref = ($name->[1] eq '-temp-') ? $name->[2] : $self->play_operator($name);
         } else { # a named variable access (ie via $name.foo)
             $name = $self->play_expr($name);
             if (defined $name) {

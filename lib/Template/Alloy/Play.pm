@@ -233,7 +233,7 @@ sub play_EVAL {
     foreach my $str (@strs) {
         $str = $self->play_expr($str);
         next if ! defined $str;
-        $str = $self->play_expr([[undef, '-data-', $str], 0, '|', 'eval', [$named]]);
+        $str = $self->play_expr([[undef, '-temp-', $str], 0, '|', 'eval', [$named]]);
         $$out_ref .= $str if defined $str;
     }
     return;
@@ -254,7 +254,7 @@ sub play_FILTER {
     eval { $self->play_tree($sub_tree, \$out) };
     die $@ if $@ && ! UNIVERSAL::can($@, 'type'); # TODO - shouldn't they all die ?
 
-    $out = $self->play_expr([[undef, '-data-', $out], 0, '|', @$filter]);
+    $out = $self->play_expr([[undef, '-temp-', $out], 0, '|', @$filter]);
     $$out_ref .= $out if defined $out;
     return;
 }
