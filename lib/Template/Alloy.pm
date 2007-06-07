@@ -15,16 +15,17 @@ use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $FILTER_OPS $LIST_OP
 our $VERSION            = '1.001';
 our $QR_PRIVATE         = qr/^[_.]/;
 our $WHILE_MAX          = 1000;
-our $EXTRA_COMPILE_EXT  = '.sto';
 our $MAX_EVAL_RECURSE   = 50;
 our $MAX_MACRO_RECURSE  = 50;
 our $STAT_TTL           = 1;
 our $QR_INDEX           = '(?:\d*\.\d+ | \d+)';
 our @CONFIG_COMPILETIME = qw(SYNTAX ANYCASE INTERPOLATE PRE_CHOMP POST_CHOMP SEMICOLONS V1DOLLAR V2PIPE V2EQUALS AUTO_EVAL SHOW_UNDEFINED_INTERP);
 our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
+our $EXTRA_COMPILE_EXT  = '.sto';
+our $PERL_COMPILE_EXT   = '.pl';
 
 our $AUTOROLE = {
-    Compile  => [qw(load_perl compile_template compile_tree compile_expr)],
+    Compile  => [qw(compile_template compile_tree compile_expr)],
     HTE      => [qw(parse_tree_hte param output register_function clear_param query new_file new_scalar_ref new_array_ref new_filehandle)],
     Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse_tree dump_parse_expr define_directive define_syntax)],
     Play     => [qw(play_tree list_plugins)],
@@ -44,6 +45,7 @@ sub AUTOLOAD {
     }
     return $self->$meth(@_);
 }
+
 sub can {
     my ($self, $meth) = @_;
     if (my $type = delete($ROLEMAP->{$meth})) {
@@ -57,6 +59,7 @@ sub can {
     }
     return $self->SUPER::can($meth);
 }
+
 sub DESTROY {}
 
 ###----------------------------------------------------------------###
@@ -337,6 +340,50 @@ sub load_tree {
     }
 
     return $tree;
+}
+
+sub load_perl {
+    my ($self, $doc) = @_;
+
+    ### first look for a compiled perl document
+    my $perl;
+    if ($doc->{'_filename'}) {
+        $doc->{'modtime'} ||= (stat $doc->{'_filename'})[9];
+        if ($self->{'COMPILE_DIR'} || $self->{'COMPILE_EXT'}) {
+            my $file = $doc->{'_filename'};
+            $file = $doc->{'COMPILE_DIR'} .'/'. $file if $doc->{'COMPILE_DIR'};
+            $file .= $self->{'COMPILE_EXT'} if defined($self->{'COMPILE_EXT'});
+            $file .= $PERL_COMPILE_EXT      if defined $PERL_COMPILE_EXT;
+
+            if (-e $file && ($doc->{'_is_str_ref'} || (stat $file)[9] == $doc->{'modtime'})) {
+                $perl = $self->slurp($file);
+            } else {
+                $doc->{'_compile_filename'} = $file;
+            }
+        }
+    }
+
+    $perl ||= $self->compile_template($doc);
+
+    ### save a cache on the fileside as asked
+    if ($doc->{'_compile_filename'}) {
+        my $dir = $doc->{'_compile_filename'};
+        $dir =~ s|/[^/]+$||;
+        if (! -d $dir) {
+            require File::Path;
+            File::Path::mkpath($dir);
+        }
+        open(my $fh, ">", $doc->{'_compile_filename'}) || $self->throw('compile', "Could not open file \"$doc->{'_compile_filename'}\" for writing: $!");
+        ### todo - think about locking
+        print $fh $$perl;
+        close $fh;
+        utime $doc->{'modtime'}, $doc->{'modtime'}, $doc->{'_compile_filename'};
+    }
+
+    $perl = eval $$perl;
+    $self->throw('compile', "Trouble loading compiled perl: $@") if ! $perl && $@;
+
+    return $perl;
 }
 
 ###----------------------------------------------------------------###
