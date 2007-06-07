@@ -10,7 +10,7 @@ use strict;
 use warnings;
 use Template::Alloy;
 use base qw(Exporter);
-our @EXPORT_OK = qw($SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
+our @EXPORT_OK = qw(define_vmethod $SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
 
 ###----------------------------------------------------------------###
 
