@@ -229,13 +229,14 @@ sub play_DUMP {
 sub play_EVAL {
     my ($self, $ref, $node, $out_ref) = @_;
     my ($named, @strs) = @$ref;
-    $named = $self->play_expr($named);
 
     foreach my $str (@strs) {
         $str = $self->play_expr($str);
         next if ! defined $str;
-        $$out_ref .= $self->play_variable($str, [undef, 0, '|', 'eval', [$named]]);
+        $str = $self->play_expr([[undef, '-data-', $str], 0, '|', 'eval', [$named]]);
+        $$out_ref .= $str if defined $str;
     }
+    return;
 }
 
 sub play_FILTER {
@@ -253,9 +254,9 @@ sub play_FILTER {
     eval { $self->play_tree($sub_tree, \$out) };
     die $@ if $@ && ! UNIVERSAL::can($@, 'type'); # TODO - shouldn't they all die ?
 
-    my $var = [[undef, '~', $out], 0, '|', @$filter]; # make a temporary var out of it
-
-    return $DIRECTIVES->{'GET'}->($self, $var, $node, $out_ref);
+    $out = $self->play_expr([[undef, '-data-', $out], 0, '|', @$filter]);
+    $$out_ref .= $out if defined $out;
+    return;
 }
 
 sub play_FOR {
