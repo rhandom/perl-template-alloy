@@ -10,7 +10,8 @@ use strict;
 use warnings;
 use Template::Alloy;
 use base qw(Exporter);
-our @EXPORT_OK = qw($QR_OP $QR_OP_ASSIGN $QR_OP_PREFIX $QR_PRIVATE
+our @EXPORT_OK = qw(play_operator define_operator
+                    $QR_OP $QR_OP_ASSIGN $QR_OP_PREFIX $QR_PRIVATE
                     $OP $OP_ASSIGN $OP_PREFIX $OP_POSTFIX $OP_DISPATCH);
 
 our $VERSION = $Template::Alloy::VERSION;
