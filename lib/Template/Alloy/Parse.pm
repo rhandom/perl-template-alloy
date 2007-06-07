@@ -508,7 +508,6 @@ sub parse_expr {
             if (@$tree == 2) { # only one operator - keep simple things fast
                 if ($OP->{$tree->[0]}->[0] eq 'assign' && $tree->[0] =~ /(.+)=/) {
                     $var = [[undef, '=', $var, [[undef, $1, $var, $tree->[1]], 0]], 0]; # "a += b" => "a = a + b"
-                    print Data::Dumper::Dumper($var);
                 } else {
                     $var = [[undef, $tree->[0], $var, $tree->[1]], 0];
                 }
