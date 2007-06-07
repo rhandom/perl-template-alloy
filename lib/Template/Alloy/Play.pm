@@ -2,17 +2,7 @@ package Template::Alloy::Play;
 
 =head1 NAME
 
-Template::Alloy::Play - Take the AST and play it in perl
-
-=head1 DESCRIPTION
-
-=head1 AUTHOR
-
-Paul Seamons <paul at seamons dot com>
-
-=head1 LICENSE
-
-This module may be distributed under the same terms as Perl itself.
+Template::Alloy::Play - Play role - allows for playing out the AST
 
 =cut
 
@@ -70,6 +60,7 @@ our $DIRECTIVES = {
     WRAPPER => \&play_WRAPPER,
 };
 
+sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
 ###----------------------------------------------------------------###
 
@@ -967,3 +958,41 @@ sub PRINT {
 ###----------------------------------------------------------------###
 
 1;
+
+__END__
+
+=head1 DESCRIPTION
+
+The Template::Alloy::Play role allows for taking the AST returned by the Parse
+role, and executes it directly.  This is in contrast Template::Alloy::Compile
+which translates the AST into perl code and then executes the perl code.
+
+=head1 ROLE METHODS
+
+=over 4
+
+=item C<play_tree>
+
+Takes the AST output of load_tree and executes it directly.  It should
+be passed an AST tree and an output string reference that the content will
+be appended to.
+
+    my $tree = $self->load_tree('somefile');
+    my $out = '';
+    $self->play_tree($tree, \$out);
+
+=item C<play_*>
+
+Methods by these names are used by execute_tree to execute the parsed tree.
+
+=back
+
+=head1 AUTHOR
+
+Paul Seamons <paul at seamons dot com>
+
+=head1 LICENSE
+
+This module may be distributed under the same terms as Perl itself.
+
+=cut
