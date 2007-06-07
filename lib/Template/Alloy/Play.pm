@@ -644,10 +644,6 @@ sub play_SET {
             $val = $self->play_expr($val);
         }
 
-        if ($Template::Alloy::OP_DISPATCH->{$op}) {
-            $val = $Template::Alloy::OP_DISPATCH->{$op}->($self->play_expr($set), $val);
-        }
-
         $self->set_variable($set, $val);
     }
     return;
