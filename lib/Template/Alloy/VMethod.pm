@@ -2,7 +2,7 @@ package Template::Alloy::VMethod;
 
 =head1 NAME
 
-Template::Alloy::VMethod - Storage for Alloy vmethods.
+Template::Alloy::VMethod - VMethod role.
 
 =cut
 
@@ -11,6 +11,8 @@ use warnings;
 use Template::Alloy;
 use base qw(Exporter);
 our @EXPORT_OK = qw(define_vmethod $SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
+
+sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
 ###----------------------------------------------------------------###
 
@@ -364,3 +366,632 @@ sub filter_redirect {
 ###----------------------------------------------------------------###
 
 1;
+
+__END__
+
+=head1 DESCRIPTION
+
+The Template::Alloy::VMethod role provides all of the extra vmethods,
+filters, and virtual objects that add to the base featureset of
+Template::Alloy.  Most of the vmethods listed here are similar to
+those provided by Template::Toolkit.  We will try to keep
+Template::Alloy's in sync.  Template::Alloy also provides several
+extra methods that are needed for HTML::Template::Expr support.
+
+=head1 VIRTUAL METHOD LIST
+
+The following is the list of builtin virtual methods and filters that
+can be called on each type of data.
+
+In Template::Alloy, the "|" operator can be used to call virtual
+methods just the same way that the "." operator can.  The main
+difference between the two is that on access to hashrefs or objects,
+the "|" means to always call the virtual method or filter rather than
+looking in the hashref for a key by that name, or trying to call that
+method on the object.  This is similar to how TT3 will function.
+
+Virtual methods are also made available via Virtual Objects which
+are discussed in a later section.
+
+=head2 SCALAR VIRTUAL METHODS AND FILTERS
+
+The following is the list of builtin virtual methods and filters that
+can be called on scalar data types.  In Alloy and TT3, filters and
+virtual methods are more closely related than in TT2.  In general
+anywhere a virtual method can be used a filter can be used also - and
+likewise all scalar virtual methods can be used as filters.
+
+In addition to the filters listed below, Alloy will automatically load
+Template::Filters and use them if Template::Toolkit is installed.
+
+In addition to the scalar virtual methods, any scalar will be
+automatically converted to a single item list if a list virtual method
+is called on it.
+
+Scalar virtual methods are also available through the "Text" virtual
+object (except for true filters such as eval and redirect).
+
+All scalar virtual methods are available as top level functions as well.
+This is not true of TT2.  In Template::Alloy the following are equivalent:
+
+    [% "abc".length %]
+    [% length("abc") %]
+
+You may set VMETHOD_FUNCTIONS to 0 to disable this behavior.
+
+=over 4
+
+=item '0'
+
+    [% item = 'foo' %][% item.0 %] Returns foo.
+
+Allows for scalars to mask as arrays (scalars already will, but this
+allows for more direct access).
+
+Not available in TT.
+
+=item abs
+
+    [% -1.abs %] Returns the absolute value
+
+=item atan2
+
+    [% pi = 4 * 1.atan2(1) %]
+
+Returns the arctangent.  The item itself represents Y, the passed argument represents X.
+
+Not available in TT - available in HTML::Template::Expr.
+
+=item chunk
+
+    [% item.chunk(60).join("\n") %] Split string up into a list of chunks of text 60 chars wide.
+
+=item collapse
+
+    [% item.collapse %] Strip leading and trailing whitespace and collapse all other space to one space.
+
+=item cos
+
+    [% item.cos %] Returns the cosine of the item.
+
+Not available in TT - available in HTML::Template::Expr.
+
+=item defined
+
+    [% item.defined %] Always true - because the undef sub translates all undefs to ''.
+
+=item eval
+
+    [% item.eval %]
+
+Process the string as though it was a template.  This will start the
+parsing engine and will use the same configuration as the current
+process.  Alloy is several times faster at doing this than TT is and
+is considered acceptable.
+
+This is a filter and is not available via the Text virtual object.
+
+Template::Alloy has attempted to make the compile process painless and
+fast.  By default an MD5 sum of evaled is taken and used to cache the
+AST.  This behavior can be disabled using the CACHE_STR_REFS
+configuration item.
+
+Template::Alloy also allows for named parameters to be passed to the
+eval filter.
+
+    [% '[% 1 + 2 %]'.eval %]
+
+    [% '${ 1 + 2 }'.eval(interpolate => 1) %]
+
+    [% "#get( 1 + 2)"|eval(syntax => 'velocity') %]
+
+    [% '<TMPL_VAR EXPR="1 + 2">'.eval(syntax => 'hte') %]
+
+    [% '<TMPL_VAR EXPR="1 + 2">'.eval(syntax => 'hte') %]
+
+=item evaltt
+
+    Same as the eval filter.
+
+=item exp
+
+    [% 1.exp %] Something like 2.71828182845905
+
+Returns "e" to the power of the item.
+
+=item file
+
+    Same as the redirect filter.
+
+=item fmt
+
+    [% item.fmt('%d') %]
+    [% item.fmt('%6s') %]
+    [% item.fmt('%*s', 6) %]
+
+Similar to format.  Returns a string formatted with the passed
+pattern.  Default pattern is %s.  Opposite from of the sprintf
+vmethod.
+
+=item format
+
+    [% item.format('%d') %]
+    [% item.format('%6s') %]
+    [% item.format('%*s', 6) %]
+
+Print the string out in the specified format.  It is similar to the
+"fmt" virtual method, except that the item is split on newline and
+each line is processed separately.
+
+=item hash
+
+    [% item.hash %] Returns a one item hash with a key of "value" and a value of the item.
+
+
+=item hex
+
+    [% "FF".hex %]
+
+Returns the decimal value of the passed hex numbers.  Note that you
+may also just use [% 0xFF %].
+
+Not available in TT - available in HTML::Template::Expr.
+
+=item html
+
+    [% item.html %] Performs a very basic html encoding (swaps out &, <, > and " for the html entities)
+
+=item indent
+
+    [% item.indent(3) %] Indent that number of spaces.
+
+    [% item.indent("Foo: ") %] Add the string "Foo: " to the beginning of every line.
+
+=item int
+
+    [% item.int %] Return the integer portion of the value (0 if none).
+
+=item lc
+
+Same as the lower vmethod.  Returns the lower cased version of the item.
+
+=item lcfirst
+
+    [% item.lcfirst %] Capitalize the leading letter.
+
+=item length
+
+    [% item.length %] Return the length of the string.
+
+=item list
+
+    [% item.list %] Returns a list with a single value of the item.
+
+=item log
+
+    [% 8.exp.log %] Equal to 8.
+
+Returns the natural log base "e" of the item.
+
+Not available in TT - available in HTML::Template::Expr.
+
+=item lower
+
+    [% item.lower %] Return a lower-casified string.
+
+=item match
+
+    [% item.match("(\w+) (\w+)") %] Return a list of items matching the pattern.
+
+    [% item.match("(\w+) (\w+)", 1) %] Same as before - but match globally.
+
+In Template::Alloy and TT3 you can use regular expressions notation as well.
+
+    [% item.match( /(\w+) (\w+)/ ) %] Same as before.
+
+    [% item.match( m{(\w+) (\w+)} ) %] Same as before.
+
+=item null
+
+    [% item.null %] Do nothing.
+
+=item oct
+
+    [% "377".oct %]
+
+Returns the decimal value of the octal string.  On recent versions of perl you
+may also pass numbers starting with 0x which will be interpreted as hexidecimal,
+and starting with 0b which will be interpreted as binary.
+
+Not available in TT - available in HTML::Template::Expr.
+
+=item rand
+
+    [% item = 10; item.rand %] Returns a number greater or equal to 0 but less than 10.
+    [% 1.rand %]
+
+Note: This filter is not available as of TT2.15.
+
+=item remove
+
+    [% item.remove("\s+") %] Same as replace - but is global and replaces with nothing.
+
+=item redirect
+
+    [% item.redirect("output_file.html") %]
+
+Writes the contents out to the specified file.  The filename must be
+relative to the OUTPUT_PATH configuration variable and the OUTPUT_PATH
+variable must be set.
+
+This is a filter and is not available via the Text virtual object.
+
+=item repeat
+
+    [% item.repeat(3) %] Repeat the item 3 times
+
+    [% item.repeat(3, ' | ') %] Repeat the item 3 times separated with ' | '
+
+=item replace
+
+    [% item.replace("\s+", "&nbsp;") %] Globally replace all space with &nbsp;
+
+    [% item.replace("foo", "bar", 0) %] Replace only the first instance of foo with bar.
+
+    [% item.replace("(\w+)", "($1)") %] Surround all words with parenthesis.
+
+In Template::Alloy and TT3 you may also use normal regular expression notation.
+
+    [% item.replace(/(\w+)/, "($1)") %] Same as before.
+
+=item search
+
+    [% item.search("(\w+)") %] Tests if the given pattern is in the string.
+
+In Template::Alloy and TT3 you may also use normal regular expression notation.
+
+    [% item.search(/(\w+)/, "($1)") %] Same as before.
+
+=item sin
+
+    [% item.sin %] Returns the sine of the item.
+
+=item size
+
+    [% item.size %] Always returns 1.
+
+=item split
+
+    [% item.split %] Returns an arrayref from the item split on " "
+
+    [% item.split("\s+") %] Returns an arrayref from the item split on /\s+/
+
+    [% item.split("\s+", 3) %] Returns an arrayref from the item split on /\s+/ splitting until 3 elements are found.
+
+In Template::Alloy and TT3 you may also use normal regular expression notation.
+
+    [% item.split( /\s+/, 3 ) %] Same as before.
+
+=item sprintf
+
+    [% item = "%d %d" %]
+    [% item.sprintf(7, 8) %]
+
+Uses the pattern stored in self, and passes it to sprintf with the passed arguments.
+Opposite from the fmt vmethod.
+
+=item sqrt
+
+    [% item.sqrt %]
+
+Returns the square root of the number.
+
+=item srand
+
+Calls the perl srand function to set the interal random seed.  This
+will affect future calls to the rand vmethod.
+
+=item stderr
+
+    [% item.stderr %] Print the item to the current STDERR handle.
+
+=item substr
+
+    [% item.substr(i) %] Returns a substring of item starting at i and going to the end of the string.
+
+    [% item.substr(i, n) %] Returns a substring of item starting at i and going n characters.
+
+=item trim
+
+    [% item.trim %] Strips leading and trailing whitespace.
+
+=item uc
+
+Same as the upper command.  Returns upper cased string.
+
+=item ucfirst
+
+    [% item.ucfirst %] Lower-case the leading letter.
+
+=item upper
+
+    [% item.upper %] Return a upper cased string.
+
+=item uri
+
+    [% item.uri %] Perform a very basic URI encoding.
+
+=item url
+
+    [% item.url %] Perform a URI encoding - but some characters such
+                   as : and / are left intact.
+
+=back
+
+=head2 LIST VIRTUAL METHODS
+
+The following methods can be called on an arrayref type data
+structures (scalar types will automatically promote to a single
+element list and call these methods if needed):
+
+Additionally, list virtual methods can be accessed via the List
+Virtual Object.
+
+=over 4
+
+=item fmt
+
+    [% mylist.fmt('%s', ', ') %]
+    [% mylist.fmt('%6s', ', ') %]
+    [% mylist.fmt('%*s', ', ', 6) %]
+
+Passed a pattern and an string to join on.  Returns a string of the
+values of the list formatted with the passed pattern and joined with
+the passed string.  Default pattern is %s and the default join string
+is a space.
+
+=item first
+
+    [% mylist.first(3) %]  Returns a list of the first 3 items in the list.
+
+=item grep
+
+    [% mylist.grep("^\w+\.\w+$") %] Returns a list of all items matching the pattern.
+
+=item hash
+
+    [% mylist.hash %] Returns a hashref with the array indexes as keys and the values as values.
+
+=item join
+
+    [% mylist.join %] Joins on space.
+    [% mylist.join(", ") Joins on the passed argument.
+
+=item last
+
+    [% mylist.last(3) %]  Returns a list of the last 3 items in the list.
+
+=item list
+
+    [% mylist.list %] Returns a reference to the list.
+
+=item max
+
+    [% mylist.max %] Returns the last item in the array.
+
+=item merge
+
+    [% mylist.merge(list2) %] Returns a new list with all defined items from list2 added.
+
+=item nsort
+
+    [% mylist.nsort %] Returns the numerically sorted items of the list.  If the items are
+    hashrefs, a key containing the field to sort on can be passed.
+
+=item pop
+
+    [% mylist.pop %] Removes and returns the last element from the arrayref (the stash is modified).
+
+=item push
+
+    [% mylist.push(23) %] Adds an element to the end of the arrayref (the stash is modified).
+
+=item pick
+
+    [% mylist.pick %] Returns a random item from the list.
+    [% ['a' .. 'z'].pick %]
+
+An additional numeric argument is how many items to return.
+
+    [% ['a' .. 'z'].pick(8).join('') %]
+
+Note: This filter is not available as of TT2.15.
+
+=item reverse
+
+    [% mylist.reverse %] Returns the list in reverse order.
+
+=item shift
+
+    [% mylist.shift %] Removes and returns the first element of the arrayref (the stash is modified).
+
+=item size
+
+    [% mylist.size %] Returns the number of elements in the array.
+
+=item slice
+
+    [% mylist.slice(i, n) %] Returns a list from the arrayref beginning at index i and continuing for n items.
+
+=item sort
+
+    [% mylist.sort %] Returns the alphabetically sorted items of the list.  If the items are
+    hashrefs, a key containing the field to sort on can be passed.
+
+=item splice
+
+    [% mylist.splice(i, n) %] Removes items from array beginning at i and continuing for n items.
+
+    [% mylist.splice(i, n, list2) %] Same as before, but replaces removed items with the items
+    from list2.
+
+=item unique
+
+    [% mylist.unique %] Return a list of the unique items in the array.
+
+=item unshift
+
+    [% mylist.unshift(23) %] Adds an item to the beginning of the arrayref.
+
+=back 4
+
+=head2 HASH VIRTUAL METHODS
+
+The following methods can be called on hash type data structures:
+
+Additionally, list virtual methods can be accessed via the Hash
+Virtual Object.
+
+=over 4
+
+=item fmt
+
+    [% myhash.fmt('%s => %s', "\n") %]
+    [% myhash.fmt('%4s => %5s', "\n") %]
+    [% myhash.fmt('%*s => %*s', "\n", 4, 5) %]
+
+Passed a pattern and an string to join on.  Returns a string of the
+key/value pairs of the hash formatted with the passed pattern and
+joined with the passed string.  Default pattern is "%s\t%s" and the
+default join string is a newline.
+
+=item defined
+
+    [% myhash.defined('a') %]  Checks if a is defined in the hash.
+
+=item delete
+
+    [% myhash.delete('a') %]  Deletes the item from the hash.
+
+Unlink Perl the value is not returned.  Multiple values may be passed
+and represent the keys to be deleted.
+
+=item each
+
+    [% myhash.each.join(", ") %]  Turns the contents of the hash into a list - subject
+    to change as TT is changing the operations of each and list.
+
+=item exists
+
+    [% myhash.exists('a') %]  Checks if a is in the hash.
+
+=item hash
+
+    [% myhash.hash %]  Returns a reference to the hash.
+
+=item import
+
+    [% myhash.import(hash2) %]  Overlays the keys of hash2 over the keys of myhash.
+
+=item item
+
+    [% myhash.item(key) %] Returns the hashes value for that key.
+
+=item items
+
+    [% myhash.items %] Returns a list of the key and values (flattened hash)
+
+=item keys
+
+    [% myhash.keys.join(', ') %] Returns an arrayref of the keys of the hash.
+
+=item list
+
+    [% myhash.list %] Returns an arrayref with the hash as a single value (subject to change).
+
+=item pairs
+
+    [% myhash.pairs %] Returns an arrayref of hashrefs where each hash contains {key => $key, value => $value}
+    for each value of the hash.
+
+=item nsort
+
+    [% myhash.nsort.join(", ") %] Returns a numerically sorted list of the keys.
+
+=item size
+
+    [% myhash.size %] Returns the number of key/value pairs in the hash.
+
+=item sort
+
+    [% myhash.sort.join(", ") Returns an alphabetically sorted list.
+
+=item values
+
+    [% myhash.values.join(', ') %] Returns an arrayref of the values of the hash.
+
+=back
+
+=head1 VIRTUAL OBJECTS
+
+TT3 has a concept of Text, List, and Hash virtual objects which
+provide direct access to the scalar, list, and hash virtual methods.
+In the TT3 engine this will allow for more concise generated code.
+Because Alloy does not generated perl code to be executed later, Alloy
+provides for these virtual objects but does so as more of a namespace
+(using the methods does not provide a speed optimization in your
+template - just may help clarify things).
+
+    [% a = "foo"; a.length %] => 3
+
+    [% a = "foo"; Text.length(a) %] => 3
+
+    [% a = Text.new("foo"); a.length %] => 3
+
+
+    [% a = [1 .. 30]; a.size %] => 30
+
+    [% a = [1 .. 30]; List.size(a) %] => 30
+
+    [% a = List.new(1 .. 30); a.size %] => 30
+
+
+    [% a = {a => 1, b => 2}; a.size %] => 2
+
+    [% a = {a => 1, b => 2}; Hash.size(a) %] => 2
+
+    [% a = Hash.new({a => 1, b => 2}); a.size %] => 2
+
+    [% a = Hash.new(a => 1, b => 2); a.size %] => 2
+
+    [% a = Hash.new(a = 1, b = 2); a.size %] => 2
+
+    [% a = Hash.new('a', 1, 'b', 2); a.size %] => 2
+
+One limitation is that if you pass a key named "Text",
+"List", or "Hash" in your variable stash - the corresponding
+virtual object will be hidden.
+
+Additionally, you can use all of the Virtual object methods with
+the pipe operator.
+
+    [% {a => 1, b => 2}
+       | Hash.keys
+       | List.join(", ") %] => a, b
+
+Again, there aren't any speed optimizations to using the virtual
+objects in Alloy, but it can help clarify the intent in some cases.
+
+Note: these aren't really objects.  All of the "virtual objects" are
+references to the $SCALAR_OPS, $LIST_OPS, and $HASH_OPS hashes
+found in the $VOBJS hash of Template::Alloy.
+
+=head1 AUTHOR
+
+Paul Seamons <perl at seamons dot com>
+
+=head1 LICENSE
+
+This module may be distributed under the same terms as Perl itself.
+
+=cut
