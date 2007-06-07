@@ -23,7 +23,7 @@ our @CONFIG_COMPILETIME = qw(SYNTAX ANYCASE INTERPOLATE PRE_CHOMP POST_CHOMP SEM
 our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
 
 our $AUTOROLE = {
-    Compile  => [qw(load_perl compile_template compile_tree compile_expr compile_expr2 compile_expr_flat compile_operator)],
+    Compile  => [qw(load_perl compile_template compile_tree compile_expr compile_expr_flat)],
     HTE      => [qw(parse_tree_hte param output register_function clear_param query new_file new_scalar_ref new_array_ref new_filehandle)],
     Operator => [qw(play_operator define_operator)],
     Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse dump_parse_expr define_directive define_syntax)],
