@@ -17,7 +17,6 @@ BEGIN {
 
 use strict;
 use Test::More tests => ! $is_tt ? 1863 : 625;
-use Data::Dumper qw(Dumper);
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -48,7 +47,7 @@ sub process_ok { # process the value and say if it was ok
         ok(0, "Line $line   \"$str\"");
         warn "# Was:\n$out\n# Should've been:\n$test\n";
         print $obj->error if $obj->can('error');
-        print Dumper $obj->parse_tree(\$str) if $obj->can('parse_tree');
+        print $obj->dump_parse_tree(\$str) if $obj->can('dump_parse_tree');
         exit;
     }
 }
