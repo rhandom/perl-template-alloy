@@ -817,10 +817,6 @@ __END__
 
 =head1 DESCRIPTION
 
-The Template::Alloy::Compile role allows for taking the AST returned
-by the Parse role, and translating it into a perl code document.  This
-is in contrast Template::Alloy::Play which executes the AST directly.
-
 =head1 ROLE METHODS
 
 =over 4
