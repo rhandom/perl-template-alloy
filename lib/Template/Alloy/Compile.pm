@@ -200,22 +200,7 @@ ${indent}}";
 
 sub compile_expr {
     my ($self, $var, $indent) = @_;
-    return "\$self->play_expr(".$self->compile_expr_flat($var).")";
-}
-
-### same as compile_expr - but without play_variable escaping - this is essentially a Dumper
-sub compile_expr_flat {
-    my ($self, $var) = @_;
-
-    if (! ref $var) {
-        return 'undef' if ! defined $var;
-        return $var if $var =~ /^(-?[1-9]\d{0,13}|0)$/;
-        $var =~ s/([\'\\])/\\$1/g;
-        return "'$var'";
-    }
-
-    return '{'.join(', ', map { $self->compile_expr_flat($_) } %$var).'}' if ref $var eq 'HASH';
-    return '['.join(', ', map { $self->compile_expr_flat($_) } @$var).']';
+    return "\$self->play_expr(".$self->ast_string($var).")";
 }
 
 sub _compile_play_named_args {
@@ -225,7 +210,7 @@ sub _compile_play_named_args {
 
     $$str_ref .= "
 ${indent}require Template::Alloy::Play;
-${indent}\$var = ".$self->compile_expr_flat($node->[3]).";
+${indent}\$var = ".$self->ast_string($node->[3]).";
 ${indent}\$Template::Alloy::Play::DIRECTIVES->{'$directive'}->(\$self, \$var, ['$directive', $node->[1], $node->[2]], \$out_ref);";
 
     return;
@@ -312,7 +297,7 @@ sub compile_GET {
     my ($self, $node, $str_ref, $indent) = @_;
     $$str_ref .= "
 $indent\$var = ".$self->compile_expr($node->[3], $indent).";
-$indent\$\$out_ref .= defined(\$var) ? \$var : \$self->undefined_get(".$self->compile_expr_flat($node->[3]).");";
+$indent\$\$out_ref .= defined(\$var) ? \$var : \$self->undefined_get(".$self->ast_string($node->[3]).");";
     return;
 }
 
@@ -321,10 +306,10 @@ sub compile_EVAL {
     my ($named, @strs) = @{ $node->[3] };
 
     $$str_ref .= "
-${indent}foreach (".join(",\n", map {$self->compile_expr_flat($_)} @strs).") {
+${indent}foreach (".join(",\n", map {$self->ast_string($_)} @strs).") {
 ${indent}${INDENT}my \$str = \$self->play_expr(\$_);
 ${indent}${INDENT}next if ! defined \$str;
-${indent}${INDENT}\$\$out_ref .= \$self->play_expr([[undef, '-temp-', \$str], 0, '|', 'eval', [".$self->compile_expr_flat($named)."]]);
+${indent}${INDENT}\$\$out_ref .= \$self->play_expr([[undef, '-temp-', \$str], 0, '|', 'eval', [".$self->ast_string($named)."]]);
 ${indent}}";
 }
 
@@ -335,7 +320,7 @@ sub compile_FILTER {
 
     $$str_ref .= "
 ${indent}\$var = do {
-${indent}${INDENT}my \$filter = ".$self->compile_expr_flat($filter).";";
+${indent}${INDENT}my \$filter = ".$self->ast_string($filter).";";
 
     ### allow for alias
     if (length $name) {
@@ -378,7 +363,7 @@ ${indent}my (\$var, \$error) = \$loop->get_first;
 ${indent}FOREACH: while (! \$error) {";
 
     if (defined $name) {
-        $$str_ref .= "\n$indent$INDENT\$self->set_variable(".$self->compile_expr_flat($name).", \$var);";
+        $$str_ref .= "\n$indent$INDENT\$self->set_variable(".$self->ast_string($name).", \$var);";
     } else {
         $$str_ref .= "\n$indent$INDENT\@\$copy{keys %\$var} = values %\$var if ref(\$var) eq 'HASH';";
     }
@@ -460,7 +445,7 @@ sub compile_MACRO {
     my $sub_tree = $node->[4];
     if (! $sub_tree || ! $sub_tree->[0]) {
         $$str_ref .= "
-${indent}\$self->set_variable(".$self->compile_expr_flat($name).", undef);";
+${indent}\$self->set_variable(".$self->ast_string($name).", undef);";
         return;
     } elsif (ref($sub_tree->[0]) && $sub_tree->[0]->[0] eq 'BLOCK') {
         $sub_tree = $sub_tree->[0]->[4];
@@ -485,7 +470,7 @@ ${indent}${INDENT}${INDENT}if ++\$self_copy->{'_macro_recurse'} > \$max;
     foreach my $var (@$args) {
         $$str_ref .= "
 ${indent}${INDENT}\$self_copy->set_variable(";
-        $$str_ref .= $self->compile_expr_flat($var);
+        $$str_ref .= $self->ast_string($var);
         $$str_ref .= ", shift(\@_));";
     }
     $$str_ref .= "
@@ -500,7 +485,7 @@ ${indent}${INDENT}my \$out = '';
 ${indent}${INDENT}my \$out_ref = \\\$out;$code
 ${indent}${INDENT}return \$out;
 ${indent}};
-${indent}\$self->set_variable(".$self->compile_expr_flat($name).", \$var);
+${indent}\$self->set_variable(".$self->ast_string($name).", \$var);
 ${indent}};";
 
     return;
@@ -609,7 +594,7 @@ ${indent}}"
         }
 
         $$str_ref .= ";
-$indent\$self->set_variable(".$self->compile_expr_flat($set).", \$var);";
+$indent\$self->set_variable(".$self->ast_string($set).", \$var);";
 
         if ($self->{'_is_default'}) {
             substr($indent, -length($INDENT), length($INDENT), '');
@@ -762,7 +747,7 @@ sub compile_VIEW {
     my ($self, $node, $str_ref, $indent) = @_;
     my ($blocks, $args, $name) = @{ $node->[3] };
 
-    my $_name = $self->compile_expr_flat($name);
+    my $_name = $self->ast_string($name);
 
     # [[undef, '{}', 'key1', 'val1', 'key2', 'val2'], 0]
     $args = $args->[0];
@@ -849,7 +834,7 @@ sub compile_WRAPPER {
     my ($self, $node, $str_ref, $indent) = @_;
 
     my ($named, @files) = @{ $node->[3] };
-    $named = $self->compile_expr_flat($named);
+    $named = $self->ast_string($named);
 
     $$str_ref .= "
 ${indent}\$var = do {
@@ -859,7 +844,7 @@ ${indent}${INDENT}my \$out_ref = \\\$out;"
 ${indent}${INDENT}\$out;
 ${indent}};
 ${indent}for my \$file (reverse("
-.join(",${indent}${INDENT}", map {"\$self->play_expr(".$self->compile_expr_flat($_).")"} @files).")) {
+.join(",${indent}${INDENT}", map {"\$self->play_expr(".$self->ast_string($_).")"} @files).")) {
 ${indent}${INDENT}local \$self->{'_vars'}->{'content'} = \$var;
 ${indent}${INDENT}\$var = '';
 ${indent}${INDENT}require Template::Alloy::Play;
