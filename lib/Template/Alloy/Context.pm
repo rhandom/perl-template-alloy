@@ -4,16 +4,6 @@ package Template::Alloy::Context;
 
 Template::Alloy::Context - Provide a TT style context
 
-=head1 DESCRIPTION
-
-=head1 AUTHOR
-
-Paul Seamons <paul at seamons dot com>
-
-=head1 LICENSE
-
-This module may be distributed under the same terms as Perl itself.
-
 =cut
 
 use strict;
@@ -21,8 +11,9 @@ use warnings;
 use Template::Alloy;
 
 our $VERSION = $Template::Alloy::VERSION;
-
 use vars qw($AUTOLOAD);
+
+###----------------------------------------------------------------###
 
 sub new {
     my $class = shift;
@@ -42,7 +33,7 @@ sub config { shift->_template }
 
 sub stash {
     my $self = shift;
-    return $self->{'stash'} ||= bless {_template => $self->_template}, 'Template::Alloy::_Stash';
+    return $self->{'stash'} ||= bless {_template => $self->_template}, 'Template::Alloy::_ContextStash';
 }
 
 sub insert {
@@ -141,7 +132,7 @@ sub DESTROY {}
 
 ###----------------------------------------------------------------###
 
-package Template::Alloy::_Stash;
+package Template::Alloy::_ContextStash;
 
 use vars qw($AUTOLOAD);
 
@@ -173,3 +164,24 @@ sub DESTROY {}
 ###----------------------------------------------------------------###
 
 1;
+
+__END__
+
+=head1 DESCRIPTION
+
+Template::Alloy::Context provides compatibility with Template::Context
+and filters that require Template::Context.
+
+=head1 TODO
+
+Flesh out the methods.
+
+=head1 AUTHOR
+
+Paul Seamons <paul at seamons dot com>
+
+=head1 LICENSE
+
+This module may be distributed under the same terms as Perl itself.
+
+=cut

@@ -2,7 +2,7 @@ package Template::Alloy::Velocity;
 
 =head1 NAME
 
-Template::Alloy::Tmpl - provide Text::Tmpl support
+Template::Alloy::Velocity - Velocity (VTL) role
 
 =cut
 
@@ -11,6 +11,10 @@ use warnings;
 use Template::Alloy;
 
 our $VERSION = $Template::Alloy::VERSION;
+
+sub new { die "This class is a role for use by packages such as Template::Alloy" }
+
+###----------------------------------------------------------------###
 
 sub parse_tree_velocity {
     my $self    = shift;
@@ -318,13 +322,30 @@ __END__
 
 =head1 DESCRIPTION
 
-Provides for extra or extended features that may not be as commonly used.
-This module should not normally be used by itself.
+The Template::Alloy::Velocity role provides the syntax and the
+interface for the Velocity Templating Language (VTL).  It also brings
+many of the features from the various templating systems.
 
 See the Template::Alloy documentation for configuration and other parameters.
 
-http://velocity.apache.org/engine/devel/vtl-reference-guide.html
-http://www.javaworld.com/javaworld/jw-12-2001/jw-1228-velocity.html?page=4
+The following documents have more information about the velocity language.
+
+    http://velocity.apache.org/engine/devel/vtl-reference-guide.html
+    http://www.javaworld.com/javaworld/jw-12-2001/jw-1228-velocity.html?page=4
+
+=head1 ROLE METHODS
+
+=over 4
+
+=item C<parse_tree_velocity>
+
+Used bh the parse_tree method when SYNTAX is set to 'velocity'.
+
+=item C<merge>
+
+Similar to process_simple, but with syntax set to velocity.
+
+=back
 
 =head1 UNSUPPORTED VELOCITY SPEC
 
@@ -332,28 +353,34 @@ http://www.javaworld.com/javaworld/jw-12-2001/jw-1228-velocity.html?page=4
 
 =item
 
-The magic velocity property lookups don't exist.  You must use the actual
-method name, Alloy will not try to guess it for you.
+The magic Java Velocity property lookups don't exist.  You must use
+the actual method name, Alloy will not try to guess it for you.  Java
+Velocity allows you to type $object.Attribute and Java Velocity will
+look for the Attribute, getAttribute, getattribute, isAttribute
+methods.  In Perl Alloy, you can call $object.can('Attribute') to
+introspect the object.
 
 =item
 
-Escaping of variables is consistent.  The velocity spec is not.  The
-velocity spec says that "\\$email" will return "\\$email" if email is
-not defined and it will return "\foo" if email is equal to "foo".  The
-slash behavior magically changes according to the spec.  In Alloy the
-"\\$email" would be "\$email" if email is not defined.
+Escaping of variables is consistent.  The Java Velocity spec is not.
+The velocity spec says that "\\$email" will return "\\$email" if email
+is not defined and it will return "\foo" if email is equal to "foo".
+The slash behavior magically changes according to the spec.  In Alloy
+the "\\$email" would be "\$email" if email is not defined.
 
 =item
 
-You can set items to null (undefined) in Alloy.  According to the velocity spec
-you have to configure Velocity to do this.  To get the other behavior, you
-would need to do "#if($questionable)#set($foo=$questionable)#end".  The default
+You can set items to null (undefined) in Alloy.  According to the Java
+Velocity reference-guide you have to configure Velocity to do this.
+To get the other behavior, you would need to do
+"#if($questionable)#set($foo=$questionable)#end".  The default
 Velocity spec way provides no way for checking null return values.
 
 =item
 
-There currently isn't a "literal" directive.  The VTL spec doesn't mention
-#literal, but the user-guide does.  In Alloy you can use the following:
+There currently isn't a "literal" directive.  The VTL reference-guide
+doesn't mention #literal, but the user-guide does.  In Alloy you can
+use the following:
 
     #get('#foreach($a in [1..3]) $a #end')
 
@@ -363,30 +390,39 @@ multiple times.
 
 =item
 
-There is no $velocityCount .  Use $loop.count .
+There is no "$velocityCount" .  Use "$loop.count" .
 
 =item
 
-In Alloy, excess whitespace outside of the directive matters.  In the VTL user-guide
-it mentions that all excess whitespace is gobbled up.  Alloy supports the TT chomp
-operators.  These operators are placed just inside the open and close parenthesis
-of directives as in the following:
+In Alloy, excess whitespace outside of the directive matters.  In the
+VTL user-guide it mentions that all excess whitespace is gobbled up.
+Alloy supports the TT chomp operators.  These operators are placed
+just inside the open and close parenthesis of directives as in the
+following:
 
      #set(~ $a = 1 ~)
 
 =item
 
-In Alloy, / division is always floating point.  If you want integer division, use "div".
+In Alloy, division using "/" is always floating point.  If you want integer
+division, use "div".  In Java Velocity, "/" division is integer only if
+both numbers are integers.
 
 =item
 
-Perl doesn't support negative ranges.  However, arrays do have reverse method.
+Perl doesn't support negative ranges.  However, arrays do have the reverse method.
 
      #foreach( $bar in [-2 .. 2].reverse ) $bar #end
 
 =item
 
-In Alloy arguments to macros are passed by value, not by name.
+In Alloy arguments to macros are passed by value, not by name.  This
+is easy to achieve with alloy - simply encase your arguments in single
+quotes and then eval the argument inside the macro.  The velocity
+people claim this feature as a jealously guarded feature.  My first
+template system "WrapEx" had the same feature.  It happened as an
+accident.  It represents lazy software architecture and is difficult to
+optimize.
 
 =back
 
