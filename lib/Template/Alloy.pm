@@ -26,7 +26,7 @@ our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
 our $AUTOROLE = {
     Compile  => [qw(load_perl compile_template compile_tree compile_expr)],
     HTE      => [qw(parse_tree_hte param output register_function clear_param query new_file new_scalar_ref new_array_ref new_filehandle)],
-    Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse dump_parse_expr define_directive define_syntax)],
+    Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse_tree dump_parse_expr define_directive define_syntax)],
     Play     => [qw(play_tree list_plugins)],
     TT       => [qw(parse_tree_tt3 process)],
     Tmpl     => [qw(parse_tree_tmpl set_delimiters set_strip set_value set_values parse_string set_dir parse_file loop_iteration fetch_loop_iteration)],
@@ -38,19 +38,24 @@ our $AUTOLOAD;
 sub AUTOLOAD {
     my $self = shift;
     my $meth = ($AUTOLOAD && $AUTOLOAD =~ /::(\w+)$/) ? $1 : $self->throw('autoload', "Invalid method $AUTOLOAD");
-    my $type = delete($ROLEMAP->{$meth}) || do { require Carp; Carp::croak("Can't locate object method \"$meth\" via package ".ref($self)) };
-
-    my $pkg  = __PACKAGE__."::$type";
-    my $file = "$pkg.pm";
-    $file =~ s|::|/|g;
-    require $file;
-
-    for my $name (@{ $AUTOROLE->{ $type }}) {
-        no strict 'refs';
-        *{__PACKAGE__."::$name"} = \&{"$pkg\::$name"};
+    if (! $self->can($meth)) {
+        require Carp;
+        Carp::croak("Can't locate object method \"$meth\" via package ".ref($self));
     }
-
     return $self->$meth(@_);
+}
+sub can {
+    my ($self, $meth) = @_;
+    if (my $type = delete($ROLEMAP->{$meth})) {
+        my $pkg  = __PACKAGE__."::$type";
+        my $file = "$pkg.pm";
+        $file =~ s|::|/|g;
+        require $file;
+
+        no strict 'refs';
+        *{__PACKAGE__."::$_"} = \&{"$pkg\::$_"} for @{ $AUTOROLE->{ $type }};
+    }
+    return $self->SUPER::can($meth);
 }
 sub DESTROY {}
 
