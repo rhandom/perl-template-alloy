@@ -26,17 +26,18 @@
 #
 #========================================================================
 
-use vars qw($module $is_tt $compile_perl);
+use vars qw($module $N $is_tt $compile_perl);
 BEGIN {
     $module = 'Template::Alloy';
     if (grep {/tt/i} @ARGV) {
         $module = 'Template';
     }
     $is_tt = $module eq 'Template';
+    $N = ! $is_tt ? 105 : 53;
 };
 
 use strict;
-use Test::More tests => ! $is_tt ? 105 : 53;
+use Test::More tests => $N;
 
 use_ok($module);
 
@@ -44,7 +45,7 @@ my $skipped;
 SKIP: {
     if (! eval { require Template::View }) {
         $skipped = 1;
-        skip("Template::View is not installed - skipping VIEW tests", 52);
+        skip("Template::View is not installed - skipping VIEW tests", $N - 1);
     }
 };
 exit if $skipped;
