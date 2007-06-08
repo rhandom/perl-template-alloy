@@ -2435,6 +2435,13 @@ for TT.  Default is "[%".
 You should be sure that the tag does not include grouping parens or
 INTERPOLATE will not function properly.
 
+=item STASH
+
+Template::Alloy manages its own stash of variables.  You can pass
+a Template::Stash or Template::Stash::XS object, but Template::Alloy
+will copy all of values out of the object into its own stash.  The
+STASH option is only available when using the process method.
+
 =item STAT_TTL
 
 Defaults to $STAT_TTL which defaults to 1.  Represents time-to-live
