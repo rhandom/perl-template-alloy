@@ -37,7 +37,8 @@ our $AUTOROLE = {
     Tmpl     => [qw(parse_tree_tmpl set_delimiters set_strip set_value set_values parse_string set_dir parse_file loop_iteration fetch_loop_iteration)],
     Velocity => [qw(parse_tree_velocity merge)],
 };
-our $ROLEMAP = { map { my $type = $_; map { ($_ => $type) } @{ $AUTOROLE->{$type} } } keys %$AUTOROLE };
+my $ROLEMAP  = { map { my $type = $_; map { ($_ => $type) } @{ $AUTOROLE->{$type} } } keys %$AUTOROLE };
+my %OVERRIDE = ('Template' => 'TT', 'Template::Toolkit' => 'TT', 'HTML::Template' => 'HTE', 'HTML::Template::Expr' => 'HTE', 'Text::Tmpl' => 'Tmpl');
 
 our $AUTOLOAD;
 sub AUTOLOAD {
@@ -52,19 +53,38 @@ sub AUTOLOAD {
 
 sub can {
     my ($self, $meth) = @_;
-    if (my $type = delete($ROLEMAP->{$meth})) {
-        my $pkg  = __PACKAGE__."::$type";
-        my $file = "$pkg.pm";
-        $file =~ s|::|/|g;
-        require $file;
-
-        no strict 'refs';
-        *{__PACKAGE__."::$_"} = \&{"$pkg\::$_"} for @{ $AUTOROLE->{ $type }};
-    }
+    __PACKAGE__->import($_) if $_ = $ROLEMAP->{$meth};
     return $self->SUPER::can($meth);
 }
 
 sub DESTROY {}
+
+sub import {
+    my $class = shift;
+    foreach my $item (@_) {
+        next if $item =~ /^(load|1)$/i;
+        return $class->import(keys %$AUTOROLE) if lc $item eq 'all';
+
+        my $type;
+        if ($type = $OVERRIDE{$item}) {
+            (my $file = "$item.pm") =~ s|::|/|g;
+            if ($INC{$file}) { require Carp; Carp::croak("Class $item is already loaded - can't override") }
+            eval "{package $item; our \@ISA = qw(Template::Alloy);}";
+            $INC{$file} = __FILE__;
+            next if ! $AUTOROLE->{$type}; # already imported
+        }
+        $type ||= $AUTOROLE->{$item} ? $item : $ROLEMAP->{$item} || do { require Carp; Carp::croak("Invalid import option \"$item\"") };
+
+        my $pkg   = __PACKAGE__."::$type";
+        (my $file = "$pkg.pm") =~ s|::|/|g;
+        require $file;
+
+        no strict 'refs';
+        *{__PACKAGE__."::$_"} = \&{"$pkg\::$_"} for @{ $AUTOROLE->{$type} };
+        $AUTOROLE->{$type} = [];
+    }
+    return 1;
+}
 
 ###----------------------------------------------------------------###
 
