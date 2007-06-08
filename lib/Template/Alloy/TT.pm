@@ -978,17 +978,6 @@ and plugins.
 
 =item
 
-There is no stash.
-
-Well there is but it isn't an object.
-
-Alloy only supports the variables passed in VARIABLES, PRE_DEFINE, and
-those passed to the process method.  Alloy provides a stash object that
-mimics the Template::Stash interface for use by some TT filters, eval
-perl blocks, and plugins.
-
-=item
-
 There is no provider.
 
 Alloy uses the load_template method to get and cache templates.
@@ -1072,12 +1061,6 @@ Template::Alloy is the "service").
 Template::Alloy provides its own pseudo context object to plugins,
 filters, and perl blocks.  The Template::Alloy model doesn't really
 allow for a separate context.  Template::Alloy IS the context.
-
-=item STASH
-
-Template::Alloy manages its own stash of variables.  A pseudo stash
-object is available via the pseudo context object for use in plugins,
-filters, and perl blocks.
 
 =item PARSER
 
