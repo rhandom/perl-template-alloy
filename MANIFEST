@@ -16,6 +16,7 @@ lib/Template/Alloy/VMethod.pm
 Makefile.PL
 MANIFEST
 MANIFEST.SKIP
+README
 samples/benchmark/bench_method_calling.pl
 samples/benchmark/bench_operator_storage.pl
 samples/benchmark/bench_optree.pl
@@ -24,6 +25,7 @@ samples/benchmark/bench_template_tag_parser.pl
 samples/benchmark/bench_various_templaters.pl
 samples/dprof_template.d
 samples/memory_template.pl
+t/00_use.t
 t/05_tt_base.t
 t/10_tt_includes.t
 t/15_tt_view.t
