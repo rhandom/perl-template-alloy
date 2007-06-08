@@ -122,6 +122,7 @@ sub compile_tree {
     #                5: continuation sub trees for sub continuation block types (elsif, else, etc)
     #                6: flag to capture next directive
     my @doc;
+    my $func;
     for my $node (@$tree) {
 
         # text nodes are just the bare text
@@ -147,7 +148,17 @@ ${indent}}";
 
         $code .= _node_info($self, $node, $indent);
 
-        $DIRECTIVES->{$node->[0]}->($self, $node, \$code, $indent);
+        if ($func = $DIRECTIVES->{$node->[0]}) {
+            $func->($self, $node, \$code, $indent);
+        } else {
+            ### if the method isn't defined - delegate to the play directive (if there is one)
+            require Template::Alloy::Play;
+            if ($func = $Template::Alloy::Play::DIRECTIVES->{$node->[0]}) {
+                _compile_defer_to_play($self, $node, \$code, $indent);
+            } else {
+                die "Couldn't find compile or play method for directive \"$node->[0]\"";
+            }
+        }
     }
     return $code;
 }
@@ -157,7 +168,7 @@ sub compile_expr {
     return "\$self->play_expr(".$self->ast_string($var).")";
 }
 
-sub _compile_play_named_args {
+sub _compile_defer_to_play {
     my ($self, $node, $str_ref, $indent) = @_;
     my $directive = $node->[0];
     die "Invalid node name \"$directive\"" if $directive !~ /^\w+$/;
@@ -165,7 +176,7 @@ sub _compile_play_named_args {
     $$str_ref .= "
 ${indent}require Template::Alloy::Play;
 ${indent}\$var = ".$self->ast_string($node->[3]).";
-${indent}\$Template::Alloy::Play::DIRECTIVES->{'$directive'}->(\$self, \$var, ['$directive', $node->[1], $node->[2]], \$out_ref);";
+${indent}\$Template::Alloy::Play::DIRECTIVES->{'$directive'}->(\$self, \$var, ".$self->ast_string($node).", \$out_ref);";
 
     return;
 }
@@ -216,7 +227,7 @@ ${indent}\$\$out_ref = '';";
 
 sub compile_CONFIG {
     my ($self, $node, $str_ref, $indent) = @_;
-    _compile_play_named_args($self, $node, $str_ref, $indent);
+    _compile_defer_to_play($self, $node, $str_ref, $indent);
 }
 
 sub compile_DEBUG {
@@ -244,7 +255,7 @@ sub compile_DEFAULT {
 
 sub compile_DUMP {
     my ($self, $node, $str_ref, $indent) = @_;
-    _compile_play_named_args($self, $node, $str_ref, $indent);
+    _compile_defer_to_play($self, $node, $str_ref, $indent);
 }
 
 sub compile_GET {
@@ -353,12 +364,12 @@ sub compile_IF {
 
 sub compile_INCLUDE {
     my ($self, $node, $str_ref, $indent) = @_;
-    _compile_play_named_args($self, $node, $str_ref, $indent);
+    _compile_defer_to_play($self, $node, $str_ref, $indent);
 }
 
 sub compile_INSERT {
     my ($self, $node, $str_ref, $indent) = @_;
-    _compile_play_named_args($self, $node, $str_ref, $indent);
+    _compile_defer_to_play($self, $node, $str_ref, $indent);
 }
 
 sub compile_LAST {
@@ -505,7 +516,12 @@ ${indent}}";
 
 sub compile_PROCESS {
     my ($self, $node, $str_ref, $indent) = @_;
-    _compile_play_named_args($self, $node, $str_ref, $indent);
+    _compile_defer_to_play($self, $node, $str_ref, $indent);
+}
+
+sub compile_RAWPERL {
+    my ($self, $node, $str_ref, $indent) = @_;
+    _compile_defer_to_play($self, $node, $str_ref, $indent);
 }
 
 sub compile_RETURN {
@@ -694,7 +710,7 @@ sub compile_UNLESS { $DIRECTIVES->{'IF'}->(@_) }
 
 sub compile_USE {
     my ($self, $node, $str_ref, $indent) = @_;
-    _compile_play_named_args($self, $node, $str_ref, $indent);
+    _compile_defer_to_play($self, $node, $str_ref, $indent);
 }
 
 sub compile_VIEW {
@@ -821,6 +837,16 @@ __END__
 The Template::Alloy::Compile role allows for taking the AST returned
 by the Parse role, and translating it into a perl code document.  This
 is in contrast Template::Alloy::Play which executes the AST directly.
+
+=head1 TODO
+
+=over 4
+
+=item
+
+Translate compile_RAWPERL to actually output rather than calling play_RAWPERL.
+
+=back
 
 =head1 ROLE METHODS
 
