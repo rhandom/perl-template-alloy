@@ -16,7 +16,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => ! $is_tt ? 1877 : 632;
+use Test::More tests => ! $is_tt ? 1879 : 633;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -1198,6 +1198,7 @@ process_ok("[% TRY %][% PERL %][% END %][% CATCH ; error; END %]" => 'perl error
 process_ok("[% PERL %] print \"[% one %]\" [% END %]" => 'ONE', {one => 'ONE', tt_config => ['EVAL_PERL' => 1]});
 process_ok("[% PERL %] print \$stash->get('one') [% END %]" => 'ONE', {one => 'ONE', tt_config => ['EVAL_PERL' => 1]});
 process_ok("[% PERL %] print \$stash->set('a.b.c', 7) [% END %][% a.b.c %]" => '77', {tt_config => ['EVAL_PERL' => 1]});
+process_ok("[% RAWPERL %]\$output .= 'interesting'[% END %]" => 'interesting', {tt_config => ['EVAL_PERL' => 1]});
 
 ###----------------------------------------------------------------###
 print "### recursion prevention ############################ $is_compile_perl\n";
