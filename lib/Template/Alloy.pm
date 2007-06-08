@@ -26,6 +26,8 @@ our $EVAL_CONFIG        = {map {$_ => 1} @CONFIG_COMPILETIME, @CONFIG_RUNTIME};
 our $EXTRA_COMPILE_EXT  = '.sto';
 our $PERL_COMPILE_EXT   = '.pl';
 
+###----------------------------------------------------------------###
+
 our $AUTOROLE = {
     Compile  => [qw(compile_template compile_tree compile_expr)],
     HTE      => [qw(parse_tree_hte param output register_function clear_param query new_file new_scalar_ref new_array_ref new_filehandle)],
@@ -833,7 +835,9 @@ sub node_info {
 
 sub get_line_number_by_index {
     my ($self, $doc, $index, $include_char) = @_;
-    return 1 if $index <= 0;
+    if (! $index || $index <= 0) {
+        return $include_char ? (1, 1) : 1;
+    }
 
     my $lines = $doc->{'_line_offsets'} ||= do {
         $doc->{'_content'} ||= $self->slurp($doc->{'_filename'});
