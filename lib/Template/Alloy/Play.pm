@@ -10,6 +10,7 @@ use strict;
 use warnings;
 use Template::Alloy;
 use Template::Alloy::Iterator;
+use Template::Alloy::Context;
 
 our $VERSION    = $Template::Alloy::VERSION;
 our $QR_NUM     = '(?:\d*\.\d+ | \d+)';
