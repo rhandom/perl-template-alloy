@@ -68,10 +68,12 @@ sub import {
         my $type;
         if ($type = $OVERRIDE{$item}) {
             (my $file = "$item.pm") =~ s|::|/|g;
-            if ($INC{$file}) { require Carp; Carp::croak("Class $item is already loaded - can't override") }
-            eval "{package $item; our \@ISA = qw(Template::Alloy);}";
-            $INC{$file} = __FILE__;
-            next if ! $AUTOROLE->{$type}; # already imported
+            if (! $INC{$file} || ! $item->isa(__PACKAGE__)) {
+                if ($INC{$file}) { require Carp; Carp::croak("Class $item is already loaded - can't override") }
+                eval "{package $item; our \@ISA = qw(".__PACKAGE__.");}";
+                $INC{$file} = __FILE__;
+                next if ! $AUTOROLE->{$type}; # already imported
+            }
         }
         $type ||= $AUTOROLE->{$item} ? $item : $ROLEMAP->{$item} || do { require Carp; Carp::croak("Invalid import option \"$item\"") };
 
