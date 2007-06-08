@@ -6,14 +6,16 @@ package Template::Alloy;
 #  Distributed under the Perl Artistic License without warranty      #
 ###----------------------------------------------------------------###
 
-use vars qw($VERSION);
 use strict;
 use warnings;
 use Template::Alloy::Exception;
 use Template::Alloy::Operator qw(play_operator define_operator);
 use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
 
-BEGIN { $VERSION = '1.002' };
+use vars qw($VERSION);
+BEGIN {
+    $VERSION            = '1.002';
+};
 our $QR_PRIVATE         = qr/^[_.]/;
 our $WHILE_MAX          = 1000;
 our $MAX_EVAL_RECURSE   = 50;
