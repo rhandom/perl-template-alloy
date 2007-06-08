@@ -1,6 +1,6 @@
 =head1 NAME
 
-Template::Alloy - Fast and lightweight TT2/3 template engine
+Template::Alloy - TT2/3, HT, HTE, Tmpl, and Velocity Engine
 
 =head1 SYNOPSIS
 
