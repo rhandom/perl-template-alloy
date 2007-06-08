@@ -9,6 +9,7 @@ Template::Alloy::Play - Compile role - allows for compiling the AST to perl code
 use strict;
 use warnings;
 use Template::Alloy;
+use Template::Alloy::Iterator;
 
 our $VERSION = $Template::Alloy::VERSION;
 our $INDENT  = ' ' x 4;
@@ -816,6 +817,10 @@ ${indent}\$\$out_ref .= \$var if defined \$var;";
 __END__
 
 =head1 DESCRIPTION
+
+The Template::Alloy::Compile role allows for taking the AST returned
+by the Parse role, and translating it into a perl code document.  This
+is in contrast Template::Alloy::Play which executes the AST directly.
 
 =head1 ROLE METHODS
 

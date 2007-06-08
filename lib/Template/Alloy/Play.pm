@@ -8,7 +8,8 @@ Template::Alloy::Play - Play role - allows for playing out the AST
 
 use strict;
 use warnings;
-use Template::Alloy qw(@CONFIG_RUNTIME);
+use Template::Alloy;
+use Template::Alloy::Iterator;
 
 our $VERSION    = $Template::Alloy::VERSION;
 our $QR_NUM     = '(?:\d*\.\d+ | \d+)';
