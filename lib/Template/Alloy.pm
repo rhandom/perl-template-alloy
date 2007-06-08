@@ -37,8 +37,8 @@ our $AUTOROLE = {
     Tmpl     => [qw(parse_tree_tmpl set_delimiters set_strip set_value set_values parse_string set_dir parse_file loop_iteration fetch_loop_iteration)],
     Velocity => [qw(parse_tree_velocity merge)],
 };
-my $ROLEMAP  = { map { my $type = $_; map { ($_ => $type) } @{ $AUTOROLE->{$type} } } keys %$AUTOROLE };
-my %OVERRIDE = ('Template' => 'TT', 'Template::Toolkit' => 'TT', 'HTML::Template' => 'HTE', 'HTML::Template::Expr' => 'HTE', 'Text::Tmpl' => 'Tmpl');
+my $ROLEMAP = { map { my $type = $_; map { ($_ => $type) } @{ $AUTOROLE->{$type} } } keys %$AUTOROLE };
+my %STANDIN = ('Template' => 'TT', 'Template::Toolkit' => 'TT', 'HTML::Template' => 'HTE', 'HTML::Template::Expr' => 'HTE', 'Text::Tmpl' => 'Tmpl');
 
 our $AUTOLOAD;
 sub AUTOLOAD {
@@ -66,7 +66,7 @@ sub import {
         return $class->import(keys %$AUTOROLE) if lc $item eq 'all';
 
         my $type;
-        if ($type = $OVERRIDE{$item}) {
+        if ($type = $STANDIN{$item}) {
             (my $file = "$item.pm") =~ s|::|/|g;
             if (! $INC{$file} || ! $item->isa(__PACKAGE__)) {
                 if ($INC{$file}) { require Carp; Carp::croak("Class $item is already loaded - can't override") }
