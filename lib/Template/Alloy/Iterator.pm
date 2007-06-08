@@ -63,3 +63,24 @@ sub next {
 }
 
 1;
+
+__END__
+
+=head1 DESCRIPTION
+
+Template::Alloy::Iterator provides compatibility with Template::Iterator
+and filters that require Template::Iterator.
+
+=head1 TODO
+
+Document all of the methods.
+
+=head1 AUTHOR
+
+Paul Seamons <paul at seamons dot com>
+
+=head1 LICENSE
+
+This module may be distributed under the same terms as Perl itself.
+
+=cut
