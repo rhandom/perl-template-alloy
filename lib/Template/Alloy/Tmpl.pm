@@ -9,7 +9,6 @@ Template::Alloy::Tmpl - Text::Tmpl role
 use strict;
 use warnings;
 use Template::Alloy;
-use Template::Alloy::Parse;
 
 our $VERSION = $template::Alloy::VERSION;
 our $error;

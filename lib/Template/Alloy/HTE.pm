@@ -9,7 +9,6 @@ Template::Alloy::HTE - HTML::Template and HTML::Template::Expr roles.
 use strict;
 use warnings;
 use Template::Alloy;
-use Template::Alloy::Parse;
 
 our $VERSION = $Template::Alloy::VERSION;
 our %DOCUMENTS; # global cache used with new(cache => 1) and output
