@@ -92,18 +92,6 @@ Template::Alloy - Fast and lightweight TT2/3 template engine
     my $str = "#set($foo 1 + 3) ($foo) ($bar) ($!baz)";
     my $out = $t->merge(\$str, $swap);
 
-=head1 OTHER DOCUMENTATION
-
-  Template::Alloy::Compile  - Compile-to-perl role
-  Template::Alloy::HTE      - HTML::Template::Expr role
-  Template::Alloy::Operator - Operator role
-  Template::Alloy::Parse    - Parse-to-AST role
-  Template::Alloy::Play     - Play-AST role
-  Template::Alloy::Tmpl     - Text::Tmpl role
-  Template::Alloy::TT       - Template::Toolkit role
-  Template::Alloy::Velocity - Velocity role
-  Template::Alloy::VMethod  - Virtual methods role
-
 =head1 DESCRIPTION
 
 "An alloy is a homogeneous mixture of two or more elements"
@@ -130,9 +118,9 @@ provides a full-featured implementation of the Template::Toolkit language.
 
 After a move to a new company that was using HTML::Template::Expr and
 Text::Tmpl templates, support was investigated and interfaces for
-HTML::Template, HTML::Template::Expr, Text::Tmpl, and Velocity (VTL).
-All of the various engines offer the same features - just using different
-syntaxes and interfaces.
+HTML::Template, HTML::Template::Expr, Text::Tmpl, and Velocity (VTL)
+were added.  All of the various engines offer the same features - just
+using different syntaxes and interfaces.
 
 Template::Toolkit brought the most to the table.  HTML::Template
 brought the LOOP directive.  HTML::Template::Expr brough more vmethods
@@ -183,6 +171,104 @@ non-cached environment, the Playing or the AST is generally faster.
 The AST method is also more secure as cached AST won't ever eval
 "perl" (assuming PERL blocks are disabled).
 
+=head1 ROLES
+
+Template::Alloy has split out its functionality into discrete roles.
+In Template::Toolkit, this functionality is split into separate
+classes.  The roles in Template::Alloy simply add on more methods to
+the main class.  When Perl 6 arrives, these roles will be translated
+into true Roles.
+
+The following is a list of roles used by Template::Alloy.
+
+    Template::Alloy::Compile  - Compile-to-perl role
+    Template::Alloy::HTE      - HTML::Template::Expr role
+    Template::Alloy::Operator - Operator role
+    Template::Alloy::Parse    - Parse-to-AST role
+    Template::Alloy::Play     - Play-AST role
+    Template::Alloy::Tmpl     - Text::Tmpl role
+    Template::Alloy::TT       - Template::Toolkit role
+    Template::Alloy::Velocity - Velocity role
+    Template::Alloy::VMethod  - Virtual methods role
+
+Template::Alloy automatically loads the roles when they are needed or
+requested - but not sooner (with the exception of the Operator role
+and the VMethod role which are always needed and always loaded).  This
+is good for a CGI environment.  In mod_perl you may want to preload a
+role to make the most of shared memory.  You may do this by passing
+either the role name or a method supplied by that role.
+
+    # import roles necessary for running TT
+    use Template::Alloy qw(Parse Play Compile TT);
+
+    # import roles based on methods
+    use Template::Alloy qw(parse_tree play_tree compile_tree process);
+
+Note: importing roles by method names does not import them into
+the current namespace - it is autoloading the role and methods into the
+Template::Alloy namespace.  To help make this more clear you may use
+the following syntax as well.
+
+    # import roles necessary for running TT
+    use Template::Alloy load => qw(Parse Play Compile TT);
+
+    # import roles based on methods
+    use Template::Alloy load => qw(process parse_tree play_tree compile_tree);
+
+    # import roles based on methods
+    use Template::Alloy
+        Parse => 1,
+        Play => 1,
+        Compile => 1,
+        TT => 1;
+
+Even with all roles loaded Template::Alloy is still relatively small.  You
+can load all of the roles by pass "all" to the use statement.
+
+    use Template::Alloy 'all';
+
+    # or
+    use Template::Alloy load => 'all';
+
+    # or
+    use Template::Alloy all => 1;
+
+As a final option, Template::Alloy also includes the ability to stand-in for
+other template modules.  It is able to do this because it supports the
+majority of the interface of the other template systems.  You
+can do this in the following way:
+
+    use Template::Alloy qw('Text::Tmpl', 'HTML::Template');
+
+    # or
+    use Template::Alloy load => qw('Text::Tmpl', 'HTML::Template');
+
+    # or
+    use Template::Alloy
+        'Text::Tmpl'     => 1,
+        'HTML::Template' => 1;
+
+Note that the use statement will die if any of the passed module names
+are already loaded and not subclasses of Template::Alloy.  This will
+avoid thinking that you are using Template::Alloy when you really aren't.
+Using the 'all' option won't automatically do this - you must mention
+the "stood-in" modules by name.
+
+The following modules may be "stood-in" for:
+
+    Template
+    Text::Tmpl
+    HTML::Template
+    HTML::Template::Expr
+
+This feature is intended to make using Template::Alloy with existing
+code easier.  Most cases should work just fine.  Almost all syntax will
+just work (except Alloy may make some things work that were previously
+broken).  However Template::Alloy doesn't support 100% of the interface
+of any of the template systems.  If you are using "features-on-the-edge"
+then you may need to re-write portions of your code that interact with
+the template system.
+
 =head1 TODO
 
 =over 4
@@ -190,15 +276,6 @@ The AST method is also more secure as cached AST won't ever eval
 =item
 
 Add more POD and examples for all of the various syntaxes.
-
-=item
-
-Allow module assimilation - allow for using Template::Alloy
-without rewriting existing code.  Along the lines of:
-
-    use Template::Alloy
-        'HTML::Template' => 'ht',
-        'Template'       => 'tt3';
 
 =item
 
@@ -459,6 +536,25 @@ template.  It is mainly used for testing.
 
 This method allows for returning a Data::Dumper dump of a parsed
 variable.  It is mainly used for testing.
+
+=item C<import>
+
+All of the arguments that can be passed to "use" that are listed
+above in the section dealing with ROLES, can be used with the
+import method.
+
+    # import by role
+    Template::Alloy->import(qw(Compile Play Parse TT));
+
+    # import by method
+    Template::Alloy->import(qw(compile_tree play_tree parse_tree process));
+
+    # import by "stand-in" class
+    Template::Alloy->import('Text::Tmpl', 'HTML::Template::Expr');
+
+As mentioned in the ROLE section - arguments passed to import are
+not imported into current namespace.  Roles and methods are only
+imported into the Template::Alloy namespace.
 
 =back
 
