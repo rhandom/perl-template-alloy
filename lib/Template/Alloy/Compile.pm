@@ -2,7 +2,7 @@ package Template::Alloy::Compile;
 
 =head1 NAME
 
-Template::Alloy::Play - Compile role - allows for compiling the AST to perl code
+Template::Alloy::Compile - Compile role - allows for compiling the AST to perl code
 
 =cut
 
