@@ -1995,7 +1995,7 @@ A hashref of blocks that can be used by the process method.
 
 Note that a Template::Document cannot be supplied as a value (TT
 supports this).  However, it is possible to supply a value that is
-equal to the hashref returned by the load_parsed_tree method.
+equal to the hashref returned by the load_template method.
 
 =item CACHE_SIZE
 
@@ -2437,10 +2437,12 @@ INTERPOLATE will not function properly.
 
 =item STASH
 
-Template::Alloy manages its own stash of variables.  You can pass
-a Template::Stash or Template::Stash::XS object, but Template::Alloy
-will copy all of values out of the object into its own stash.  The
-STASH option is only available when using the process method.
+Template::Alloy manages its own stash of variables.  You can pass a
+Template::Stash or Template::Stash::XS object, but Template::Alloy
+will copy all of values out of the object into its own stash.
+Template::Alloy won't use any of the methods of the passed STASH
+object.  The STASH option is only available when using the process
+method.
 
 =item STAT_TTL
 
