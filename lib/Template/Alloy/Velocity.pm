@@ -57,7 +57,7 @@ sub parse_tree_velocity {
     my $pre_chomp;
     my $node;
     my $macro_block;
-    local pos $$str_ref = 0;
+    local pos($$str_ref) = 0;
 
     while (1) {
         ### allow for #set(foo = PROCESS foo)

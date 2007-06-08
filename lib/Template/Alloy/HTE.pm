@@ -69,7 +69,7 @@ sub parse_tree_hte {
     my $pre_chomp;
     my $node;
     my ($comment, $is_close);
-    local pos $$str_ref = 0;
+    local pos($$str_ref) = 0;
     my $allow_expr = ! defined($self->{'EXPR'}) || $self->{'EXPR'}; # default is on
 
     while (1) {
