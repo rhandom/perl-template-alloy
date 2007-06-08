@@ -125,7 +125,7 @@ sub define_syntax {
 
 sub parse_tree {
     my $syntax = $_[0]->{'SYNTAX'} || 'alloy';
-    my $meth   = $SYNTAX->{$syntax} || $_[0]->throw('parse', "Unknown SYNTAX \"$syntax\"");
+    my $meth   = $SYNTAX->{$syntax} || $_[0]->throw('config', "Unknown SYNTAX \"$syntax\"");
     return $meth->(@_);
 }
 
@@ -463,7 +463,7 @@ sub parse_expr {
                         $var = [[undef, $tree->[0], $var, $tree->[1]], 0];
                     } else {
                         unshift @$tree, $var;
-                        $var = $self->apply_precedence($tree, $found);
+                        $var = $self->apply_precedence($tree, $found, $str_ref);
                     }
                     undef $tree;
                     undef $found;
@@ -489,7 +489,7 @@ sub parse_expr {
                 }
             } else {
                 unshift @$tree, $var;
-                $var = $self->apply_precedence($tree, $found);
+                $var = $self->apply_precedence($tree, $found, $str_ref);
             }
         }
     }
@@ -504,7 +504,7 @@ sub parse_expr {
 
 ### this is used to put the parsed variables into the correct operations tree
 sub apply_precedence {
-    my ($self, $tree, $found) = @_;
+    my ($self, $tree, $found, $str_ref) = @_;
 
     my @var;
     my $trees;
@@ -534,7 +534,7 @@ sub apply_precedence {
             } elsif (@$node == 3) {
                 $node = [[undef, $node->[1], $node->[0], $node->[2]], 0]; # single operator - put it straight on
             } else {
-                $node = $self->apply_precedence($node, $found); # more complicated - recurse
+                $node = $self->apply_precedence($node, $found, $str_ref); # more complicated - recurse
             }
         }
 
@@ -551,8 +551,8 @@ sub apply_precedence {
 
             ### return simple ternary
             if (@exprs == 3) {
-                $self->throw('parse', "Ternary operator mismatch") if $ops[0] ne $op;
-                $self->throw('parse', "Ternary operator mismatch") if ! $ops[1] || $ops[1] eq $op;
+                $self->throw('parse', "Ternary operator mismatch", undef, pos($$str_ref)) if $ops[0] ne $op;
+                $self->throw('parse', "Ternary operator mismatch", undef, pos($$str_ref)) if ! $ops[1] || $ops[1] eq $op;
                 return [[undef, $op, @exprs], 0];
             }
 
@@ -588,7 +588,7 @@ sub apply_precedence {
         }
     }
 
-    $self->throw('parse', "Couldn't apply precedence");
+    $self->throw('parse', "Couldn't apply precedence", undef, pos($$str_ref));
 }
 
 ### look for arguments - both positional and named

@@ -23,7 +23,7 @@ sub parse_tree_tt3 {
     my $self    = shift;
     my $str_ref = shift;
     if (! $str_ref || ! defined $$str_ref) {
-        $self->throw('parse.no_string', "No string or undefined during parse");
+        $self->throw('parse.no_string', "No string or undefined during parse", undef, 1);
     }
 
     my $STYLE = $self->{'TAG_STYLE'} || 'default';

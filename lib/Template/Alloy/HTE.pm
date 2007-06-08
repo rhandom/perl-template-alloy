@@ -38,7 +38,7 @@ sub parse_tree_hte {
     my $self    = shift;
     my $str_ref = shift;
     if (! $str_ref || ! defined $$str_ref) {
-        $self->throw('parse.no_string', "No string or undefined during parse");
+        $self->throw('parse.no_string', "No string or undefined during parse", undef, 1);
     }
 
     local $self->{'V2EQUALS'}   = $self->{'V2EQUALS'} || 0;
@@ -195,10 +195,10 @@ sub parse_tree_hte {
                             if ($key eq 'name') {
                                 $name ||= $val;
                             } else {
-                                $self->throw('parse', uc($key)." not allowed in TMPL_$func tag") if $func ne 'GET';
+                                $self->throw('parse', uc($key)." not allowed in TMPL_$func tag", undef, pos($$str_ref)) if $func ne 'GET';
                                 if    ($key eq 'escape')  { $escape  ||= lc $val }
                                 elsif ($key eq 'default') { $default ||= $val    }
-                                else  { $self->throw('parse', uc($key)." not allowed in TMPL_$func tag") }
+                                else  { $self->throw('parse', uc($key)." not allowed in TMPL_$func tag", undef, pos($$str_ref)) }
                             }
                         } elsif ($$str_ref =~ m{ \G ([\w./+_]+) \s* }gcx) {
                             $name ||= $1;
@@ -214,7 +214,7 @@ sub parse_tree_hte {
                     ### dress up node before finishing
                     $escape = lc $self->{'DEFAULT_ESCAPE'} if ! $escape && $self->{'DEFAULT_ESCAPE'};
                     if ($escape) {
-                        $self->throw('parse', "ESCAPE not allowed in TMPL_$func tag") if $func ne 'GET';
+                        $self->throw('parse', "ESCAPE not allowed in TMPL_$func tag", undef, pos($$str_ref)) if $func ne 'GET';
                         if ($escape eq 'html' || $escape eq '1') {
                             push @{ $node->[3] }, '|', 'html', 0;
                         } elsif ($escape eq 'url') {
