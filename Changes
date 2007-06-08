@@ -1,4 +1,13 @@
 1.001
+      2007-06-08
+        * Fix initial release blues
+        * Add support for overriding other classes
+        * Document roles a little better.
+        * Allow for STASH to be passed - even though we won't use its methods.
+        * Make sure compile_RAWPERL works
+        * Allow methods without entries in the Compile::DIRECTIVES table to defer to Play::DIRECTIVES table.
+
+1.001
       2007-06-07
         * Added strref cache support
         * Added compile_perl support.
