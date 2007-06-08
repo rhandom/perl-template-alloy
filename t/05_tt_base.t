@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-00_base.t - Test the basic language functionality of Template::Alloy - including many edge cases
+05_tt_base.t - Test the basic language functionality of Template::Alloy - including many edge cases
 
 =cut
 
@@ -48,7 +48,7 @@ sub process_ok { # process the value and say if it was ok
         warn "# Was:\n$out\n# Should've been:\n$test\n";
         print $obj->error if $obj->can('error');
         print $obj->dump_parse_tree(\$str) if $obj->can('dump_parse_tree');
-        exit;
+#        exit;
     }
 }
 
