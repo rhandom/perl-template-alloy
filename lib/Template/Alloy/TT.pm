@@ -349,7 +349,7 @@ sub process {
         ### localize the stash
         $swap ||= {};
         my $var1 = $self->{'_vars'} ||= {};
-        my $var2 = $self->{'VARIABLES'} || $self->{'PRE_DEFINE'} || {};
+        my $var2 = $self->{'STASH'} || $self->{'VARIABLES'} || $self->{'PRE_DEFINE'} || {};
         $var1->{'global'} ||= {}; # allow for the "global" namespace - that continues in between processing
         my $copy = {%$var2, %$var1, %$swap};
 
