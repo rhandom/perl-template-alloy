@@ -10,7 +10,6 @@ use strict;
 use warnings;
 
 use Template::Alloy;
-use Template::Alloy::Parse qw($ALIASES $DIRECTIVES $TAGS $QR_DIRECTIVE $QR_COMMENTS);
 use Template::Alloy::Operator qw($QR_OP_ASSIGN);
 
 our $VERSION = $Template::Alloy::VERSION;
@@ -27,12 +26,15 @@ sub parse_tree_tt3 {
     }
 
     my $STYLE = $self->{'TAG_STYLE'} || 'default';
-    local $self->{'_end_tag'}   = $self->{'END_TAG'}   || $TAGS->{$STYLE}->[1];
-    local $self->{'START_TAG'}  = $self->{'START_TAG'} || $TAGS->{$STYLE}->[0];
+    local $self->{'_end_tag'}   = $self->{'END_TAG'}   || $Template::Alloy::Parse::TAGS->{$STYLE}->[1];
+    local $self->{'START_TAG'}  = $self->{'START_TAG'} || $Template::Alloy::Parse::TAGS->{$STYLE}->[0];
     local $self->{'_start_tag'} = (! $self->{'INTERPOLATE'}) ? $self->{'START_TAG'} : qr{(?: $self->{'START_TAG'} | (\$))}sx;
 
+    our $QR_COMMENTS ||= $Template::Alloy::Parse::QR_COMMENTS; # must be our because we localise later on
+    my $dirs    = $Template::Alloy::Parse::DIRECTIVES;
+    my $aliases = $Template::Alloy::Parse::ALIASES;
+    local @{ $dirs }{ keys %$aliases } = values %$aliases; # temporarily add to the table
     local @{ $self }{@Template::Alloy::CONFIG_COMPILETIME} = @{ $self }{@Template::Alloy::CONFIG_COMPILETIME};
-    local @{ $DIRECTIVES }{ keys %$ALIASES } = values %$ALIASES; # temporarily add to the table
 
     my @tree;             # the parsed tree
     my $pointer = \@tree; # pointer to current tree to handle nested blocks
@@ -92,7 +94,7 @@ sub parse_tree_tt3 {
                         || $self->throw('parse', 'Missing close }', undef, pos($$str_ref));
                 } else {
                     local $self->{'_operator_precedence'} = 1; # no operators
-                    local $Template::Alloy::Parse::QR_COMMENTS = qr{};
+                    local $QR_COMMENTS = qr{};
                     $ref = $self->parse_expr($str_ref);
                 }
                 $self->throw('parse', "Error while parsing for interpolated string", undef, pos($$str_ref))
@@ -134,19 +136,19 @@ sub parse_tree_tt3 {
         }
 
         ### look for DIRECTIVES
-        if ($$str_ref =~ m{ \G \s* $QR_COMMENTS $QR_DIRECTIVE }gcxo   # find a word
+        if ($$str_ref =~ m{ \G \s* $QR_COMMENTS $Template::Alloy::Parse::QR_DIRECTIVE }gcxo   # find a word
             && ($func = $self->{'ANYCASE'} ? uc($1) : $1)
-            && ($DIRECTIVES->{$func}
+            && ($dirs->{$func}
                 || ((pos($$str_ref) -= length $1) && 0))
             ) {                       # is it a directive
             $$str_ref =~ m{ \G \s* $QR_COMMENTS }gcx;
 
-            $func = $ALIASES->{$func} if $ALIASES->{$func};
+            $func = $aliases->{$func} if $aliases->{$func};
             $node->[0] = $func;
 
             ### store out this current node level to the appropriate tree location
             # on a post operator - replace the original node with the new one - store the old in the new
-            if ($DIRECTIVES->{$func}->[3] && $post_op) {
+            if ($dirs->{$func}->[3] && $post_op) {
                 my @post_op = @$post_op;
                 @$post_op = @$node;
                 $node = $post_op;
@@ -166,7 +168,7 @@ sub parse_tree_tt3 {
             }
 
             ### parse any remaining tag details
-            $node->[3] = eval { $DIRECTIVES->{$func}->[0]->($self, $str_ref, $node) };
+            $node->[3] = eval { $dirs->{$func}->[0]->($self, $str_ref, $node) };
             if (my $err = $@) {
                 $err->node($node) if UNIVERSAL::can($err, 'node') && ! $err->node;
                 die $err;
@@ -174,7 +176,7 @@ sub parse_tree_tt3 {
             $node->[2] = pos $$str_ref;
 
             ### anything that behaves as a block ending
-            if ($func eq 'END' || $DIRECTIVES->{$func}->[4]) { # [4] means it is a continuation block (ELSE, CATCH, etc)
+            if ($func eq 'END' || $dirs->{$func}->[4]) { # [4] means it is a continuation block (ELSE, CATCH, etc)
                 if (! @state) {
                     $self->throw('parse', "Found an $func tag while not in a block", $node, pos($$str_ref));
                 }
@@ -184,7 +186,7 @@ sub parse_tree_tt3 {
                     pop @$pointer; # we will store the node in the parent instead
                     $parent_node->[5] = $node;
                     my $parent_type = $parent_node->[0];
-                    if (! $DIRECTIVES->{$func}->[4]->{$parent_type}) {
+                    if (! $dirs->{$func}->[4]->{$parent_type}) {
                         $self->throw('parse', "Found unmatched nested block", $node, pos($$str_ref));
                     }
                 }
@@ -206,7 +208,7 @@ sub parse_tree_tt3 {
                     } elsif ($parent_node->[0] eq 'VIEW') {
                         my $ref = { map {($_->[3] => $_->[4])} @{ pop @in_view }};
                         unshift @{ $parent_node->[3] }, $ref;
-                    } elsif ($DIRECTIVES->{$parent_node->[0]}->[5]) { # allow no_interp to turn on and off
+                    } elsif ($dirs->{$parent_node->[0]}->[5]) { # allow no_interp to turn on and off
                         $self->{'_no_interp'}--;
                     }
 
@@ -217,11 +219,11 @@ sub parse_tree_tt3 {
                 }
 
             ### handle block directives
-            } elsif ($DIRECTIVES->{$func}->[2] && ! $post_op) {
+            } elsif ($dirs->{$func}->[2] && ! $post_op) {
                     push @state, $node;
                     $pointer = $node->[4] ||= []; # allow future parsed nodes before END tag to end up in current node
                     push @in_view, [] if $func eq 'VIEW';
-                    $self->{'_no_interp'}++ if $DIRECTIVES->{$node->[0]}->[5] # allow no_interp to turn on and off
+                    $self->{'_no_interp'}++ if $dirs->{$node->[0]}->[5] # allow no_interp to turn on and off
 
             } elsif ($func eq 'TAGS') {
                 ($self->{'_start_tag'}, $self->{'_end_tag'}, my $old_end) = (@{ $node->[3] }[0,1], $self->{'_end_tag'});
@@ -248,7 +250,7 @@ sub parse_tree_tt3 {
             push @$pointer, $node;
             if ($$str_ref =~ m{ \G \s* $QR_COMMENTS ($QR_OP_ASSIGN) >? (?! [+=~-]? $self->{'_end_tag'}) \s* $QR_COMMENTS }gcx) {
                 $node->[0] = 'SET';
-                $node->[3] = eval { $DIRECTIVES->{'SET'}->[0]->($self, $str_ref, $node, $1, $var) };
+                $node->[3] = eval { $dirs->{'SET'}->[0]->($self, $str_ref, $node, $1, $var) };
                 if (my $err = $@) {
                     $err->node($node) if UNIVERSAL::can($err, 'node') && ! $err->node;
                     die $err;
@@ -989,7 +991,7 @@ perl blocks, and plugins.
 
 There is no provider.
 
-Alloy uses the load_parsed_tree method to get and cache templates.
+Alloy uses the load_template method to get and cache templates.
 
 =item
 
@@ -1025,30 +1027,31 @@ Parse errors actually know what line and character they occured at.
 
 =item LOAD_TEMPLATES
 
-Template::Alloy has its own mechanism for loading and storing
-compiled templates.  TT would use a Template::Provider that would
-return a Template::Document.  The closest thing in Template::Alloy
-is the load_parsed_template method.  There is no immediate plan to
-support the TT behavior.
+Template::Alloy has its own mechanism for loading and storing compiled
+templates.  TT would use a Template::Provider that would return a
+Template::Document.  The closest thing in Template::Alloy is the
+load_template method.  There is no immediate plan to support the TT
+behavior.
 
 =item LOAD_PLUGINS
 
-Template::Alloy uses its own mechanism for loading plugins.  TT
-would use a Template::Plugins object to load plugins requested via the
-USE directive.  The functionality for doing this in Template::Alloy
-is contained in the list_plugins method and the play_USE method.  There
+Template::Alloy uses its own mechanism for loading plugins.  TT would
+use a Template::Plugins object to load plugins requested via the USE
+directive.  The functionality for doing this in Template::Alloy is
+contained in the list_plugins method and the play_USE method.  There
 is no immediate plan to support the TT behavior.
 
-Full support is offered for the PLUGINS and LOAD_PERL configuration items.
+Full support is offered for the PLUGINS and LOAD_PERL configuration
+items.
 
-Also note that Template::Alloy only natively supports the Iterator plugin.
-Any of the other plugins requested will need to provided by installing
-Template::Toolkit or the appropriate plugin module.
+Also note that Template::Alloy only natively supports the Iterator
+plugin.  Any of the other plugins requested will need to provided by
+installing Template::Toolkit or the appropriate plugin module.
 
 =item LOAD_FILTERS
 
-Template::Alloy uses its own mechanism for loading filters.  TT
-would use the Template::Filters object to load filters requested via the
+Template::Alloy uses its own mechanism for loading filters.  TT would
+use the Template::Filters object to load filters requested via the
 FILTER directive.  The functionality for doing this in Template::Alloy
 is contained in the list_filters method and the play_expr method.
 
@@ -1061,8 +1064,8 @@ is not applicable in Template::Alloy.
 
 =item SERVICE
 
-Template::Alloy has no concept of service (theoretically the Template::Alloy
-is the "service").
+Template::Alloy has no concept of service (theoretically the
+Template::Alloy is the "service").
 
 =item CONTEXT
 
@@ -1078,23 +1081,23 @@ filters, and perl blocks.
 
 =item PARSER
 
-Template::Alloy has its own built in parser.  The closest similarity is
-the parse_tree method.  The output of parse_tree is an optree that is
-later run by execute_tree.  Alloy provides a backend to the Template::Parser::Alloy
-module which can be used to replace the default parser when using
-the standard Template::Toolkit library.
+Template::Alloy has its own built in parser.  The closest similarity
+is the parse_tree method.  The output of parse_tree is an optree that
+is later run by execute_tree.  Alloy provides a backend to the
+Template::Parser::Alloy module which can be used to replace the
+default parser when using the standard Template::Toolkit library.
 
 =item GRAMMAR
 
 Template::Alloy maintains its own grammar.  The grammar is defined
 in the parse_tree method and the callbacks listed in the global
-$DIRECTIVES hashref.
+$Template::Alloy::Parse::DIRECTIVES hashref.
 
 =back
 
 =head1 AUTHOR
 
-Paul Seamons <paul at seamons dot com>
+Paul Seamons <perl at seamons dot com>
 
 =head1 LICENSE
 
