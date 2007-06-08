@@ -24,9 +24,9 @@ samples/benchmark/bench_template_tag_parser.pl
 samples/benchmark/bench_various_templaters.pl
 samples/dprof_template.d
 samples/memory_template.pl
-t/00_base.t
-t/01_includes.t
-t/02_view.t
-t/03_html_template.t
-t/04_text_tmpl.t
-t/05_velocity.t
+t/05_tt_base.t
+t/10_tt_includes.t
+t/15_tt_view.t
+t/20_html_template.t
+t/25_text_tmp.t
+t/30_velocity.t
