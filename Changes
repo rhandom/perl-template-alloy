@@ -1,4 +1,9 @@
-1.001
+1.002
+      2007-06-12
+        * Documentation fixes
+        * Allow for some easier subclassing
+
+1.002
       2007-06-08
         * Fix initial release blues
         * Add support for overriding other classes
