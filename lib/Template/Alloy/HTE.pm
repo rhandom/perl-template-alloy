@@ -211,7 +211,7 @@ sub parse_tree_hte {
                     }
 
                     $self->throw('parse', 'Error while looking for NAME', undef, pos($$str_ref)) if ! defined($name) || ! length($name);
-                    $node->[3] = $func eq 'INCLUDE' ? $name : [($self->{'CASE_SENSITIVE'} ? $name : lc $name), 0]; # set the variable
+                    $node->[3] = $func eq 'INCLUDE' ? $name : [$name, 0]; # set the variable
                     $node->[3] = [[undef, '||', $node->[3], $default], 0] if $default;
 
                     ### dress up node before finishing
