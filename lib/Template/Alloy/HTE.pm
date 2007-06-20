@@ -166,7 +166,7 @@ sub parse_tree_hte {
         ### parse remaining tag details
         if (! $is_close) {
             ### handle HT style nodes
-            if ($func =~ /^(IF|ELSIF|UNLESS|LOOP|VAR|INCLUDE)$/) {
+            if ($func =~ /^(IF|ELSIF|ELSE|UNLESS|LOOP|VAR|INCLUDE)$/) {
                 $func = $node->[0] = 'GET' if $func eq 'VAR';
 
                 ### handle EXPR attribute
