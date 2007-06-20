@@ -1,3 +1,7 @@
+1.004
+      2007-06-20
+        * Fix braindead bug in COMPILE_DIR
+
 1.003
       2007-06-20
         * Fix several issues with the HTE role

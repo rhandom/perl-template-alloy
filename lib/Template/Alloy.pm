@@ -14,7 +14,7 @@ use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $FILTER_OPS $LIST_OP
 
 use vars qw($VERSION);
 BEGIN {
-    $VERSION            = '1.003';
+    $VERSION            = '1.004';
 };
 our $QR_PRIVATE         = qr/^[_.]/;
 our $WHILE_MAX          = 1000;
@@ -331,7 +331,7 @@ sub load_tree {
         $doc->{'modtime'} ||= (stat $doc->{'_filename'})[9];
         if ($self->{'COMPILE_DIR'} || $self->{'COMPILE_EXT'}) {
             my $file = $doc->{'_filename'};
-            $file = $doc->{'COMPILE_DIR'} .'/'. $file if $doc->{'COMPILE_DIR'};
+            $file = $self->{'COMPILE_DIR'} .'/'. $file if $self->{'COMPILE_DIR'};
             $file .= $self->{'COMPILE_EXT'} if defined($self->{'COMPILE_EXT'});
             $file .= $EXTRA_COMPILE_EXT     if defined $EXTRA_COMPILE_EXT;
 
@@ -380,7 +380,7 @@ sub load_perl {
         $doc->{'modtime'} ||= (stat $doc->{'_filename'})[9];
         if ($self->{'COMPILE_DIR'} || $self->{'COMPILE_EXT'}) {
             my $file = $doc->{'_filename'};
-            $file = $doc->{'COMPILE_DIR'} .'/'. $file if $doc->{'COMPILE_DIR'};
+            $file = $self->{'COMPILE_DIR'} .'/'. $file if $self->{'COMPILE_DIR'};
             $file .= $self->{'COMPILE_EXT'} if defined($self->{'COMPILE_EXT'});
             $file .= $PERL_COMPILE_EXT      if defined $PERL_COMPILE_EXT;
 
