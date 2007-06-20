@@ -1,3 +1,8 @@
+1.003
+      2007-06-20
+        * Fix several issues with the HTE role
+        * Add a few more tests
+
 1.002
       2007-06-12
         * Documentation fixes
