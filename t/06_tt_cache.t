@@ -7,7 +7,7 @@
 =cut
 
 use strict;
-use constant n_tests => 30;
+use constant n_tests => 184;
 use Test::More tests => n_tests;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
@@ -367,6 +367,32 @@ ok(! $Template::Alloy::GLOBAL_CACHE->{$file}->{'_perl'}, "Doesn't Have perl");
 
 pristine();
 
+process_ok($name => 'BlueBAR', {blue => 'Blue', tt_config => [GLOBAL_CACHE => 1, CACHE_STR_REFS => 0]});
+
+test_cache([$test_dir,  $file, 0],
+           [$test_dir2, $file, 0],
+           [$test_dir,  "$file$Template::Alloy::EXTRA_COMPILE_EXT", 0],
+           [$test_dir,  "$file$Template::Alloy::PERL_COMPILE_EXT",  0],
+           );
+ok(! $Template::Alloy::GLOBAL_CACHE->{$file}, "Not in GLOBAL_CACHE");
+
+###----------------------------------------------------------------###
+
+pristine();
+
+process_ok($name => 'BlueBAR', {blue => 'Blue', tt_config => [GLOBAL_CACHE => 1, CACHE_STR_REFS => 0, FORCE_STR_REF_PERL => 1]});
+
+test_cache([$test_dir,  $file, 0],
+           [$test_dir2, $file, 0],
+           [$test_dir,  "$file$Template::Alloy::EXTRA_COMPILE_EXT", 0],
+           [$test_dir,  "$file$Template::Alloy::PERL_COMPILE_EXT",  0],
+           );
+ok(! $Template::Alloy::GLOBAL_CACHE->{$file}, "Not in GLOBAL_CACHE");
+
+###----------------------------------------------------------------###
+
+pristine();
+
 process_ok($name => 'BlueBAR', {blue => 'Blue', tt_config => [GLOBAL_CACHE => 1, COMPILE_PERL => 1]});
 
 test_cache([$test_dir,  $file, 0],
@@ -446,7 +472,7 @@ process_ok($name => 'BlueBAR', {blue => 'Blue', tt_config => [COMPILE_EXT => '.t
 test_cache([$test_dir,  $file, 0],
            [$test_dir2, $file, 0],
            [$test_dir,  "$file.ttc$Template::Alloy::EXTRA_COMPILE_EXT", 1],
-           [$test_dir,  "$file.ttc$Template::Alloy::PERL_COMPILE_EXT", 1],
+           [$test_dir,  "$file.ttc$Template::Alloy::PERL_COMPILE_EXT",  1],
            );
 
 ###----------------------------------------------------------------###
