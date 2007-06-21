@@ -7,7 +7,7 @@
 =cut
 
 use strict;
-use constant n_tests => 190;
+use constant n_tests => 192;
 use Test::More tests => n_tests;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
@@ -157,6 +157,14 @@ test_cache([$test_dir,  $name, 1],
            [$test_dir2, "$test_dir/$name$Template::Alloy::PERL_COMPILE_EXT",  0],
            );
 ok($Template::Alloy::GLOBAL_CACHE->{$name}, "Is in GLOBAL_CACHE");
+
+###----------------------------------------------------------------###
+
+pristine();
+
+my $cache = {};
+process_ok($name => 'BlueBAR', {blue => 'Blue', tt_config => [GLOBAL_CACHE => $cache]});
+ok($cache->{$name}, "Is in CACHE");
 
 ###----------------------------------------------------------------###
 
