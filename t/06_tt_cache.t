@@ -7,13 +7,13 @@
 =cut
 
 use strict;
-use constant n_tests => 184;
+use constant n_tests => 190;
 use Test::More tests => n_tests;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 if (! eval { require File::Path }) {
-    SKIP {
-        skip("File::Path not installed, skipping tests");
+    SKIP: {
+        skip("File::Path not installed, skipping tests", n_tests);
     };
     exit;
 }
@@ -27,13 +27,13 @@ my $name = "bar.tt";
 
 ### find a place to allow for testing
 my $test_dir = $0 .'.test_dir';
-END { flush_dir($test_dir); rmdir($test_dir)  || die "Couldn't rmdir $test_dir: $!" }
+END { if($test_dir){ flush_dir($test_dir); rmdir($test_dir)  || die "Couldn't rmdir $test_dir: $!"} }
 mkdir $test_dir, 0755;
 ok(-d $test_dir, "Got a test dir up and running");
 
 ### find a place to allow for testing
 my $test_dir2 = $0 .'.test_dir2';
-END { flush_dir($test_dir2); rmdir $test_dir2  || die "Couldn't rmdir $test_dir2: $!" }
+END { if($test_dir2){flush_dir($test_dir2); rmdir $test_dir2  || die "Couldn't rmdir $test_dir2: $!"} }
 mkdir $test_dir2, 0755;
 ok(-d $test_dir2, "Got a test dir up and running");
 
@@ -52,7 +52,7 @@ sub process_ok { # process the value and say if it was ok
 
     Taint::Runtime::taint(\$str) if test_taint;
 
-    $obj->process($str, $vars, \$out);
+    $obj->process_simple($str, $vars, \$out);
     my $ok = ref($test) ? $out =~ $test : $out eq $test;
     if ($ok) {
         ok(1, "Line $line   \"".(ref($str) ? $$str : $str)."\" => \"$out\"");
@@ -380,7 +380,20 @@ ok(! $Template::Alloy::GLOBAL_CACHE->{$file}, "Not in GLOBAL_CACHE");
 
 pristine();
 
-process_ok($name => 'BlueBAR', {blue => 'Blue', tt_config => [GLOBAL_CACHE => 1, CACHE_STR_REFS => 0, FORCE_STR_REF_PERL => 1]});
+process_ok($name => 'BlueBAR', {blue => 'Blue', tt_config => [GLOBAL_CACHE => 1, CACHE_STR_REFS => 0, COMPILE_PERL => 1]});
+
+test_cache([$test_dir,  $file, 0],
+           [$test_dir2, $file, 0],
+           [$test_dir,  "$file$Template::Alloy::EXTRA_COMPILE_EXT", 0],
+           [$test_dir,  "$file$Template::Alloy::PERL_COMPILE_EXT",  0],
+           );
+ok(! $Template::Alloy::GLOBAL_CACHE->{$file}, "Not in GLOBAL_CACHE");
+
+###----------------------------------------------------------------###
+
+pristine();
+
+process_ok($name => 'BlueBAR', {blue => 'Blue', tt_config => [GLOBAL_CACHE => 1, CACHE_STR_REFS => 0, COMPILE_PERL => 1, FORCE_STR_REF_PERL => 1]});
 
 test_cache([$test_dir,  $file, 0],
            [$test_dir2, $file, 0],
