@@ -785,7 +785,7 @@ sub include_paths {
     my $self = shift;
     return $self->{'INCLUDE_PATHS'} ||= do {
         # TT does this everytime a file is looked up - we are going to do it just in time - the first time
-        my $paths = $self->{'INCLUDE_PATH'} || ['./'];
+        my $paths = $self->{'INCLUDE_PATH'} || ['.'];
         $paths = $paths->()                 if UNIVERSAL::isa($paths, 'CODE');
         $paths = $self->split_paths($paths) if ! UNIVERSAL::isa($paths, 'ARRAY');
         $paths; # return of the do

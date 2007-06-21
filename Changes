@@ -1,6 +1,9 @@
 1.004
       2007-06-20
         * Fix braindead bug in COMPILE_DIR
+        * Fix many caching bugs particularly with string refs
+        * Add GLOBAL_CACHE support
+        * Add 02_cache.t
 
 1.003
       2007-06-20
