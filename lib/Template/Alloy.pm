@@ -28,6 +28,7 @@ our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
 our $EVAL_CONFIG        = {map {$_ => 1} @CONFIG_COMPILETIME, @CONFIG_RUNTIME};
 our $EXTRA_COMPILE_EXT  = '.sto';
 our $PERL_COMPILE_EXT   = '.pl';
+our $GLOBAL_CACHE       = {};
 
 ###----------------------------------------------------------------###
 
@@ -195,6 +196,9 @@ sub _process {
 sub load_template {
     my ($self, $file) = @_;
 
+    my $docs = $self->{'GLOBAL_CACHE'} || ($self->{'_documents'} ||= {});
+    $docs = $GLOBAL_CACHE if ! ref $docs;
+
     my $doc;
     if (! defined $file) {
         return;
@@ -204,21 +208,24 @@ sub load_template {
         return $file if ref $file eq 'HASH';
 
         if (! defined($self->{'CACHE_STR_REFS'}) || $self->{'CACHE_STR_REFS'}) {
-            require Digest::MD5;
-            my $sum   = Digest::MD5::md5_hex($$file);
-            my $_file = 'Alloy_str_ref_cache/'.substr($sum,0,3).'/'.$sum;
-            return $self->{'_documents'}->{$_file} if $self->{'_documents'}->{$_file}; # no-ttl necessary
+            my $_file = $self->string_id($file);
+            if ($docs->{$_file}) { # no-ttl necessary
+                $doc = $docs->{$_file};
+                $doc->{'_perl'} = $self->load_perl($doc) if ! $doc->{'_perl'} && $self->{'COMPILE_PERL'}; # second hit
+                return $doc;
+            }
             $doc->{'_filename'} = $_file;
         } else {
             $doc->{'_no_perl'} = $self->{'FORCE_STR_REF_PERL'} ? 0 : 1;
         }
+        $doc->{'_is_str_ref'} = 1;
         $doc->{'_content'}    = $file;
         $doc->{'name'}        = 'input text';
         $doc->{'modtime'}     = time;
 
     ### looks like a previously cached document
-    } elsif ($self->{'_documents'}->{$file}) {
-        $doc = $self->{'_documents'}->{$file};
+    } elsif ($docs->{$file}) {
+        $doc = $docs->{$file};
         if (time - $doc->{'cache_time'} < ($self->{'STAT_TTL'} || $STAT_TTL) # don't stat more than once a second
             || $doc->{'modtime'} == (stat $doc->{'_filename'})[9]) {         # otherwise see if the file was modified
             $doc->{'_perl'} = $self->load_perl($doc) if ! $doc->{'_perl'} && $self->{'COMPILE_PERL'}; # second hit
@@ -303,24 +310,30 @@ sub load_template {
     if (! defined($self->{'CACHE_SIZE'}) || $self->{'CACHE_SIZE'}) {
         $doc->{'cache_time'} = time;
         if (ref $file) {
-            $self->{'_documents'}->{$doc->{'_filename'}} = $doc if $doc->{'_filename'};
+            $docs->{$doc->{'_filename'}} = $doc if $doc->{'_filename'};
         } else {
-            $self->{'_documents'}->{$file} ||= $doc;
+            $docs->{$file} ||= $doc;
         }
 
         ### allow for config option to keep the cache size down
         if ($self->{'CACHE_SIZE'}) {
-            my $all = $self->{'_documents'};
-            if (scalar(keys %$all) > $self->{'CACHE_SIZE'}) {
+            if (scalar(keys %$docs) > $self->{'CACHE_SIZE'}) {
                 my $n = 0;
-                foreach my $file (sort {$all->{$b}->{'cache_time'} <=> $all->{$a}->{'cache_time'}} keys %$all) {
-                    delete($all->{$file}) if ++$n > $self->{'CACHE_SIZE'};
+                foreach my $file (sort {$docs->{$b}->{'cache_time'} <=> $docs->{$a}->{'cache_time'}} keys %$docs) {
+                    delete($docs->{$file}) if ++$n > $self->{'CACHE_SIZE'};
                 }
             }
         }
     }
 
     return $doc;
+}
+
+sub string_id {
+    my ($self, $ref) = @_;
+    require Digest::MD5;
+    my $sum   = Digest::MD5::md5_hex($$ref);
+    return 'Alloy_str_ref_cache/'.substr($sum,0,3).'/'.$sum;
 }
 
 sub load_tree {
@@ -331,7 +344,11 @@ sub load_tree {
         $doc->{'modtime'} ||= (stat $doc->{'_filename'})[9];
         if ($self->{'COMPILE_DIR'} || $self->{'COMPILE_EXT'}) {
             my $file = $doc->{'_filename'};
-            $file = $self->{'COMPILE_DIR'} .'/'. $file if $self->{'COMPILE_DIR'};
+            if ($self->{'COMPILE_DIR'}) {
+                $file = $self->{'COMPILE_DIR'} .'/'. $file;
+            } elsif ($doc->{'_is_str_ref'}) {
+                $file = ($self->include_paths->[0] || '.') .'/'. $file;
+            }
             $file .= $self->{'COMPILE_EXT'} if defined($self->{'COMPILE_EXT'});
             $file .= $EXTRA_COMPILE_EXT     if defined $EXTRA_COMPILE_EXT;
 
@@ -380,7 +397,11 @@ sub load_perl {
         $doc->{'modtime'} ||= (stat $doc->{'_filename'})[9];
         if ($self->{'COMPILE_DIR'} || $self->{'COMPILE_EXT'}) {
             my $file = $doc->{'_filename'};
-            $file = $self->{'COMPILE_DIR'} .'/'. $file if $self->{'COMPILE_DIR'};
+            if ($self->{'COMPILE_DIR'}) {
+                $file = $self->{'COMPILE_DIR'} .'/'. $file;
+            } elsif ($doc->{'_is_str_ref'}) {
+                $file = ($self->include_paths->[0] || '.') .'/'. $file;
+            }
             $file .= $self->{'COMPILE_EXT'} if defined($self->{'COMPILE_EXT'});
             $file .= $PERL_COMPILE_EXT      if defined $PERL_COMPILE_EXT;
 
@@ -753,18 +774,22 @@ sub include_filename {
         return $file if -e $file;
     }
 
-    my $paths = $self->{'INCLUDE_PATHS'} ||= do {
-        # TT does this everytime a file is looked up - we are going to do it just in time - the first time
-        my $paths = $self->{'INCLUDE_PATH'} || [];
-        $paths = $paths->()                 if UNIVERSAL::isa($paths, 'CODE');
-        $paths = $self->split_paths($paths) if ! UNIVERSAL::isa($paths, 'ARRAY');
-        $paths; # return of the do
-    };
-    foreach my $path (@$paths) {
+    foreach my $path (@{ $self->include_paths }) {
         return "$path/$file" if -e "$path/$file";
     }
 
     $self->throw('file', "$file: not found");
+}
+
+sub include_paths {
+    my $self = shift;
+    return $self->{'INCLUDE_PATHS'} ||= do {
+        # TT does this everytime a file is looked up - we are going to do it just in time - the first time
+        my $paths = $self->{'INCLUDE_PATH'} || ['./'];
+        $paths = $paths->()                 if UNIVERSAL::isa($paths, 'CODE');
+        $paths = $self->split_paths($paths) if ! UNIVERSAL::isa($paths, 'ARRAY');
+        $paths; # return of the do
+    };
 }
 
 sub split_paths {
