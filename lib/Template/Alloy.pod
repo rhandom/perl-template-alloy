@@ -2238,11 +2238,21 @@ dynamic filters are passed the pseudo context object and any arguments
 and should return a coderef that will be called as the filter.  The filter
 coderef is then passed the string.
 
+=item GLOBAL_CACHE
+
+Default 0.  If true, documents will be cached in $Template::Alloy::GLOBAL_CACHE.
+It may also be passed a hashref, in which case the documents will be
+cached in the passed hashref.
+
+The TT, Tmpl, and velocity will automatically cache documents in the object.  The
+HTML::Template interface uses a new object each time.  Setting the HTML::Template's
+CACHE configuration is the same as setting GLOBAL_CACHE.
+
 =item INCLUDE_PATH
 
 A string or an arrayref or coderef that returns an arrayref that
 contains directories to look for files included by processed
-templates.
+templates.  Defaults to "." (the current directory).
 
 =item INCLUDE_PATHS
 
