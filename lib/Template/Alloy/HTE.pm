@@ -11,7 +11,6 @@ use warnings;
 use Template::Alloy;
 
 our $VERSION = $Template::Alloy::VERSION;
-our %DOCUMENTS; # global cache used with new(cache => 1) and output
 
 sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
@@ -417,13 +416,13 @@ sub output {
     $cache_size = undef if $self->{'DOUBLE_FILE_CACHE'};
 
     local $self->{'SYNTAX'}       = $self->{'SYNTAX'} || 'hte';
+    local $self->{'GLOBAL_CACHE'} = $self->{'CACHE'};
     local $self->{'CACHE_SIZE'}   = $cache_size;
     local $self->{'STAT_TTL'}     = $stat_ttl;
     local $self->{'COMPILE_DIR'}  = $compile_dir;
     local $self->{'ABSOLUTE'}     = 1;
     local $self->{'RELATIVE'}     = 1;
-    local $self->{'INCLUDE_PATH'} = $self->{'PATH'} || './';
-    local $self->{'_documents'}   = $self->{'_documents'} || \%DOCUMENTS;
+    local $self->{'INCLUDE_PATH'} = $self->{'PATH'};
     local $self->{'LOWER_CASE_VAR_FALLBACK'} = ! $self->{'CASE_SENSITIVE'}; # un-smart HTML::Template default
     local $Template::Alloy::QR_PRIVATE = undef;
 
