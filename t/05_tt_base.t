@@ -16,7 +16,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => ! $is_tt ? 1879 : 633;
+use Test::More tests => ! $is_tt ? 1883 : 635;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -766,6 +766,9 @@ process_ok("[% BLOCK foo %]hi [% one %] there[% END %][% PROCESS foo one = 'two'
 process_ok("[% BLOCK foo %]hi [% one.two %] there[% END %][% PROCESS foo one.two = 'two' %]" => 'hi two there');
 process_ok("[% BLOCK foo %]hi [% one.two %] there[% END %][% PROCESS foo + foo one.two = 'two' %]" => 'hi two there'x2);
 process_ok("[% BLOCK foo %][% BLOCK bar %]hi [% one %] there[% END %][% END %][% PROCESS foo/bar one => 'two' %]" => 'hi two there');
+
+process_ok("[% BLOCK b %]Ta-Da[% END %][% self = {a => 'b'} %][% PROCESS \$self.a self = 'blah' %]" => 'Ta-Da');
+process_ok("[% BLOCK b %]Ta-Da[% END %][% self = {a => 'b'} %][% INCLUDE \$self.a self = 'blah' %]" => 'Ta-Da');
 
 process_ok("[% BLOCK foo %]hi [% one %] there[% END %][% PROCESS foo one = 'two' %][% one %]" => 'hi two theretwo');
 process_ok("[% BLOCK foo %]hi [% one %] there[% END %][% INCLUDE foo one = 'two' %][% one %]" => 'hi two there');
