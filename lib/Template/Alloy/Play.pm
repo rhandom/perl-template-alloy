@@ -523,6 +523,11 @@ sub play_PROCESS {
 
     my ($args, @files) = @$info;
 
+    ### process files first
+    foreach my $ref (@files) {
+        $ref = $self->play_expr($ref) if defined $ref;
+    }
+
     ### set passed args
     # [[undef, '{}', 'key1', 'val1', 'key2', 'val2'], 0]
     $args = $args->[0];
@@ -539,9 +544,8 @@ sub play_PROCESS {
     }
 
     ### iterate on any passed block or filename
-    foreach my $ref (@files) {
-        next if ! defined $ref;
-        my $filename = $self->play_expr($ref);
+    foreach my $filename (@files) {
+        next if ! defined $filename;
         my $out = ''; # have temp item to allow clear to correctly clear
 
         ### normal blocks or filenames
