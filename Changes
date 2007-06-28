@@ -1,3 +1,7 @@
+1.005
+      2007-06-28
+        * Update evaluation order of files and arguments to PROCESS and INCLUDE
+
 1.004
       2007-06-20
         * Fix braindead bug in COMPILE_DIR
