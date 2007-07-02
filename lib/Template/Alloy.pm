@@ -57,7 +57,7 @@ sub AUTOLOAD {
 
 sub can {
     my ($self, $meth) = @_;
-    __PACKAGE__->import($_) if $_ = $ROLEMAP->{$meth};
+    __PACKAGE__->import($ROLEMAP->{$meth}) if $ROLEMAP->{$meth};
     return $self->SUPER::can($meth);
 }
 
