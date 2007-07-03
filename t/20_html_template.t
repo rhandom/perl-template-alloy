@@ -20,7 +20,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => ($is_ta) ? 214 : ($is_ht) ? 65 : 73;
+use Test::More tests => ($is_ta) ? 218 : ($is_ht) ? 65 : 74;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -140,6 +140,8 @@ process_ok("<TMPL_IF name='foo'>bar<TMPL_ELSE>bing</TMPL_IF>" => "bar",  {foo =>
 process_ok("<TMPL_IF name=\"foo\">bar<TMPL_ELSE>bing</TMPL_IF>" => "bar",  {foo => '1'});
 process_ok("<TMPL_IF expr=\"73\">bar<TMPL_ELSE>bing</TMPL_IF>" => "bar")     if ! $is_ht;
 process_ok("<TMPL_IF expr=\"1 - 1\">bar<TMPL_ELSE>bing</TMPL_IF>" => "bing") if ! $is_ht;
+process_ok("<TMPL_IF expr=\"73\" >bar<TMPL_ELSE>bing</TMPL_IF>" => "bar")    if ! $is_ht;
+process_ok("<TMPL_IF expr=1 + 2>bar<TMPL_ELSE>bing</TMPL_IF>" => "bar")      if $is_ta;
 process_ok("<TMPL_IF 0>bar</TMPL_IF>baz" => "baz");
 process_ok("<TMPL_UNLESS foo>bar</TMPL_UNLESS>" => "bar", {foo => ""});
 process_ok("<TMPL_UNLESS foo>bar</TMPL_UNLESS>" => "", {foo => "1"});
