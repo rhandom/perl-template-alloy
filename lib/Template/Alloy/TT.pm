@@ -314,6 +314,11 @@ sub process {
     my ($self, $in, $swap, $out, @ARGS) = @_;
     delete $self->{'error'};
 
+    if ($self->{'DEBUG'}) { # "enable" some types of tt style debugging
+        $self->{'_debug_dirs'}  = 1 if $self->{'DEBUG'} =~ /^\d+$/ ? $self->{'DEBUG'} & 8 : $self->{'DEBUG'} =~ /dirs|all/;
+        $self->{'_debug_undef'} = 1 if $self->{'DEBUG'} =~ /^\d+$/ ? $self->{'DEBUG'} & 2 : $self->{'DEBUG'} =~ /undef|all/;
+    }
+
     my $args;
     $args = ($#ARGS == 0 && UNIVERSAL::isa($ARGS[0], 'HASH')) ? {%{$ARGS[0]}} : {@ARGS} if scalar @ARGS;
 

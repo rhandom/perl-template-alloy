@@ -103,14 +103,7 @@ sub new {
       @{ $args }{ map { uc $_ } @keys } = delete @{ $args }{ @keys };
   }
 
-  my $self = bless $args, $class;
-
-  if ($self->{'DEBUG'}) { # "enable" some types of tt style debugging
-      $self->{'_debug_dirs'}  = 1 if $self->{'DEBUG'} =~ /^\d+$/ ? $self->{'DEBUG'} & 8 : $self->{'DEBUG'} =~ /dirs|all/;
-      $self->{'_debug_undef'} = 1 if $self->{'DEBUG'} =~ /^\d+$/ ? $self->{'DEBUG'} & 2 : $self->{'DEBUG'} =~ /undef|all/;
-  }
-
-  return $self;
+  return bless $args, $class;
 }
 
 ###----------------------------------------------------------------###
