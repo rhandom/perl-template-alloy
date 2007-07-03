@@ -178,9 +178,12 @@ sub parse_tree_hte {
                     }
                     my $quote = $1;
                     local $self->{'_end_tag'} = $quote ? qr{$quote\s*$self->{'_end_tag'}} : $self->{'_end_tag'};
-                    $node->[3] = $self->parse_expr($str_ref);
-                    $self->throw('parse', 'Error while looking for EXPR', undef, pos($$str_ref))
-                        if ! defined($node->[3]);
+                    $node->[3] = eval { $self->parse_expr($str_ref) };
+                    if (! defined($node->[3])) {
+                        my $err = $@ || $self->exception('parse', 'Error while looking for EXPR', undef, pos($$str_ref));
+                        $err->info($err->info . " (Could be a missing close quote near expr=$quote)") if $quote && UNIVERSAL::can($err, 'info');
+                        $self->throw($err);
+                    }
                     if ($quote) {
                         $$str_ref =~ m{ \G $quote }gcx
                             || $self->throw('parse', "Missing close quote ($quote)", undef, pos($$str_ref));
