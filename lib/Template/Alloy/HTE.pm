@@ -158,6 +158,7 @@ sub parse_tree_hte {
             }
 
             push @$pointer, $node;
+            $self->{'_end_tag'} = $comment ? qr{([+=~-]?)-->} : qr{([+=~-]?)>}; # how will this tag end
         }
 
         $$str_ref =~ m{ \G \s+ }gcx;
@@ -176,16 +177,17 @@ sub parse_tree_hte {
                         $self->throw('parse', 'EXPR are not allowed without hte mode', undef, pos($$str_ref));
                     }
                     my $quote = $1;
-                    $self->{'_end_tag'} = $comment ? qr{$quote\s*([+=~-]?)-->} : qr{$quote\s*([+=~-]?)>};
+                    local $self->{'_end_tag'} = $quote ? qr{$quote\s*$self->{'_end_tag'}} : $self->{'_end_tag'};
                     $node->[3] = $self->parse_expr($str_ref);
                     $self->throw('parse', 'Error while looking for EXPR', undef, pos($$str_ref))
                         if ! defined($node->[3]);
+                    if ($quote) {
+                        $$str_ref =~ m{ \G $quote }gcx
+                            || $self->throw('parse', "Missing close quote ($quote)", undef, pos($$str_ref));
+                    }
 
                 ### handle "normal" NAME attributes
                 } else {
-
-                    ### store what we'll find at the end of the tag
-                    $self->{'_end_tag'} = $comment ? qr{([+=~-]?)-->} : qr{([+=~-]?)>};
 
                     my ($name, $escape, $default);
                     while (1) {
@@ -240,7 +242,6 @@ sub parse_tree_hte {
             ### handle TT Directive extensions
             } else {
                 $self->throw('parse', "Found a TT tag $func with NO_TT enabled", undef, pos($$str_ref)) if $self->{'NO_TT'};
-                $self->{'_end_tag'} = $comment ? qr{\s*([+=~-]?)-->} : qr{\s*([+=~-]?)>};
                 $node->[3] = eval { $dirs->{$func}->[0]->($self, $str_ref, $node) };
                 if (my $err = $@) {
                     $err->node($node) if UNIVERSAL::can($err, 'node') && ! $err->node;
@@ -313,7 +314,7 @@ sub parse_tree_hte {
 
 
         ### look for the closing tag
-        if ($$str_ref =~ m{ \G $self->{'_end_tag'} }gcxs) {
+        if ($$str_ref =~ m{ \G \s* $self->{'_end_tag'} }gcxs) {
             $post_chomp = $1 || $self->{'POST_CHOMP'};
             $post_chomp =~ y/-=~+/1230/ if $post_chomp;
             $continue = 0;
