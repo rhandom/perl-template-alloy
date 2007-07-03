@@ -141,7 +141,7 @@ process_ok("<TMPL_IF name=\"foo\">bar<TMPL_ELSE>bing</TMPL_IF>" => "bar",  {foo 
 process_ok("<TMPL_IF expr=\"73\">bar<TMPL_ELSE>bing</TMPL_IF>" => "bar")     if ! $is_ht;
 process_ok("<TMPL_IF expr=\"1 - 1\">bar<TMPL_ELSE>bing</TMPL_IF>" => "bing") if ! $is_ht;
 process_ok("<TMPL_IF expr=\"73\" >bar<TMPL_ELSE>bing</TMPL_IF>" => "bar")    if ! $is_ht;
-process_ok("<TMPL_IF expr=\"73" => "")                                       if ! $is_ht;
+process_ok("<TMPL_IF expr=\"73>bar</TMPL_IF>" => "")                         if ! $is_ht;
 process_ok("<TMPL_IF expr=1 + 2>bar<TMPL_ELSE>bing</TMPL_IF>" => "bar")      if $is_ta;
 process_ok("<TMPL_IF 0>bar</TMPL_IF>baz" => "baz");
 process_ok("<TMPL_UNLESS foo>bar</TMPL_UNLESS>" => "bar", {foo => ""});
