@@ -1,3 +1,7 @@
+1.006
+      2007-07-03
+        * Fix parsing errors in HTE syntax with <TMPL_IF expr="1 + 1">foo</TMPL_IF>
+
 1.005
       2007-06-28
         * Update evaluation order of files and arguments to PROCESS and INCLUDE

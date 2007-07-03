@@ -2958,6 +2958,8 @@ Thanks to the Apache Velocity guys.
 
 Thanks to Ben Grimm for a patch to allow passing a parsed document to the ->process method.
 
+Thanks to David Warring for finding a parse error in HTE syntax.
+
 =head1 AUTHOR
 
 Paul Seamons <paul at seamons dot com>
