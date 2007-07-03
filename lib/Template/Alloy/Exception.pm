@@ -19,27 +19,11 @@ sub new {
     return bless [$type, $info, $node, $pos, $doc], $class;
 }
 
-sub type { shift->[0] }
-
-sub info { shift->[1] }
-
-sub node {
-    my $self = shift;
-    $self->[2] = shift if @_;
-    $self->[2];
-}
-
-sub offset {
-    my $self = shift;
-    $self->[3] = shift if @_;
-    $self->[3];
-}
-
-sub doc {
-    my $self = shift;
-    $self->[4] = shift if @_;
-    $self->[4];
-}
+sub type   { $_[0]->[0] }
+sub info   { $_[0]->[1] = $_[1] if @_ >= 2; $_[0]->[1] }
+sub node   { $_[0]->[2] = $_[1] if @_ >= 2; $_[0]->[2] }
+sub offset { $_[0]->[3] = $_[1] if @_ >= 2; $_[0]->[3] }
+sub doc    { $_[0]->[4] = $_[1] if @_ >= 2; $_[0]->[4] }
 
 sub as_string {
     my $self = shift;
