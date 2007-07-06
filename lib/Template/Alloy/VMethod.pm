@@ -311,14 +311,14 @@ sub vmethod_substr {
 
 sub vmethod_uri {
     my $str = shift;
-    utf8::encode($str) if defined &utf8::encode;
+    utf8::upgrade($str) if defined &utf8::upgrade;
     $str =~ s/([^A-Za-z0-9\-_.!~*\'()])/sprintf('%%%02X', ord($1))/eg;
     return $str;
 }
 
 sub vmethod_url {
     my $str = shift;
-    utf8::encode($str) if defined &utf8::encode;
+    utf8::upgrade($str) if defined &utf8::upgrade;
     $str =~ s/([^;\/?:@&=+\$,A-Za-z0-9\-_.!~*\'()])/sprintf('%%%02X', ord($1))/eg;
     return $str;
 }
