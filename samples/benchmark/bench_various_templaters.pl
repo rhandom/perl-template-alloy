@@ -255,30 +255,30 @@ my $tests = {
     },
 
     TA_H_str => sub {
-        my $t = Template::Alloy->new(    type => 'scalarref', source => \$content_ht, CASE_SENSITVE=>1, cache => 1);
+        my $t = Template::Alloy->new(    type => 'scalarref', source => \$content_ht, case_sensitve=>1, cache => 1);
         $t->{'_documents'} = \%Alloy_DOCUMENTS;
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     TA_H_X_str => sub {
-        my $t = Template::Alloy::XS->new(type => 'scalarref', source => \$content_ht, CASE_SENSITVE=>1, cache => 1);
+        my $t = Template::Alloy::XS->new(type => 'scalarref', source => \$content_ht, case_sensitve=>1, cache => 1);
         $t->{'_documents'} = \%AlloyX_DOCUMENTS;
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     TA_H_XP_str => sub {
-        my $t = Template::Alloy::XS->new(type => 'scalarref', source => \$content_ht, CASE_SENSITVE=>1, COMPILE_PERL => 1, cache => 1);
+        my $t = Template::Alloy::XS->new(type => 'scalarref', source => \$content_ht, case_sensitve=>1, COMPILE_PERL => 1, cache => 1);
         $t->{'_documents'} = \%AlloyXP_DOCUMENTS;
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HT_str => sub {
-        my $t = HTML::Template->new(       type => 'scalarref', source => \$content_ht, CASE_SENSITVE=>1);
+        my $t = HTML::Template->new(       type => 'scalarref', source => \$content_ht, case_sensitve=>1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HTE_str => sub {
-        my $t = HTML::Template::Expr->new( type => 'scalarref', source => \$content_ht, CASE_SENSITVE=>1);
+        my $t = HTML::Template::Expr->new( type => 'scalarref', source => \$content_ht, case_sensitve=>1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HTC_str => sub {
-        my $t = HTML::Template::Compiled->new(type => 'scalarref', source => \$content_ht, CASE_SENSITVE=>1, cache => 1);
+        my $t = HTML::Template::Compiled->new(type => 'scalarref', source => \$content_ht, case_sensitve=>1, cache => 1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     TMPL_str => sub {
@@ -324,25 +324,25 @@ my $tests = {
     },
 
     TA_H_file => sub {
-        my $t = Template::Alloy->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, file_cache_dir => $dir2, CASE_SENSITVE=>1);
+        my $t = Template::Alloy->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, file_cache_dir => $dir2, case_sensitve=>1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     TA_H_X_file => sub {
         my $t = Template::Alloy::XS->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, file_cache_dir => $dir2,
-                                            CASE_SENSITVE=>1);
+                                            case_sensitve=>1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     TA_H_XP_file => sub {
         my $t = Template::Alloy::XS->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, file_cache_dir => $dir2,
-                                         CASE_SENSITVE=>1, compile_perl => 1);
+                                         case_sensitve=>1, compile_perl => 1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HT_file => sub {
-        my $t = HTML::Template->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, file_cache_dir => $dir2, CASE_SENSITVE=>1);
+        my $t = HTML::Template->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, file_cache_dir => $dir2, case_sensitve=>1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HTC_file => sub {
-        my $t = HTML::Template::Compiled->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, file_cache_dir => $dir2, CASE_SENSITVE=>1, cache => 0);
+        my $t = HTML::Template::Compiled->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, cache_dir => $dir2, case_sensitve=>1, cache => 0); # intentionally named cache_dir instead of file_cache_dir (thanks to Tina Müller for the patch)
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
 #        $t->clear_cache; # caches in memory by default - can't disable it
 #        return $out;
@@ -384,34 +384,34 @@ my $tests = {
     TA_P_mem  => sub { my $out = ""; $tap->process( 'foo.tt', $form, \$out); $out },
 
     TA_H_mem => sub {
-        my $t = Template::Alloy->new(    filename => "foo.ht", path => \@dirs, cache => 1, CASE_SENSITVE=>1);
+        my $t = Template::Alloy->new(    filename => "foo.ht", path => \@dirs, cache => 1, case_sensitve=>1);
         $t->{'_documents'} = \%Alloy_DOCUMENTS;
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     TA_H_X_mem => sub {
-        my $t = Template::Alloy::XS->new(filename => "foo.ht", path => \@dirs, cache => 1, CASE_SENSITVE=>1);
+        my $t = Template::Alloy::XS->new(filename => "foo.ht", path => \@dirs, cache => 1, case_sensitve=>1);
         $t->{'_documents'} = \%AlloyX_DOCUMENTS;
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     TA_H_XP_mem => sub {
-        my $t = Template::Alloy::XS->new(filename => "foo.ht", path => \@dirs, cache => 1, CASE_SENSITVE=>1, compile_perl => 1, cache => 1);
+        my $t = Template::Alloy::XS->new(filename => "foo.ht", path => \@dirs, cache => 1, case_sensitve=>1, compile_perl => 1, cache => 1);
         $t->{'_documents'} = \%AlloyXP_DOCUMENTS;
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HT_mem => sub {
-        my $t = HTML::Template->new(       filename => "foo.ht", path => \@dirs, cache => 1, CASE_SENSITVE=>1);
+        my $t = HTML::Template->new(       filename => "foo.ht", path => \@dirs, cache => 1, case_sensitve=>1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HTC_mem => sub {
-        my $t = HTML::Template::Compiled->new(       filename => "foo.ht", path => \@dirs, cache => 1, CASE_SENSITVE=>1);
+        my $t = HTML::Template::Compiled->new(       filename => "foo.ht", path => \@dirs, cache => 1, case_sensitve=>1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HTE_mem => sub {
-        my $t = HTML::Template::Expr->new( filename => "foo.ht", path => \@dirs, cache => 1, CASE_SENSITVE=>1);
+        my $t = HTML::Template::Expr->new( filename => "foo.ht", path => \@dirs, cache => 1, case_sensitve=>1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HTJ_mem => sub { # this is interesting - it is compiled - but it is pulled into memory just once
-        my $t = HTML::Template::JIT->new(  filename => "foo.ht", path => \@dirs, jit_path => $dir2, CASE_SENSITVE=>1);
+        my $t = HTML::Template::JIT->new(  filename => "foo.ht", path => \@dirs, jit_path => $dir2, case_sensitve=>1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
 };

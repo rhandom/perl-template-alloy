@@ -1,3 +1,7 @@
+1.007
+      2007-07-
+        * Patch to bench_various_templaters.pl to fix HTC_file test (Tina Müller via RT)
+
 1.006
       2007-07-03
         * Fix parsing errors in HTE syntax with <TMPL_IF expr="1 + 1">foo</TMPL_IF>
