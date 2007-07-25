@@ -113,6 +113,7 @@ sub process_simple {
     my $in   = shift || die "Missing input";
     my $swap = shift || die "Missing variable hash";
     my $out  = shift || die "Missing output string ref";
+    delete $self->{'error'};
 
     eval {
         delete $self->{'_debug_off'};
@@ -188,16 +189,14 @@ sub _process {
 
 sub load_template {
     my ($self, $file) = @_;
+    $self->throw('undef', 'Undefined file passed to load_template') if ! defined $file;
 
     my $docs = $self->{'GLOBAL_CACHE'} || ($self->{'_documents'} ||= {});
     $docs = $GLOBAL_CACHE if ! ref $docs;
 
-    my $doc;
-    if (! defined $file) {
-        return;
-
     ### looks like a scalar ref
-    } elsif (ref $file) {
+    my $doc;
+    if (ref $file) {
         return $file if ref $file eq 'HASH';
 
         if (! defined($self->{'CACHE_STR_REFS'}) || $self->{'CACHE_STR_REFS'}) {
