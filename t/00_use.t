@@ -79,3 +79,11 @@ ok(eval "use Template::Alloy 'Template'; 1", "It can be imported twice");
 
 ###----------------------------------------------------------------###
 
+ok(! eval { Template::Alloy->flabbergast } && $@, "Got an error on invalid methods ($@)");
+my $meth = '';
+ok(! eval { Template::Alloy->$meth() } && $@, "Got an error on invalid methods ($@)");
+$meth = 'foo&bar';
+ok(! eval { Template::Alloy->$meth() } && $@, "Got an error on invalid methods ($@)");
+
+###----------------------------------------------------------------###
+
