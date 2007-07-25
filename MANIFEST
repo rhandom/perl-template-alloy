@@ -26,6 +26,7 @@ samples/benchmark/bench_various_templaters.pl
 samples/dprof_template.d
 samples/memory_template.pl
 t/00_use.t
+t/01_coverage.t
 t/02_cache.t
 t/05_tt_base.t
 t/10_tt_includes.t
