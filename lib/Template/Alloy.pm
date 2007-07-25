@@ -141,14 +141,7 @@ sub _process {
     ### parse and execute
     my $doc;
     eval {
-        ### handed us a precompiled document
-        if (ref($file) eq 'HASH') {
-            $doc = $file;
-
-        ### load the document
-        } else {
-            $doc = $self->load_template($file) || $self->throw('undef', "Zero length content");;
-        }
+        $doc = (ref($file) eq 'HASH') ? $file : $self->load_template($file);
 
         ### prevent recursion
         $self->throw('file', "recursion into '$doc->{name}'")
