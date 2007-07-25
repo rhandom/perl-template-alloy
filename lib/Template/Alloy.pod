@@ -2823,8 +2823,7 @@ Provided by the Play role.
 Given a filename or a string reference will return a "document" hashref
 hash that contains the parsed tree.
 
-  my $doc = $self->load_template($file)
-      || $self->throw('undef', "Zero length content");
+    my $doc = $self->load_template($file); # errors die
 
 This method handles the in-memory caching of the document.
 
