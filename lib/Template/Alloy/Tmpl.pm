@@ -22,8 +22,6 @@ sub parse_tree_tmpl {
 
     local @{ $Template::Alloy::Parse::ALIASES }{qw(ECHO INCLUDE IFN    ENDCOMMENT ENDIF ENDIFN ENDLOOP)}
                                                 = qw(GET  PROCESS UNLESS END        END   END    END);
-    local $self->{'ABSOLUTE'}   = defined($self->{'ABSOLUTE'}) ? $self->{'ABSOLUTE'} : 1;
-    local $self->{'RELATIVE'}   = defined($self->{'RELATIVE'}) ? $self->{'RELATIVE'} : 1;
     local $self->{'V1DOLLAR'}   = defined($self->{'V1DOLLAR'}) ? $self->{'V1DOLLAR'} : 1;
     local $self->{'ANYCASE'}    = defined($self->{'ANYCASE'})  ? $self->{'ANYCASE'}  : 1;
     local $self->{'TAG_STYLE'}  = $self->{'TAG_STYLE'} || 'html';
@@ -62,6 +60,8 @@ sub parse_file {
 
     local $self->{'SYNTAX'} = $self->{'SYNTAX'} || 'tmpl';
     local $Template::Alloy::QR_PRIVATE = undef;
+    local $self->{'ABSOLUTE'} = defined($self->{'ABSOLUTE'}) ? $self->{'ABSOLUTE'} : 1;
+    local $self->{'RELATIVE'} = defined($self->{'RELATIVE'}) ? $self->{'RELATIVE'} : 1;
 
     $error = undef;
 
