@@ -9,7 +9,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 23;
+use Test::More tests => 31;
 
 ###----------------------------------------------------------------###
 
@@ -61,3 +61,23 @@ ok(! eval { $o->_process({name => 'foo'}, undef, \$out) }, "Ran _process ($@)");
 $out = '';
 ok(eval { $o->_process({name => 'foo', _tree=>['wow']}, undef, \$out) }, "Ran _process");
 
+###----------------------------------------------------------------###
+
+ok(! eval { $o->load_template } && $@, "Can't load_template without a file");
+ok($o->load_template({foo => 'bar'})->{'foo'} eq 'bar', "load_template assumes we know what we are doing if we pass a hash");
+
+$o->{'BLOCKS'} = {
+    foo  => 'One + Two = [% 1 + 2 %]',
+    code => sub {'[% 2 * 2 * 2 %]'},
+    ok   => $o->load_template(\ '[% 3 * 5 %]'),
+    ok2  => do { local $o->{'COMPILE_PERL'} = 1; $o->load_template(\ '[% 3 * 5 %]') },
+    nok  => {},
+    nok2 => '[% 3',
+    bad  => [],
+};
+ok($o->load_template('foo')->{'name'} eq 'foo', "Can load a string block");
+ok($o->load_template('code')->{'name'} eq 'code', "Can load a code block");
+ok($o->load_template('ok')->{'name'} eq 'ok', "Can load a previously loaded template");
+ok(! eval { $o->load_template('nok') }  && $@, "Can't load a poorly formed block");
+ok(! eval { $o->load_template('nok2') } && $@, "Can't load a string block with parse errors");
+ok(! eval { $o->load_template('bad') }  && $@, "Can't load a ref block");
