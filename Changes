@@ -1,6 +1,9 @@
 1.007
       2007-07-
         * Patch to bench_various_templaters.pl to fix HTC_file test (Tina Müller via RT)
+        * Update coverage tests
+        * Allow relative to get set better when calling parse_file in Tmpl.pm
+        * Fix DUMP directive to show keys when QR_PRIVATE is set to false.
 
 1.006
       2007-07-03
