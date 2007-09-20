@@ -183,7 +183,8 @@ sub play_DUMP {
         my $meth;
         foreach my $prop (keys %$conf) { $obj->$prop($conf->{$prop}) if $prop =~ /^\w+$/ && ($meth = $obj->can($prop)) }
         my $sort = defined($conf->{'Sortkeys'}) ? $obj->Sortkeys : 1;
-        $obj->Sortkeys(sub { my $h = shift; [grep {$_ !~ $Template::Alloy::QR_PRIVATE} ($sort ? sort keys %$h : keys %$h)] });
+        $obj->Sortkeys(sub { my $h = shift; [grep {! $Template::Alloy::QR_PRIVATE
+                                                       || $_ !~ $Template::Alloy::QR_PRIVATE} ($sort ? sort keys %$h : keys %$h)] });
         $handler = sub { $obj->Values([@_]); $obj->Dump }
     }
 
