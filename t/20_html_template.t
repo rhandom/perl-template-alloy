@@ -18,9 +18,8 @@ BEGIN {
     $is_ht  = $module eq 'HTML::Template';
     $is_ta = $module eq 'Template::Alloy';
 };
-
 use strict;
-use Test::More tests => ($is_ta) ? 220 : ($is_ht) ? 65 : 75;
+use Test::More tests => ($is_ta) ? 220 : ($is_ht) ? 65 : 72;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -179,13 +178,13 @@ print "### EXPR ############################################ $is_compile_perl\n"
 process_ok("<TMPL_VAR EXPR=\"sprintf('%d', foo)\">" => "777", {foo => "777"}) if ! $is_ht;
 process_ok("<TMPL_VAR EXPR=\"sprintf('%d', foo)\">" => "777", {foo => "777"}) if ! $is_ht;
 process_ok("<TMPL_VAR EXPR='sprintf(\"%d\", foo)'>" => "777", {foo => "777"}) if ! $is_ht && ! $is_hte; # odd that HTE can't parse this
-process_ok("<TMPL_VAR EXPR=\"sprintf(\"%d\", foo)\">" => "777", {foo => "777"}) if ! $is_ht;
+process_ok("<TMPL_VAR EXPR=\"sprintf(\"%d\", foo)\">" => "777", {foo => "777"}) if ! $is_ht && ! $is_hte;
 process_ok("<TMPL_VAR EXPR=sprintf(\"%d\", foo)>" => "777", {foo => "777"}) if ! $is_ht && ! $is_hte;
 process_ok("<TMPL_VAR EXPR=\"sprintf('%s', foo)\">" => "<>", {foo => "<>"}) if ! $is_ht;
-process_ok("<TMPL_VAR ESCAPE=HTML EXPR=\"sprintf('%s', foo)\">" => "", {foo => "<>"});
+process_ok("<TMPL_VAR ESCAPE=HTML EXPR=\"sprintf('%s', foo)\">" => "", {foo => "<>"}) if ! $is_hte;
 process_ok("<TMPL_VAR DEFAULT=bar EXPR=foo>" => "", {foo => "FOO", bar => "BAR"});
 
-process_ok("<!--TMPL_VAR EXPR=\"foo\"-->" => "FOO", {foo => "FOO"}) if ! $is_ht;;
+process_ok("<!--TMPL_VAR EXPR=\"foo\"-->" => "FOO", {foo => "FOO"}) if ! $is_ht && ! $is_hte;
 
 ###----------------------------------------------------------------###
 print "### LOOP ############################################ $is_compile_perl\n";
