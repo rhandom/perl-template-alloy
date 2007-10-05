@@ -342,7 +342,7 @@ my $tests = {
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
     HTC_file => sub {
-        my $t = HTML::Template::Compiled->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, cache_dir => $dir2, case_sensitve=>1, cache => 0); # intentionally named cache_dir instead of file_cache_dir (thanks to Tina Müller for the patch)
+        my $t = HTML::Template::Compiled->new(type => 'filename', source => "foo.ht", file_cache => 1, path => \@dirs, file_cache_dir => $dir2, case_sensitve=>1, cache => 0);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
 #        $t->clear_cache; # caches in memory by default - can't disable it
 #        return $out;
