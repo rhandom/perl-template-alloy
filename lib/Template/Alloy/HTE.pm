@@ -209,6 +209,8 @@ sub parse_tree_hte {
                             }
                         } elsif ($$str_ref =~ m{ \G ([\w./+_]+) \s* }gcx) {
                             $name ||= $1;
+                        } elsif ($$str_ref =~ m{ \G ([\"\']) (.*?) (?<!\\) \1 \s* }gcx) {
+                            $name ||= $2;
                         } else {
                             last;
                         }
