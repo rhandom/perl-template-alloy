@@ -8,6 +8,7 @@ package Template::Alloy;
 
 use strict;
 use warnings;
+use 5.006;
 use Template::Alloy::Exception;
 use Template::Alloy::Operator qw(play_operator define_operator);
 use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
