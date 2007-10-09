@@ -779,10 +779,10 @@ sub include_paths {
 
 sub split_paths {
     my ($self, $path) = @_;
-    return $path if ref $path;
+    return $path if UNIVERSAL::isa($path, 'ARRAY');
     my $delim = $self->{'DELIMITER'} || ':';
     $delim = ($delim eq ':' && $^O eq 'MSWin32') ? qr|:(?!/)| : qr|\Q$delim\E|;
-    return [split $delim, $path];
+    return [split $delim, "$path"]; # allow objects to stringify as necessary
 }
 
 sub slurp {
