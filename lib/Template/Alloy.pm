@@ -23,7 +23,7 @@ our $MAX_EVAL_RECURSE   = 50;
 our $MAX_MACRO_RECURSE  = 50;
 our $STAT_TTL           = 1;
 our $QR_INDEX           = '(?:\d*\.\d+ | \d+)';
-our @CONFIG_COMPILETIME = qw(SYNTAX CACHE_STR_REFS ANYCASE INTERPOLATE PRE_CHOMP POST_CHOMP
+our @CONFIG_COMPILETIME = qw(SYNTAX CACHE_STR_REFS ANYCASE INTERPOLATE PRE_CHOMP POST_CHOMP ENCODING
                              SEMICOLONS V1DOLLAR V2PIPE V2EQUALS AUTO_EVAL SHOW_UNDEFINED_INTERP);
 our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
 our $EVAL_CONFIG        = {map {$_ => 1} @CONFIG_COMPILETIME, @CONFIG_RUNTIME};
@@ -790,6 +790,16 @@ sub slurp {
     my ($self, $file) = @_;
     open(my $fh, '<', $file) || $self->throw('file', "$file couldn't be opened: $!");
     read $fh, my $txt, -s $file;
+
+    if ($self->{'ENCODING'}) { # thanks to Carl Franks for this addition
+        eval { require Encode };
+        if ($@) {
+            warn "Encode module not found, 'ENCODING' config only available on perl >= 5.7.3\n$@";
+        } else {
+            $txt = Encode::decode($self->{'ENCODING'}, $txt);
+        }
+    }
+
     return \$txt;
 }
 
