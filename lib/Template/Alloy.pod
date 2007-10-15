@@ -1020,6 +1020,7 @@ The following compile time configuration options may be set:
     ANYCASE
     AUTO_EVAL
     CACHE_STR_REFS
+    ENCODING
     INTERPOLATE
     POST_CHOMP
     PRE_CHOMP
@@ -2163,6 +2164,16 @@ and encased in "pre" tags.  If set to 0 no html encoding takes place.
 Any of the Data::Dumper configuration items may be passed.
 
 =back
+
+=item ENCODING
+
+Default undef.  If set, and if Perl version is greater than or equal to
+5.7.3 (when Encode.pm was first included), then Encode::decode will
+be called everytime a template file is processed and will be passed
+the value of ENCODING and text from the template.
+
+This item can also be set using [% CONFIG ENCODING => encoding %] before
+calling INCLUDE or PROCESS directives to change encodings on the fly.
 
 =item END_TAG
 
