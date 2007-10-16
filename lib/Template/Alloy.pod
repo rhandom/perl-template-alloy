@@ -1302,6 +1302,9 @@ be used on all templates.
     [% INCLUDE "path/to/template.html",
                "path/to/template2.html" a = "An arg" b = "Another arg" %]
 
+On Perl 5.6 on some platforms there may be some issues with the variable
+localization.  There is no problem on 5.8 and greater.
+
 =item C<INSERT>
 
 Insert the contents of a file without template parsing.
