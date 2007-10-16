@@ -915,14 +915,12 @@ sub get_line_number_by_index {
 sub ast_string {
     my ($self, $var) = @_;
 
-    if (! ref $var) {
-        return 'undef' if ! defined $var;
-        return $var if $var =~ /^(-?[1-9]\d{0,13}|0)$/;
-        $var =~ s/([\'\\])/\\$1/g;
-        return "'$var'";
-    }
+    return 'undef' if ! defined $var;
+    return '['.join(', ', map { $self->ast_string($_) } @$var).']' if ref $var;
+    return $var if $var =~ /^(-?[1-9]\d{0,13}|0)$/;
 
-    return '['.join(', ', map { $self->ast_string($_) } @$var).']';
+    $var =~ s/([\'\\])/\\$1/g;
+    return $self->{'_encode'} ? $self->{'_encode'}->($var) : "'$var'"; # _encode may be set in Alloy/Compile.pm
 }
 
 1;
