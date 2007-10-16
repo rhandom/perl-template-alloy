@@ -580,7 +580,7 @@ process_ok('[% a = Hash.new("one", "ONE") %][% a.one %]' => 'ONE') if ! $is_tt;
 process_ok('[% a = Hash.new(one = "ONE") %][% a.one %]' => 'ONE') if ! $is_tt;
 process_ok('[% a = Hash.new(one => "ONE") %][% a.one %]' => 'ONE') if ! $is_tt;
 
-process_ok('[% {a => 1, b => 2} | Hash.keys | List.join(", ") %]' => 'a, b') if ! $is_tt;
+process_ok('[% {a => 1, b => 2} | Hash.keys | List.sort | List.join(", ") %]' => 'a, b') if ! $is_tt;
 
 ###----------------------------------------------------------------###
 print "### chomping ######################################## $is_compile_perl\n";
