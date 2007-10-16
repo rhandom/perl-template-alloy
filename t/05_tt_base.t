@@ -6,17 +6,19 @@
 
 =cut
 
-use vars qw($module $is_tt $compile_perl);
+use 5.006;
+use vars qw($module $is_tt $compile_perl $five_six);
 BEGIN {
     $module = 'Template::Alloy';
     if (grep {/tt/i} @ARGV) {
         $module = 'Template';
     }
     $is_tt = $module eq 'Template';
+    $five_six = ($^V < 5.007) ? 1 : 0;
 };
 
 use strict;
-use Test::More tests => ! $is_tt ? 1887 : 636;
+use Test::More tests => (! $is_tt ? 1887 : 636) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -768,10 +770,10 @@ process_ok("[% BLOCK foo %]hi [% one.two %] there[% END %][% PROCESS foo + foo o
 process_ok("[% BLOCK foo %][% BLOCK bar %]hi [% one %] there[% END %][% END %][% PROCESS foo/bar one => 'two' %]" => 'hi two there');
 
 process_ok("[% BLOCK b %]Ta-Da[% END %][% self = {a => 'b'} %][% PROCESS \$self.a self = 'blah' %]" => 'Ta-Da');
-process_ok("[% BLOCK b %]Ta-Da[% END %][% self = {a => 'b'} %][% INCLUDE \$self.a self = 'blah' %]" => 'Ta-Da');
+process_ok("[% BLOCK b %]Ta-Da[% END %][% self = {a => 'b'} %][% INCLUDE \$self.a self = 'blah' %]" => 'Ta-Da') if ! $five_six;
 
 process_ok("[% BLOCK foo %]hi [% one %] there[% END %][% PROCESS foo one = 'two' %][% one %]" => 'hi two theretwo');
-process_ok("[% BLOCK foo %]hi [% one %] there[% END %][% INCLUDE foo one = 'two' %][% one %]" => 'hi two there');
+process_ok("[% BLOCK foo %]hi [% one %] there[% END %][% INCLUDE foo one = 'two' %][% one %]" => 'hi two there') if ! $five_six;
 
 process_ok("[% BLOCK foo %]FOO[% IF ! a ; a = 1; PROCESS bar; END %][% END %][% BLOCK bar %]BAR[% PROCESS foo %][% END %][% PROCESS foo %]" => "") if ! $is_tt;
 process_ok("[% BLOCK foo %]FOO[% IF ! a ; a = 1; PROCESS bar; END %][% END %][% BLOCK bar %]BAR[% PROCESS foo %][% END %][% PROCESS foo %]" => "FOOBARFOO", {tt_config => [RECURSION => 1]});
