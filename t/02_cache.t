@@ -6,14 +6,24 @@
 
 =cut
 
+use 5.006;
+use vars qw($n_tests $has_encode);
+BEGIN {
+    if (eval { require Encode; require utf8 }) {
+        $has_encode = 1;
+    }
+
+    $n_tests = 192;
+    $n_tests += 12 if $has_encode;
+};
+
 use strict;
-use constant n_tests => 192;
-use Test::More tests => n_tests;
+use Test::More tests => $n_tests;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 if (! eval { require File::Path }) {
     SKIP: {
-        skip("File::Path not installed, skipping tests", n_tests);
+        skip("File::Path not installed, skipping tests", $n_tests);
     };
     exit;
 }
@@ -67,6 +77,13 @@ sub process_ok { # process the value and say if it was ok
 }
 
 sub pristine {
+    my $contents = shift || "[% blue %]BAR";
+    my $encoding = shift;
+    
+    if ($encoding) {
+        $contents = Encode::encode( $encoding, $contents );
+    }
+    
     $Template::Alloy::GLOBAL_CACHE = {};
     flush_dir($test_dir);
     flush_dir($test_dir2);
@@ -74,7 +91,7 @@ sub pristine {
     if (! ref $name) {
         my $fh;
         open($fh, ">$test_dir/$name") || die "Couldn't open $name in $test_dir: $!";
-        print $fh "[% blue %]BAR";
+        print $fh $contents;
         close $fh;
     }
 }
@@ -226,6 +243,28 @@ ok($Template::Alloy::GLOBAL_CACHE->{$name}, "Is in GLOBAL_CACHE");
 ok(! $Template::Alloy::GLOBAL_CACHE->{$name}->{'_perl'}, "Doesn't Have perl");
 
 ###----------------------------------------------------------------###
+
+if ($has_encode) {
+    my $encoding = 'UTF-8';
+    my $template = "[% blue %]BAR ¥";
+
+    pristine($template, $encoding);
+
+    my $in  = 'fü';
+    my $out = 'füBAR ¥';
+
+    process_ok($name => $out, {blue => $in, tt_config => [ENCODING => $encoding, COMPILE_EXT => '.ttc']});
+
+    test_cache([$test_dir,  $name, 1],
+               [$test_dir2, $name, 0],
+               [$test_dir,  "$name.ttc$Template::Alloy::EXTRA_COMPILE_EXT", 1],
+               [$test_dir,  "$name.ttc$Template::Alloy::PERL_COMPILE_EXT",  0],
+               );
+
+    process_ok($name => $out, {blue => $in, tt_config => [ENCODING => $encoding, COMPILE_EXT => '.ttc']});
+}
+
+###----------------------------------------------------------------###
 print "### COMPILE_PERL => 1 ################################################\n";
 
 pristine();
@@ -314,6 +353,28 @@ test_cache([$test_dir,  $name, 1],
            );
 ok($Template::Alloy::GLOBAL_CACHE->{$name}, "Is in GLOBAL_CACHE");
 ok($Template::Alloy::GLOBAL_CACHE->{$name}->{'_perl'}, "Has perl");
+
+###----------------------------------------------------------------###
+
+if ($has_encode) {
+    my $encoding = 'UTF-8';
+    my $template = "[% blue %]BAR ¥";
+
+    pristine($template, $encoding);
+
+    my $in  = 'fü';
+    my $out = 'füBAR ¥';
+
+    process_ok($name => $out, {blue => $in, tt_config => [ENCODING => $encoding, COMPILE_PERL => 1, COMPILE_EXT => '.ttc']});
+
+    test_cache([$test_dir,  $name, 1],
+               [$test_dir2, $name, 0],
+               [$test_dir,  "$name.ttc$Template::Alloy::EXTRA_COMPILE_EXT", 1],
+               [$test_dir,  "$name.ttc$Template::Alloy::PERL_COMPILE_EXT",  1],
+               );
+
+    process_ok($name => $out, {blue => $in, tt_config => [ENCODING => $encoding, COMPILE_PERL => 1, COMPILE_EXT => '.ttc']});
+}
 
 ###----------------------------------------------------------------###
 print "### COMPILE_PERL => 2 ################################################\n";
