@@ -411,7 +411,11 @@ sub load_perl {
         }
         open(my $fh, ">", $doc->{'_compile_filename'}) || $self->throw('compile', "Could not open file \"$doc->{'_compile_filename'}\" for writing: $!");
         ### todo - think about locking
-        print $fh $$perl;
+        if ($self->{'ENCODING'} && eval { require Encode }) {
+            print $fh Encode::encode($self->{'ENCODING'}, $$perl);
+        } else {
+            print $fh $$perl;
+        }
         close $fh;
         utime $doc->{'modtime'}, $doc->{'modtime'}, $doc->{'_compile_filename'};
     }
@@ -920,7 +924,7 @@ sub ast_string {
     return $var if $var =~ /^(-?[1-9]\d{0,13}|0)$/;
 
     $var =~ s/([\'\\])/\\$1/g;
-    return $self->{'_encode'} ? $self->{'_encode'}->($var) : "'$var'"; # _encode may be set in Alloy/Compile.pm
+    return "'$var'";
 }
 
 1;

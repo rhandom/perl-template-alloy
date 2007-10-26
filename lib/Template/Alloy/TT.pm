@@ -492,6 +492,10 @@ sub process {
                 if (my $bm = $args->{'binmode'}) {
                     if (+$bm == 1) { binmode $fh }
                     else           { binmode $fh, $bm }
+                } elsif ($self->{'ENCODING'}) {
+                    if (eval { require Encode }) {
+                        $output = Encode::encode($self->{'ENCODING'}, $output);
+                    }
                 }
                 print $fh $output;
             } else {
