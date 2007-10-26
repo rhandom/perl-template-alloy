@@ -2973,6 +2973,8 @@ Thanks to Ben Grimm for a patch to allow passing a parsed document to the ->proc
 
 Thanks to David Warring for finding a parse error in HTE syntax.
 
+Thanks to Carl Franks for adding the base ENCODING support.
+
 =head1 AUTHOR
 
 Paul Seamons <paul at seamons dot com>
