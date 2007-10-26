@@ -924,7 +924,7 @@ sub ast_string {
     return $var if $var =~ /^(-?[1-9]\d{0,13}|0)$/;
 
     $var =~ s/([\'\\])/\\$1/g;
-    return "'$var'";
+    return $self->{'_encode'} ? $self->{'_encode'}->($var) : "'$var'"; # _encode may be set in Alloy/Compile.pm
 }
 
 1;
