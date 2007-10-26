@@ -1,9 +1,9 @@
 1.008
-      2007-10-10
+      2007-10-26
         * Fix split_paths to work with objects
-        * Make 5.6 as a requirement
-        * Add patch for ENCODING (thanks to Carl Franks)
-        * Fix broken tests
+        * Make 5.6 a requirement
+        * Add patches for ENCODING (thanks to Carl Franks)
+        * Fix broken tests on low perl version
 
 1.007
       2007-10-04
