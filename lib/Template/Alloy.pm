@@ -24,7 +24,8 @@ our $MAX_MACRO_RECURSE  = 50;
 our $STAT_TTL           = 1;
 our $QR_INDEX           = '(?:\d*\.\d+ | \d+)';
 our @CONFIG_COMPILETIME = qw(SYNTAX CACHE_STR_REFS ANYCASE INTERPOLATE PRE_CHOMP POST_CHOMP ENCODING
-                             SEMICOLONS V1DOLLAR V2PIPE V2EQUALS AUTO_EVAL SHOW_UNDEFINED_INTERP);
+                             SEMICOLONS V1DOLLAR V2PIPE V2EQUALS AUTO_EVAL SHOW_UNDEFINED_INTERP
+                             ADD_LOCAL_PATH);
 our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
 our $EVAL_CONFIG        = {map {$_ => 1} @CONFIG_COMPILETIME, @CONFIG_RUNTIME};
 our $EXTRA_COMPILE_EXT  = '.sto';
@@ -924,7 +925,7 @@ sub ast_string {
     return $var if $var =~ /^(-?[1-9]\d{0,13}|0)$/;
 
     $var =~ s/([\'\\])/\\$1/g;
-    return $self->{'_encode'} ? $self->{'_encode'}->($var) : "'$var'"; # _encode may be set in Alloy/Compile.pm
+    return "'$var'";
 }
 
 1;
