@@ -1017,6 +1017,7 @@ options.
 
 The following compile time configuration options may be set:
 
+    ADD_LOCAL_PATH
     ANYCASE
     AUTO_EVAL
     CACHE_STR_REFS
@@ -1970,6 +1971,17 @@ All of the variables in this section can be passed to the "new" constructor.
 =item ABSOLUTE
 
 Boolean.  Default false.  Are absolute paths allowed for included files.
+
+=item ADD_LOCAL_PATH
+
+If true, allows calls to PROCESS and INCLUDE to temporarily add
+the directory of the current template being processed to the INCLUDE_PATHS
+arrayref.  This allows templates to refer to files in the local directory
+without specifying the local directory.  Default is 0.  If set to a negative
+value, the current directory will be added to the end of the current
+INCLUDE_PATHS.  This modification to the INCLUDE_PATHS will only be in
+effect during a PROCESS or INCLUDE directive.  This feature is similar to
+the default behavior of HTML::Template.
 
 =item ANYCASE
 
