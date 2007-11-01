@@ -1,3 +1,8 @@
+1.009
+      2007-11-01
+        * Add ADD_LOCAL_PATH configuration item
+        * Try to cleanup some failing tests on other platforms - particularly with Andy's view tests
+
 1.008
       2007-10-26
         * Fix split_paths to work with objects
