@@ -57,9 +57,10 @@ sub process_ok { # process the value and say if it was ok
 ###----------------------------------------------------------------###
 
 ### set up some dummy packages for various tests
+local $INC{'MyTestPlugin/Foo.pm'} = $0;
+local $INC{'Foo2.pm'} = $0;
 {
     package MyTestPlugin::Foo;
-    $INC{'MyTestPlugin/Foo.pm'} = $0;
     sub load { $_[0] }
     sub new {
         my $class   = shift;
@@ -74,7 +75,6 @@ sub process_ok { # process the value and say if it was ok
 }
 {
     package Foo2;
-    $INC{'Foo2.pm'} = $0;
     use base qw(MyTestPlugin::Foo);
     use vars qw($AUTOLOAD);
     sub new {
