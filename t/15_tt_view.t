@@ -123,10 +123,10 @@ for $compile_perl (($is_tt) ? (0) : (0, 1)) {
 
 ### View plugin usage
 
-process_ok("[% USE v = View -%]
+process_ok("[% USE v = view -%]
 [[% v.prefix %]]" => "[]", $vars);
 
-process_ok("[% USE v = View( map => { default='any' } ) -%]
+process_ok("[% USE v = view( map => { default='any' } ) -%]
 [[% v.map.default %]]" => "[any]", $vars);
 
 process_ok("[% USE view( prefix=> 'foo/', suffix => '.tt2') -%]
