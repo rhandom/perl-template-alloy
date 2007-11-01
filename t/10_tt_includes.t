@@ -122,7 +122,7 @@ close $fh;
 
 my $nested_foo_template = "$test_dir/nested/foo.tt";
 END { unlink $nested_foo_template };
-open(my $fh, ">$nested_foo_template") || die "Couldn't open $nested_foo_template: $!";
+open($fh, ">$nested_foo_template") || die "Couldn't open $nested_foo_template: $!";
 print $fh "(Nested foo [% INCLUDE bar.tt %])";
 close $fh;
 
@@ -134,7 +134,7 @@ close $fh;
 
 my $nested_foo2_template = "$test_dir/nested/foo2.tt";
 END { unlink $nested_foo2_template };
-open(my $fh, ">$nested_foo2_template") || die "Couldn't open $nested_foo2_template: $!";
+open($fh, ">$nested_foo2_template") || die "Couldn't open $nested_foo2_template: $!";
 print $fh "(Nested foo [% INCLUDE bar2.tt %])";
 close $fh;
 
