@@ -421,14 +421,15 @@ sub output {
     my $stat_ttl    = (! $self->{'BLIND_CACHE'}) ? undef : 60; # not sure how high to set the blind cache
     $cache_size = undef if $self->{'DOUBLE_FILE_CACHE'};
 
-    local $self->{'SYNTAX'}       = $self->{'SYNTAX'} || 'hte';
-    local $self->{'GLOBAL_CACHE'} = $self->{'CACHE'};
-    local $self->{'CACHE_SIZE'}   = $cache_size;
-    local $self->{'STAT_TTL'}     = $stat_ttl;
-    local $self->{'COMPILE_DIR'}  = $compile_dir;
-    local $self->{'ABSOLUTE'}     = 1;
-    local $self->{'RELATIVE'}     = 1;
-    local $self->{'INCLUDE_PATH'} = $self->{'PATH'};
+    local $self->{'SYNTAX'}         = $self->{'SYNTAX'} || 'hte';
+    local $self->{'GLOBAL_CACHE'}   = $self->{'CACHE'};
+    local $self->{'ADD_LOCAL_PATH'} = defined($self->{'ADD_LOCAL_PATH'}) ? $self->{'ADD_LOCAL_PATH'} : 1;
+    local $self->{'CACHE_SIZE'}     = $cache_size;
+    local $self->{'STAT_TTL'}       = $stat_ttl;
+    local $self->{'COMPILE_DIR'}    = $compile_dir;
+    local $self->{'ABSOLUTE'}       = 1;
+    local $self->{'RELATIVE'}       = 1;
+    local $self->{'INCLUDE_PATH'}   = $self->{'PATH'};
     local $self->{'LOWER_CASE_VAR_FALLBACK'} = ! $self->{'CASE_SENSITIVE'}; # un-smart HTML::Template default
     local $Template::Alloy::QR_PRIVATE = undef;
 
