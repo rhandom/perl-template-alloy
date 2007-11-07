@@ -34,8 +34,8 @@ my $swap = {
 
 use Template::Stash;;
 my $s = Template::Stash->new($swap);
-#use Template::Stash::XS;
-#$s = Template::Stash::XS->new($swap);
+use Template::Stash::XS;
+$s = Template::Stash::XS->new($swap);
 
 ###----------------------------------------------------------------###
 ### get objects ready
@@ -44,11 +44,12 @@ my @config1 = (STASH => $s, ABSOLUTE => 1, CONSTANTS => {simple => 'var'}, EVAL_
 #push @config1, (INTERPOLATE => 1);
 my @config2 = (@config1, COMPILE_EXT => '.ttc');
 
-#use Template::Alloy::XS;
-#my $tt1 = Template::Alloy::XS->new(@config1);
 my $tt1 = Template->new(@config1);
+my $tap = Template::Alloy->new(@config1, COMPILE_PERL => 1);
 
-my $tal = Template::Alloy->new(@config1, compile_perl => 1);
+use Template::Alloy::XS;
+my $tt1 = Template::Alloy::XS->new(@config1);
+my $tap = Template::Alloy::XS->new(@config1, COMPILE_PERL => 1);
 
 #$swap->{$_} = $_ for (1 .. 1000); # swap size affects benchmark speed
 
@@ -120,59 +121,59 @@ my $filename;
 #                                                   New object each time (undef CACHE_SIZE) #        #        #
 #                              This percent is compiled in memory (repeated calls) #        #        #        #
 my $tests = {                                                             #        #        #        #        #
-    '01_empty'     => "",                                                 #  214%  #  425%  #  386%  #  495%  # 18426.2/s #
-    '02_var_sma'   => "[% one %]",                                        #  176%  #  393%  #  394%  #  854%  # 14129.6/s #
-    '03_var_lar'   => "[% one %]"x100,                                    #   42%  #  226%  #   61%  #  1747%  # 969.5/s #
-    '04_set_sma'   => "[% SET one = 2 %]",                                #  158%  #  354%  #  346%  #  1052%  # 14654.2/s #
-    '05_set_lar'   => "[% SET one = 2 %]"x100,                            #   55%  #  181%  #   29%  #  3650%  # 1228.9/s #
-    '06_set_range' => "[% SET one = [0..30] %]",                          #   73%  #  273%  #  289%  #  768%  # 9121.5/s #
-    '07_chain_sm'  => "[% hash.a %]",                                     #  163%  #  434%  #  384%  #  848%  # 12923.1/s #
-    '08_mixed_sma' => "".((" "x100)."[% one %]\n")x10,                    #   95%  #  396%  #  239%  #  1737%  # 6245.7/s #
-    '09_mixed_med' => "".((" "x10)."[% one %]\n")x100,                    #   48%  #  321%  #  114%  #  2256%  # 962.9/s #
-    '10_str_sma'   => "".("[% \"".(" "x100)."\$one\" %]\n")x10,           #  -15%  #  1463%  #  104%  #  5285%  # 2550.5/s #
-    '11_str_lar'   => "".("[% \"".(" "x10)."\$one\" %]\n")x100,           #  -48%  #  276%  #    1%  #  1322%  # 335.5/s #
-    '12_num_lterl' => "[% 2 %]",                                          #  182%  #  402%  #  390%  #  936%  # 16523.1/s #
-    '13_plus'      => "[% 1 + 2 %]",                                      #  115%  #  373%  #  366%  #  842%  # 12464.8/s #
-    '14_chained'   => "[% c.d.0.hee.0 %]",                                #  146%  #  471%  #  371%  #  965%  # 12515.9/s #
-    '15_chain_set' => "[% SET c.d.0.hee.0 = 2 %]",                        #  152%  #  386%  #  345%  #  925%  # 10318.6/s #
-    '16_chain_lar' => "[% c.d.0.hee.0 %]"x100,                            #    3%  #  373%  #   66%  #  1925%  # 469.9/s #
-    '17_chain_sl'  => "[% SET c.d.0.hee.0 = 2 %]"x100,                    #  109%  #  238%  #   77%  #  1634%  # 313.5/s #
-    '18_cplx_comp' => "[% t = 1 || 0 ? 0 : 1 || 2 ? 2 : 3 %][% t %]",     #   75%  #  199%  #  233%  #  1163%  # 8831.9/s #
-    '19_if_sim_t'  => "[% a=1 %][% IF a %]Two[% END %]",                  #  140%  #  354%  #  281%  #  1350%  # 12439.8/s #
-    '20_if_sim_f'  => "         [% IF a %]Two[% END %]",                  #  138%  #  464%  #  357%  #  1204%  # 12969.7/s #
-    '21_if_else'   => "[% IF a %]A[% ELSE %]B[% END %]",                  #  152%  #  424%  #  343%  #  1219%  # 13233.2/s #
-    '22_if_elsif'  => "[% IF a %]A[% ELSIF b %]B[% ELSE %]C[% END %]",    #  144%  #  416%  #  321%  #  1339%  # 11985.8/s #
-    '23_for_i_sml' => "[% FOREACH i = [0..10]   ; i ; END %]",            #   56%  #  170%  #  169%  #  376%  # 3050.0/s #
-    '24_for_i_med' => "[% FOREACH i = [0..100]  ; i ; END %]",            #   14%  #   26%  #   10%  #   66%  # 455.8/s #
-    '25_for_sml'   => "[% FOREACH [0..10]       ; i ; END %]",            #   46%  #  160%  #  137%  #  367%  # 2928.2/s #
-    '26_for_med'   => "[% FOREACH [0..100]      ; i ; END %]",            #   13%  #   39%  #   13%  #   78%  # 455.1/s #
-    '27_while'     => "[% f = 10 %][%WHILE f%][%f=f- 1%][%f%][% END %]",  #   18%  #  158%  #   83%  #  289%  # 1696.8/s #
-    '28_whl_set_l' => "[% f = 10; WHILE (g=f) ; f = f - 1 ; f ; END %]",  #    4%  #  117%  #   66%  #  190%  # 1287.0/s #
-    '29_whl_set_s' => "[% f = 1;  WHILE (g=f) ; f = f - 1 ; f ; END %]",  #   64%  #  239%  #  230%  #  967%  # 6051.6/s #
-    '30_file_proc' => "[% PROCESS bar.tt %]",                             #  234%  #  384%  #  383%  #  805%  # 9958.1/s #
-    '31_file_incl' => "[% INCLUDE baz.tt %]",                             #  169%  #  245%  #  266%  #  541%  # 6544.5/s #
-    '32_process'   => "[% BLOCK foo %]Hi[% END %][% PROCESS foo %]",      #  148%  #  370%  #  334%  #  1128%  # 9980.9/s #
-    '33_include'   => "[% BLOCK foo %]Hi[% END %][% INCLUDE foo %]",      #  127%  #  393%  #  312%  #  1038%  # 8415.1/s #
-    '34_macro'     => "[% MACRO foo BLOCK %]Hi[% END %][% foo %]",        #  113%  #  244%  #  293%  #  835%  # 8801.4/s #
-    '35_macro_arg' => "[% MACRO foo(n) BLOCK %]Hi[%n%][%END%][%foo(2)%]", #   97%  #  211%  #  285%  #  918%  # 7363.9/s #
-    '36_macro_pro' => "[% MACRO foo PROCESS bar;BLOCK bar%]7[%END;foo%]", #  105%  #  237%  #  307%  #  943%  # 6149.5/s #
-    '37_filter2'   => "[% n = 1 %][% n | repeat(2) %]",                   #  155%  #  321%  #  321%  #  1370%  # 10826.2/s #
-    '38_filter'    => "[% n = 1 %][% n FILTER repeat(2) %]",              #  102%  #  265%  #  265%  #  1153%  # 9161.6/s #
-    '39_fltr_name' => "[% n=1; n FILTER echo=repeat(2); n FILTER echo%]", #   45%  #  264%  #  201%  #  1028%  # 5914.1/s #
-    '40_constant'  => "[% constants.simple %]",                           #  191%  #  436%  #  417%  #  1232%  # 16812.8/s #
-    '41_perl'      => "[%one='ONE'%][% PERL %]print \"[%one%]\"[%END%]",  #   81%  #  371%  #  280%  #  908%  # 7144.2/s #
-    '42_filtervar' => "[% 'hi' | \$filt %]",                              #   67%  #  415%  #  311%  #  656%  # 8050.5/s #
-    '43_filteruri' => "[% ' ' | uri %]",                                  #  119%  #  405%  #  328%  #  808%  # 10610.8/s #
-    '44_filterevl' => "[% foo | eval %]",                                 #  415%  #  348%  #  376%  #  873%  # 6255.3/s #
-    '45_capture'   => "[% foo = BLOCK %]Hi[% END %][% foo %]",            #  137%  #  296%  #  266%  #  1180%  # 11934.0/s #
-    '46_refs'      => "[% b = \\code(1); b(2) %]",                        #   29%  #  231%  #  195%  #  614%  # 5399.1/s #
-    '47_complex'   => "$longer_template",                                 #   74%  #  214%  #  157%  #  854%  # 1279.0/s #
-    '48_hello2000' => "$hello2000",                                       #   31%  #  147%  #   53%  #  309%  # 229.2/s #
-    # overall                                                             #  103%  #  323%  #  240%  #  1105%  #
-
+    '01_empty'     => "",                                                 #  157%  #  357%  #  318%  #  386%  # 17173.6/s #
+    '02_var_sma'   => "[% one %]",                                        #  131%  #  361%  #  359%  #  709%  # 14022.8/s #
+    '03_var_lar'   => "[% one %]"x100,                                    #   33%  #  238%  #   61%  #  1694%  # 1046.3/s #
+    '04_set_sma'   => "[% SET one = 2 %]",                                #  142%  #  311%  #  331%  #  889%  # 14614.1/s #
+    '05_set_lar'   => "[% SET one = 2 %]"x100,                            #   66%  #  172%  #   22%  #  3621%  # 1436.4/s #
+    '06_set_range' => "[% SET one = [0..30] %]",                          #   72%  #  223%  #  246%  #  648%  # 9774.1/s #
+    '07_chain_sm'  => "[% hash.a %]",                                     #  138%  #  376%  #  336%  #  786%  # 13001.4/s #
+    '08_mixed_sma' => "".((" "x100)."[% one %]\n")x10,                    #   81%  #  333%  #  216%  #  1617%  # 6483.7/s #
+    '09_mixed_med' => "".((" "x10)."[% one %]\n")x100,                    #   35%  #  306%  #   97%  #  2156%  # 1017.8/s #
+    '10_str_sma'   => "".("[% \"".(" "x100)."\$one\" %]\n")x10,           #  -19%  #  1345%  #   95%  #  4956%  # 2873.3/s #
+    '11_str_lar'   => "".("[% \"".(" "x10)."\$one\" %]\n")x100,           #  -50%  #  325%  #    2%  #  1218%  # 370.4/s #
+    '12_num_lterl' => "[% 2 %]",                                          #  150%  #  346%  #  362%  #  755%  # 16365.4/s #
+    '13_plus'      => "[% 1 + 2 %]",                                      #  100%  #  304%  #  318%  #  691%  # 13031.8/s #
+    '14_chained'   => "[% c.d.0.hee.0 %]",                                #  117%  #  399%  #  314%  #  891%  # 12271.8/s #
+    '15_chain_set' => "[% SET c.d.0.hee.0 = 2 %]",                        #  120%  #  327%  #  292%  #  924%  # 10048.1/s #
+    '16_chain_lar' => "[% c.d.0.hee.0 %]"x100,                            #   -2%  #  379%  #   54%  #  1880%  # 520.7/s #
+    '17_chain_sl'  => "[% SET c.d.0.hee.0 = 2 %]"x100,                    #   99%  #  257%  #   72%  #  1663%  # 354.2/s #
+    '18_cplx_comp' => "[% t = 1 || 0 ? 0 : 1 || 2 ? 2 : 3 %][% t %]",     #   66%  #  199%  #  233%  #  1090%  # 9359.2/s #
+    '19_if_sim_t'  => "[% a=1 %][% IF a %]Two[% END %]",                  #  126%  #  306%  #  299%  #  1145%  # 12739.3/s #
+    '20_if_sim_f'  => "         [% IF a %]Two[% END %]",                  #  137%  #  377%  #  314%  #  935%  # 13652.8/s #
+    '21_if_else'   => "[% IF a %]A[% ELSE %]B[% END %]",                  #  134%  #  383%  #  314%  #  1061%  # 13651.9/s #
+    '22_if_elsif'  => "[% IF a %]A[% ELSIF b %]B[% ELSE %]C[% END %]",    #  109%  #  346%  #  276%  #  1179%  # 11572.2/s #
+    '23_for_i_sml' => "[% FOREACH i = [0..10]   ; i ; END %]",            #   43%  #  156%  #  138%  #  348%  # 3258.5/s #
+    '24_for_i_med' => "[% FOREACH i = [0..100]  ; i ; END %]",            #    7%  #   27%  #   12%  #   56%  # 506.4/s #
+    '25_for_sml'   => "[% FOREACH [0..10]       ; i ; END %]",            #   41%  #  161%  #  142%  #  341%  # 3163.9/s #
+    '26_for_med'   => "[% FOREACH [0..100]      ; i ; END %]",            #   19%  #   35%  #   18%  #   71%  # 509.1/s #
+    '27_while'     => "[% f = 10 %][%WHILE f%][%f=f- 1%][%f%][% END %]",  #   14%  #  143%  #   73%  #  262%  # 1848.0/s #
+    '28_whl_set_l' => "[% f = 10; WHILE (g=f) ; f = f - 1 ; f ; END %]",  #    4%  #  105%  #   58%  #  190%  # 1420.1/s #
+    '29_whl_set_s' => "[% f = 1;  WHILE (g=f) ; f = f - 1 ; f ; END %]",  #   55%  #  201%  #  190%  #  891%  # 6351.0/s #
+    '30_file_proc' => "[% PROCESS bar.tt %]",                             #  171%  #  345%  #  331%  #  638%  # 9388.6/s #
+    '31_file_incl' => "[% INCLUDE baz.tt %]",                             #  122%  #  274%  #  238%  #  432%  # 6426.3/s #
+    '32_process'   => "[% BLOCK foo %]Hi[% END %][% PROCESS foo %]",      #  118%  #  339%  #  295%  #  928%  # 9431.1/s #
+    '33_include'   => "[% BLOCK foo %]Hi[% END %][% INCLUDE foo %]",      #  106%  #  322%  #  286%  #  802%  # 8298.5/s #
+    '34_macro'     => "[% MACRO foo BLOCK %]Hi[% END %][% foo %]",        #   91%  #  194%  #  241%  #  793%  # 8881.4/s #
+    '35_macro_arg' => "[% MACRO foo(n) BLOCK %]Hi[%n%][%END%][%foo(2)%]", #   70%  #  189%  #  223%  #  899%  # 7111.7/s #
+    '36_macro_pro' => "[% MACRO foo PROCESS bar;BLOCK bar%]7[%END;foo%]", #   79%  #  211%  #  255%  #  793%  # 6189.0/s #
+    '37_filter2'   => "[% n = 1 %][% n | repeat(2) %]",                   #  126%  #  317%  #  297%  #  1173%  # 11058.5/s #
+    '38_filter'    => "[% n = 1 %][% n FILTER repeat(2) %]",              #   99%  #  252%  #  257%  #  995%  # 9657.4/s #
+    '39_fltr_name' => "[% n=1; n FILTER echo=repeat(2); n FILTER echo%]", #   47%  #  239%  #  194%  #  912%  # 6633.8/s #
+    '40_constant'  => "[% constants.simple %]",                           #  167%  #  359%  #  360%  #  1060%  # 16677.6/s #
+    '41_perl'      => "[%one='ONE'%][% PERL %]print \"[%one%]\"[%END%]",  #   63%  #  297%  #  239%  #  827%  # 7242.2/s #
+    '42_filtervar' => "[% 'hi' | \$filt %]",                              #   55%  #  352%  #  272%  #  607%  # 8618.4/s #
+    '43_filteruri' => "[% ' ' | uri %]",                                  #   76%  #  360%  #  277%  #  689%  # 10118.0/s #
+    '44_filterevl' => "[% foo | eval %]",                                 #  367%  #  319%  #  334%  #  752%  # 6482.5/s #
+    '45_capture'   => "[% foo = BLOCK %]Hi[% END %][% foo %]",            #  120%  #  270%  #  260%  #  1002%  # 12199.6/s #
+    '46_refs'      => "[% b = \\code(1); b(2) %]",                        #   33%  #  201%  #  175%  #  545%  # 6132.4/s #
+    '47_complex'   => "$longer_template",                                 #   62%  #  194%  #  136%  #  790%  # 1302.9/s #
+    '48_hello2000' => "$hello2000",                                       #   29%  #  145%  #   40%  #  303%  # 251.9/s #
+    # overall                                                             #   86%  #  291%  #  214%  #  999%  #
     # With Stash::XS
-    #'46_complex'   => "$longer_template",                                 #   -4%  #  274%  #   93%  #  228%  # 1201.9/s #
-    ## overall                                                             #   30%  #  377%  #  211%  #  317%  #
+    #'47_complex'   => "$longer_template",                                #   15%  #  184%  #  100%  #   12%  # 1952.5/s #
+    #'48_hello2000' => "$hello2000",                                      #   28%  #  104%  #  -12%  #   29%  # 574.0/s #
+    ## overall                                                            #   15%  #  277%  #  186%  #   15%  #
 };
 
 ### load the code representation
@@ -247,19 +248,14 @@ sub str_Alloy_new {
 
 sub file_Alloy {
     my $out = '';
-    $tal->process($filename, $swap, \$out);
+    $tap->process($filename, $swap, \$out);
     return $out;
 }
 
 sub str_Alloy {
     my $out = '';
-    $tal->process($str_ref, $swap, \$out);
+    $tap->process($str_ref, $swap, \$out);
     return $out;
-}
-
-sub str_Alloy_swap {
-    my $txt = $tal->swap($str_ref, $swap);
-    return $txt;
 }
 
 sub file_Alloy_cache_new {
@@ -278,7 +274,7 @@ my %cumulative;
 foreach my $test_name (@run) {
     die "Invalid test $test_name" if ! exists $tests->{$test_name};
     my $txt = $tests->{$test_name};
-    my $sample =$text->{$test_name};
+    my $sample = $text->{$test_name};
     $sample =~ s/^.+=>//;
     $sample =~ s/\#.+$//;
     print "-------------------------------------------------------------\n";
@@ -293,18 +289,17 @@ foreach my $test_name (@run) {
     close $fh;
 
     #debug file_Alloy(), str_TT();
-    #debug $tal->parse_tree($file);
+    #debug $tap->parse_tree($file);
 
-    ### check out put - and also allow for caching
+    ### check output - and also allow for caching
     for (1..2) {
         if (file_Alloy() ne str_TT()) {
-            debug $tal->parse_tree($str_ref);
+            debug $tap->parse_tree($str_ref);
             debug file_Alloy(), str_TT();
             die "file_Alloy didn't match";
         }
         die "file_TT didn't match "              if file_TT()        ne str_TT();
         die "str_Alloy didn't match "            if str_Alloy()      ne str_TT();
-#        die "str_Alloy_swap didn't match "       if str_Alloy_swap() ne str_TT();
         die "file_Alloy_cache_new didn't match " if file_Alloy_cache_new() ne str_TT();
         die "file_TT_cache_new didn't match "    if file_TT_cache_new()    ne str_TT();
     }
@@ -324,7 +319,6 @@ foreach my $test_name (@run) {
 #        str_Alloy_n    => \&str_Alloy_new,
         file_Alloy     => \&file_Alloy,
         str_Alloy      => \&str_Alloy,
-#        str_Alloy_sw   => \&str_Alloy_swap,
         file_Alloy_c_n => \&file_Alloy_cache_new,
     }) };
     if (! $r) {
