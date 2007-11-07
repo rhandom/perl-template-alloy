@@ -1980,8 +1980,7 @@ arrayref.  This allows templates to refer to files in the local directory
 without specifying the local directory.  Default is 0.  If set to a negative
 value, the current directory will be added to the end of the current
 INCLUDE_PATHS.  This modification to the INCLUDE_PATHS will only be in
-effect during a PROCESS or INCLUDE directive.  This feature is similar to
-the default behavior of HTML::Template.
+effect during a PROCESS or INCLUDE directive.
 
 =item ANYCASE
 

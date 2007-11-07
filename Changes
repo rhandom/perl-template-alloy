@@ -1,7 +1,8 @@
 1.009
-      2007-11-01
+      2007-11-07
         * Add ADD_LOCAL_PATH configuration item
         * Try to cleanup some failing tests on other platforms - particularly with Andy's view tests
+        * Resample benchmarks to allow for updates to HTML::Template::Compiled
 
 1.008
       2007-10-26
