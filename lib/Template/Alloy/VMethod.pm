@@ -303,6 +303,7 @@ sub vmethod_split {
 sub vmethod_substr {
     my ($str, $i, $len, $replace) = @_;
     $i ||= 0;
+    return '' if ! defined $str;
     return substr($str, $i)       if ! defined $len;
     return substr($str, $i, $len) if ! defined $replace;
     substr($str, $i, $len, $replace);
