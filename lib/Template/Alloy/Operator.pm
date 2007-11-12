@@ -65,6 +65,7 @@ our $OPERATORS = [
     ['assign',  53,        ['**='],             undef],
     ['assign',  53,        ['~=', '_='],        undef],
     ['assign',  53,        ['//='],             undef],
+    ['assign',  53,        ['||='],             undef],
     ['assign',  52,        ['='],               undef],
     ['prefix',  50,        ['not', 'NOT'],      sub { no warnings; ! $_[0]         } ],
     ['left',    45,        ['and', 'AND'],      undef],
