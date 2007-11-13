@@ -165,11 +165,12 @@ Once at the AST stage, there are two modes of operation.  Alloy can
 either operate directly on the AST using the Play role, or it can
 compile the AST to perl code via the Compile role, and then execute
 the code.  To use the perl code route, you must set the COMPILE_PERL
-flag to 1.  If you are running in a cached environment such as
-mod_perl, this is the fastest option.  If you are running in a
-non-cached environment, the Playing or the AST is generally faster.
-The AST method is also more secure as cached AST won't ever eval
-"perl" (assuming PERL blocks are disabled).
+flag to 1.  If you are running in a cached-in-memory environment such
+as mod_perl, this is the fastest option.  If you are running in a
+non-cached-in-memory environment, then using the Play role to run the
+AST is generally faster.  The AST method is also more secure as cached
+AST won't ever eval any "perl" (assuming PERL blocks are disabled -
+which is the default).
 
 =head1 ROLES
 
@@ -205,7 +206,7 @@ either the role name or a method supplied by that role.
     use Template::Alloy qw(parse_tree play_tree compile_tree process);
 
 Note: importing roles by method names does not import them into
-the current namespace - it is autoloading the role and methods into the
+that namespace - it is autoloading the role and methods into the
 Template::Alloy namespace.  To help make this more clear you may use
 the following syntax as well.
 
@@ -238,10 +239,10 @@ other template modules.  It is able to do this because it supports the
 majority of the interface of the other template systems.  You
 can do this in the following way:
 
-    use Template::Alloy qw('Text::Tmpl', 'HTML::Template');
+    use Template::Alloy qw(Text::Tmpl HTML::Template);
 
     # or
-    use Template::Alloy load => qw('Text::Tmpl', 'HTML::Template');
+    use Template::Alloy load => qw(Text::Tmpl HTML::Template);
 
     # or
     use Template::Alloy
