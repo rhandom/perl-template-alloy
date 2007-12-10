@@ -9,6 +9,7 @@ lib/Template/Alloy/Iterator.pm
 lib/Template/Alloy/Operator.pm
 lib/Template/Alloy/Parse.pm
 lib/Template/Alloy/Play.pm
+lib/Template/Alloy/Stream.pm
 lib/Template/Alloy/Tmpl.pm
 lib/Template/Alloy/TT.pm
 lib/Template/Alloy/Velocity.pm
