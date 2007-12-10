@@ -649,6 +649,7 @@ sub play_SET {
             my $sub_tree = $node->[4];
             $sub_tree = $sub_tree->[0]->[4] if $sub_tree->[0] && $sub_tree->[0]->[0] eq 'BLOCK';
             $val = '';
+            local $self->{'STREAM'} = undef;
             $self->play_tree($sub_tree, \$val);
         } else { # normal var
             $val = $self->play_expr($val);
