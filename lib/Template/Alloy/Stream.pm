@@ -67,6 +67,9 @@ All directives are supported except for the CLEAR directive which is meaningless
 Most configuration items are supported - except for the TRIM directive which cannot
 be used because the output is not buffered into a variable that can be trimmed.
 
+The WRAPPER directive is still supported - but it essentially turns off STREAM as
+the content must be generated before playing the WRAPPER templates.
+
 =head1 ROLE METHODS
 
 =over 4
