@@ -26,7 +26,7 @@ use_ok($module);
 Taint::Runtime::taint_start() if test_taint;
 
 my $test_dir = $0 .'.test_dir';
-END { rmdir $test_dir }
+END { unlink "$test_dir/stream.out"; rmdir $test_dir }
 mkdir $test_dir, 0755;
 ok(-d $test_dir, "Got a test dir up and running");
 
