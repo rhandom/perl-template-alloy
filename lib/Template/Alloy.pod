@@ -2488,6 +2488,51 @@ system for modifications.  Setting this number higher will allow for
 fewer file system accesses.  Setting it to a negative number will allow
 for the file system to be checked every hit.
 
+=item STREAM
+
+Defaults to false.  If set to true, generated template content will be
+printed to the currently selected filehandle (default is STDOUT) as
+soon as it is ready - there will be no buffering of the output.
+
+The Stream role uses the Play role's directives (non-compiled_perl).
+
+All directives and configuration work, except for the following
+exceptions:
+
+=over 4
+
+=item CLEAR directive
+
+Because the output is not buffered - the CLEAR directive would have no
+effect.  The CLEAR directive will throw an error when STREAM is on.
+
+=item TRIM configuration
+
+Because the output is not buffered - trim operations cannot be played
+on the output buffers.
+
+=item WRAPPER configuration/directive
+
+The WRAPPER configuration and directive items effectively turn off
+STREAM since the WRAPPERS are generated in reverse order and because
+the content is inserted into the middle of the WRAPPERS.  WRAPPERS
+will still work, they just won't stream.
+
+=item VARIOUS errors
+
+Because the template is streaming, items that cause errors my result
+in partially printed pages - since the error would occur part way
+through the print.
+
+=back
+
+All output is printed directly to the currently selected filehandle
+(defaults to STDOUT) via the CORE::print function.  Any output
+parameter passed to process or process_simple will be ignored.
+
+If you would like the output to go to another handle, you will need to
+select that handle, process the template, and re-select STDOUT.
+
 =item SYNTAX (not in TT)
 
 Defaults to "cet".  Indicates the syntax that will be used for parsing
