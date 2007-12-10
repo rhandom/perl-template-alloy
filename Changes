@@ -3,6 +3,7 @@
         * Add missing ||= operator (we already had //=)
         * Cleanup some POD
         * Add STREAM support for printing out the template as it is generated.
+        * Fix CASE_SENSITIVE on HT
 
 1.009
       2007-11-07
