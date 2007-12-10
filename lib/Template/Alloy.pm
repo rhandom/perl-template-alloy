@@ -39,6 +39,7 @@ our $AUTOROLE = {
     HTE      => [qw(parse_tree_hte param output register_function clear_param query new_file new_scalar_ref new_array_ref new_filehandle)],
     Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse_tree dump_parse_expr define_directive define_syntax)],
     Play     => [qw(play_tree list_plugins)],
+    Stream   => [qw(stream_tree)],
     TT       => [qw(parse_tree_tt3 process)],
     Tmpl     => [qw(parse_tree_tmpl set_delimiters set_strip set_value set_values parse_string set_dir parse_file loop_iteration fetch_loop_iteration)],
     Velocity => [qw(parse_tree_velocity merge)],
@@ -114,7 +115,7 @@ sub process_simple {
     my $self = shift;
     my $in   = shift || die "Missing input";
     my $swap = shift || die "Missing variable hash";
-    my $out  = shift || die "Missing output string ref";
+    my $out  = shift || ($self->{'STREAM'} ? \ "" : die "Missing output string ref");
     delete $self->{'error'};
 
     eval {
@@ -155,7 +156,10 @@ sub _process {
         local @{ $self }{@CONFIG_RUNTIME} = @{ $self }{@CONFIG_RUNTIME};
 
         ### run the document however we can
-        if ($doc->{'_perl'}) {
+        if ($self->{'STREAM'}) {
+            $self->throw('process', 'No _tree found') if ! $doc->{'_tree'};
+            $self->stream_tree($doc->{'_tree'});
+        } elsif ($doc->{'_perl'}) {
             $doc->{'_perl'}->{'code'}->($self, $out_ref);
         } elsif (! $doc->{'_tree'}) {
             $self->throw('process', 'No _perl and no _tree found');

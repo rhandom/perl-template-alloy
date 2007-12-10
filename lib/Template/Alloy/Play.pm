@@ -69,6 +69,8 @@ sub new { die "This class is a role for use by packages such as Template::Alloy"
 sub play_tree {
     my ($self, $tree, $out_ref) = @_;
 
+    return $self->stream_tree($tree) if $self->{'STREAM'};
+
     # node contains (0: DIRECTIVE,
     #                1: start_index,
     #                2: end_index,
