@@ -928,12 +928,18 @@ sub play_WRAPPER {
     my ($named, @files) = @$args;
 
     my $out = '';
-    $self->play_tree($sub_tree, \$out);
-
-    foreach my $name (reverse @files) {
-        local $self->{'_vars'}->{'content'} = $out;
+    {
+        local $self->{'STREAM'} = undef;
+        $self->play_tree($sub_tree, \$out);
+        foreach my $name (reverse @files) {
+            local $self->{'_vars'}->{'content'} = $out;
+            $out = '';
+            $DIRECTIVES->{'INCLUDE'}->($self, [$named, $name], $node, \$out);
+        }
+    }
+    if ($self->{'STREAM'}) {
+        print $out;
         $out = '';
-        $DIRECTIVES->{'INCLUDE'}->($self, [$named, $name], $node, \$out);
     }
 
     $$out_ref .= $out;
