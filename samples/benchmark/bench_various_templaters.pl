@@ -50,6 +50,7 @@ my $names = {
   TTX          => 'Template::Toolkit with Stash::XS',
   TTXCET       => 'Template::Toolkit with Stash::XS and Template::Parser::CET',
   TMPL         => 'Text::Tmpl - Engine is C based',
+  RAW          => 'Raw perl - no template engine',
 
   mem          => 'Compiled in memory',
   file         => 'Loaded from file',
@@ -196,6 +197,33 @@ if (open (my $fh, ">$dir/foo.tmpl")) {
     print $fh $content_tmpl;
     close $fh;
 }
+
+###----------------------------------------------------------------###
+### Pure perl base case
+
+my $content_raw = sub {
+    my $args = shift;
+
+    return "$args->{shell_header}
+$args->{shell_start}
+$filler
+
+".($args->{foo} ? "
+This is some text.
+" : "")."
+
+".(do {
+    my $t = '';
+    $t .= $_ foreach @{ $args->{a_stuff} };
+    $t;
+})."
+$args->{pass_in_something}
+
+$filler
+$args->{shell_end}
+$args->{shell_footer}
+";
+};
 
 ###----------------------------------------------------------------###
 ### The TT interface allows for a single object to be cached and reused.
@@ -444,6 +472,9 @@ my $tests = {
         my $t = HTML::Template::JIT->new(  filename => "foo.ht", path => \@dirs, jit_path => $dir2, case_sensitve=>1);
         $t->param($stash_ht); $t->param($form); my $out = $t->output;
     },
+    #RAW_mem => sub {
+    #    my $out = $content_raw->({%$stash_t, %$form});
+    #},
 };
 
 my $test = $tests->{'TT_str'}->();
