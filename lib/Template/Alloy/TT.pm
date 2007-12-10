@@ -375,6 +375,8 @@ sub process {
 
         ### process the central file now - catching errors to allow for the ERROR config
         eval {
+            local $self->{'STREAM'} = undef if $self->{'WRAPPER'};
+
             ### handle the PROCESS config - which loads another template in place of the real one
             if (exists $self->{'PROCESS'}) {
                 _load_template_meta($self, $content);
@@ -412,6 +414,7 @@ sub process {
             if (defined $file) {
                 $output = '';
                 local $copy->{'error'} = local $copy->{'e'} = $err;
+                local $self->{'STREAM'} = undef if $self->{'WRAPPER'};
                 $self->_process($file, $copy, \$output);
             }
         }
@@ -423,8 +426,13 @@ sub process {
                 next if ! length $name;
                 local $copy->{'content'} = $output;
                 my $out = '';
+                local $self->{'STREAM'} = undef;
                 $self->_process($name, $copy, \$out);
                 $output = $out;
+            }
+            if ($self->{'STREAM'}) {
+                print $output;
+                $output = 1;
             }
         }
 
