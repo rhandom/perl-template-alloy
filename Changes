@@ -1,3 +1,9 @@
+1.010
+      2007-12-10
+        * Add missing ||= operator (we already had //=)
+        * Cleanup some POD
+        * Add STREAM support for printing out the template as it is generated.
+
 1.009
       2007-11-07
         * Add ADD_LOCAL_PATH configuration item

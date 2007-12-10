@@ -247,7 +247,7 @@ sub play_FILTER {
 
     ### play the block
     my $out = '';
-    eval { $self->play_tree($sub_tree, \$out) };
+    eval { local $self->{'STREAM'} = undef; $self->play_tree($sub_tree, \$out) };
     die $@ if $@ && ! UNIVERSAL::can($@, 'type'); # TODO - shouldn't they all die ?
 
     $out = $self->play_expr([[undef, '-temp-', $out], 0, '|', @$filter]);
@@ -484,7 +484,10 @@ sub play_PERL {
     ### fill in any variables
     my $perl = $node->[4] || return;
     my $out  = '';
-    $self->play_tree($perl, \$out);
+    {
+        local $self->{'STREAM'} = undef;
+        $self->play_tree($perl, \$out);
+    };
     $out = $1 if $out =~ /^(.+)$/s; # blatant untaint - shouldn't use perl anyway
 
     ### try the code
@@ -612,7 +615,10 @@ sub play_RAWPERL {
     ### fill in any variables
     my $tree = $node->[4] || return;
     my $perl  = '';
-    $self->play_tree($tree, \$perl);
+    {
+        local $self->{'STREAM'} = undef;
+        $self->play_tree($tree, \$perl);
+    }
     $perl = $1 if $perl =~ /^(.+)$/s; # blatant untaint - shouldn't use perl anyway
 
     ### try the code
