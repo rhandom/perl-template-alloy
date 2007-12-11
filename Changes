@@ -1,3 +1,6 @@
+1.012
+        * Allow scalar refs passed as variables to be processed
+
 1.011
       2007-12-10
         * Boneheaded release bug - add Stream.pm to manifest
