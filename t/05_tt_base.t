@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 2825 : 637) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 2828 : 638) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -71,7 +71,7 @@ sub process_ok { # process the value and say if it was ok
         warn "# Was:\n$out\n# Should've been:\n$test\n";
         print $obj->error if $obj->can('error');
         print $obj->dump_parse_tree(\$str) if $obj->can('dump_parse_tree');
-        #exit;
+        exit;
     }
 }
 
@@ -802,6 +802,8 @@ process_ok("[% BLOCK foo %]hi [% one %] there[% END %][% INCLUDE foo one = 'two'
 process_ok("[% BLOCK foo %]FOO[% IF ! a ; a = 1; PROCESS bar; END %][% END %][% BLOCK bar %]BAR[% PROCESS foo %][% END %][% PROCESS foo %]" => "") if ! $is_tt && ! $use_stream;
 process_ok("[% BLOCK foo %]FOO[% IF ! a ; a = 1; PROCESS bar; END %][% END %][% BLOCK bar %]BAR[% PROCESS foo %][% END %][% PROCESS foo %]d" => "FOOBAR") if $use_stream;
 process_ok("[% BLOCK foo %]FOO[% IF ! a ; a = 1; PROCESS bar; END %][% END %][% BLOCK bar %]BAR[% PROCESS foo %][% END %][% PROCESS foo %]" => "FOOBARFOO", {tt_config => [RECURSION => 1]});
+
+process_ok('[% a = 23; PROCESS $foo %]' => 'bar 23 baz', {foo => \ "bar [% a %] baz"});
 
 ###----------------------------------------------------------------###
 print "### IF / UNLESS / ELSIF / ELSE ###################### $engine_option\n";
