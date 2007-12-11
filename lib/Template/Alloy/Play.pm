@@ -565,7 +565,7 @@ sub play_PROCESS {
         my $out = ''; # have temp item to allow clear to correctly clear
 
         ### normal blocks or filenames
-        if (! ref $filename) {
+        if (! ref($filename) || ref($filename) eq 'SCALAR') {
             eval { $self->_process($filename, $self->{'_vars'}, \$out) }; # restart the swap - passing it our current stash
 
         ### allow for $template which is used in some odd instances
