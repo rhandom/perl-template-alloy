@@ -549,16 +549,6 @@ sub play_PROCESS {
         $self->set_variable($key, $val);
     }
 
-    local $self->{'INCLUDE_PATHS'} = do {
-        my $ref = $self->include_paths;
-        if ($self->{'ADD_LOCAL_PATH'}
-            && $self->{'_component'}->{'_filename'}
-            && $self->{'_component'}->{'_filename'} =~ m|^(.+)/[^/]+$|) {
-            $ref = ($self->{'ADD_LOCAL_PATH'} < 0) ? [@$ref, $1] : [$1, @$ref];
-        }
-        $ref;
-    };
-
     ### iterate on any passed block or filename
     foreach my $filename (@files) {
         next if ! defined $filename;
