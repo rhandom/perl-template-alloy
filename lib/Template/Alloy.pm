@@ -144,15 +144,6 @@ sub _process {
     ### parse and execute
     my $doc;
     eval {
-        my $add;
-        local $self->{'INCLUDE_PATHS'}
-            = ($self->{'ADD_LOCAL_PATH'} < 0) ? [@{$self->include_paths}, $add] : [$add, @{$self->include_paths}]
-                if ($self->{'ADD_LOCAL_PATH'}
-                    && $self->{'_component'}
-                    && $self->{'_component'}->{'_filename'}
-                    && $self->{'_component'}->{'_filename'} =~ m|^(.+)/[^/]+$|
-                    && ($add = $1));
-
         $doc = (ref($file) eq 'HASH') ? $file : $self->load_template($file);
 
         ### prevent recursion
@@ -778,7 +769,15 @@ sub include_filename {
         return $file if -e $file;
     }
 
-    foreach my $path (@{ $self->include_paths }) {
+    my $ref = $self->include_paths;
+    if ($self->{'ADD_LOCAL_PATH'}
+        && $self->{'_component'}
+        && $self->{'_component'}->{'_filename'}
+        && $self->{'_component'}->{'_filename'} =~ m|^(.+)/[^/]+$|) {
+        ($self->{'ADD_LOCAL_PATH'} < 0) ? push(@$ref, $1) : unshift(@$ref, $1);
+    }
+
+    foreach my $path (@$ref) {
         return "$path/$file" if -e "$path/$file";
     }
 
