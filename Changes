@@ -1,6 +1,7 @@
 1.012
         * Allow scalar refs passed as variables to be processed
         * Allow ADD_LOCAL_PATH to function in more areas (including INSERT)
+        * Stream cleanup
 
 1.011
       2007-12-10

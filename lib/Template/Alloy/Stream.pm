@@ -9,8 +9,6 @@ Template::Alloy::Stream - Stream role - allows for playing out the AST and print
 use strict;
 use warnings;
 use Template::Alloy;
-use Template::Alloy::Iterator;
-use Template::Alloy::Context;
 use Template::Alloy::Play;
 
 our $VERSION = $Template::Alloy::VERSION;
