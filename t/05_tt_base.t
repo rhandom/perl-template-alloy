@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 2828 : 638) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 2939 : 643) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -106,8 +106,20 @@ local $INC{'Foo2.pm'} = $0;
     sub leave {}      # hacks to allow tt to do the plugins passed via PLUGINS
     sub delocalise {} # hacks to allow tt to do the plugins passed via PLUGINS
 }
+{
+    package CallContext;
+    sub new { my $class = shift; my $args = shift || {}; bless $args, $class }
+    sub last_context { shift->{'last_context'} || '' }
+    sub call_me { shift->{'last_context'} = wantarray ? 'list' : defined(wantarray) ? 'scalar' : 'void' }
+    sub array   { return my @a = (1, 2, 3) }
+    sub array2  { return my @a = (4) }
+    sub list    { return (5, 6, 7) }
+    sub scalar  { return 8 }
+    sub dataref { return shift->{'data'} ||= {} }
+}
 
-my $obj = Foo2->new;
+my $obj  = Foo2->new;
+my $cctx = CallContext->new;
 my $vars;
 my $stash = {foo => 'Stash', bingo => 'bango'};
 $stash = Template::Stash->new($stash) if eval{require Template::Stash};
@@ -607,6 +619,63 @@ process_ok('[% a = Hash.new(one = "ONE") %][% a.one %]' => 'ONE') if ! $is_tt;
 process_ok('[% a = Hash.new(one => "ONE") %][% a.one %]' => 'ONE') if ! $is_tt;
 
 process_ok('[% {a => 1, b => 2} | Hash.keys | List.sort | List.join(", ") %]' => 'a, b') if ! $is_tt;
+
+###----------------------------------------------------------------###
+print "### CONTEXT ######################################### $engine_option\n";
+
+$cctx->{'bang'} = 'bing';
+process_ok("[% CALL cctx.call_me  %][% cctx.last_context %]" => "list", {cctx => $cctx});
+process_ok("[% cctx.array  %]" => qr{^ARRAY}, {cctx => $cctx});
+process_ok("[% cctx.array2 %]" => "4",        {cctx => $cctx});
+process_ok("[% cctx.list   %]" => qr{^ARRAY}, {cctx => $cctx});
+process_ok("[% cctx.scalar %]" => "8",        {cctx => $cctx});
+process_ok("[% cctx.bang   %]" => "bing",     {cctx => $cctx});
+
+if (! $is_tt) {
+    process_ok("[% CALL cctx.*call_me %][% cctx.last_context %]" => "list", {cctx => $cctx});
+    process_ok("[% CALL cctx.+call_me %][% cctx.last_context %]" => "list", {cctx => $cctx});
+    process_ok("[% CALL cctx.?call_me %][% cctx.last_context %]" => "scalar", {cctx => $cctx});
+    process_ok("[% CALL cctx.!call_me %][% cctx.last_context %]" => "void", {cctx => $cctx});
+    process_ok("[% cctx.*array %]" => qr{^ARRAY}, {cctx => $cctx});
+    process_ok("[% cctx.+array %]" => qr{^ARRAY}, {cctx => $cctx});
+    process_ok("[% cctx.?array %]" => "3",        {cctx => $cctx});
+    process_ok("[% cctx.!array %] ~" => " ~",     {cctx => $cctx});
+    process_ok("[% cctx.*array2 %]" => "4",        {cctx => $cctx});
+    process_ok("[% cctx.+array2 %]" => qr{^ARRAY}, {cctx => $cctx});
+    process_ok("[% cctx.?array2 %]" => "1",        {cctx => $cctx});
+    process_ok("[% cctx.!array2 %] ~" => " ~",     {cctx => $cctx});
+    process_ok("[% cctx.*list %]" => qr{^ARRAY}, {cctx => $cctx});
+    process_ok("[% cctx.+list %]" => qr{^ARRAY}, {cctx => $cctx});
+    process_ok("[% cctx.?list %]" => "7",        {cctx => $cctx});
+    process_ok("[% cctx.!list %] ~" => " ~",     {cctx => $cctx});
+    process_ok("[% cctx.*scalar %]" => "8",        {cctx => $cctx});
+    process_ok("[% cctx.+scalar %]" => qr{^ARRAY}, {cctx => $cctx});
+    process_ok("[% cctx.?scalar %]" => "8",        {cctx => $cctx});
+    process_ok("[% cctx.!scalar %] ~" => " ~",     {cctx => $cctx});
+    process_ok("[% cctx.*bang   %] ~" => "",     {cctx => $cctx});
+    process_ok("[% cctx.+bang   %] ~" => "",     {cctx => $cctx});
+    process_ok("[% cctx.?bang   %] ~" => "",     {cctx => $cctx});
+    process_ok("[% cctx.!bang   %] ~" => "",     {cctx => $cctx});
+}
+
+delete $cctx->{'bang'};
+process_ok("[% cctx.data = 1 %] ~" => "",   {cctx => $cctx})   if $is_tt; # TT lets you read but not write - weird
+process_ok("[% cctx.bang = 1 %] ~" => " ~", {cctx => $cctx}) if ! $is_tt;
+$cctx->{'data'} = {};
+process_ok("[% cctx.dataref.foo = 7; cctx.dataref.foo %]" => "7", {cctx => $cctx});
+
+if (! $is_tt) {
+    $cctx->{'data'} = {};
+    process_ok("[% cctx.*dataref.foo = 7; cctx.dataref.foo %]" => "7", {cctx => $cctx});
+    $cctx->{'data'} = {};
+    process_ok("[% cctx.+dataref.0.foo = 7; cctx.dataref.foo %]" => "7", {cctx => $cctx});
+    $cctx->{'data'} = {};
+    process_ok("[% cctx.*dataref.0.foo = 7 %]|[% cctx.+dataref.0.foo %]|[% cctx.+dataref.0.0.foo %]" => "||7", {cctx => $cctx});
+    $cctx->{'data'} = {};
+    process_ok("[% cctx.?dataref.foo = 7; cctx.dataref.foo %]" => "7", {cctx => $cctx});
+    $cctx->{'data'} = {};
+    process_ok("[% cctx.!dataref.foo = 7; cctx.dataref.foo %]" => "", {cctx => $cctx});
+}
 
 ###----------------------------------------------------------------###
 print "### chomping ######################################## $engine_option\n";
