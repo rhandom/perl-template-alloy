@@ -19,7 +19,7 @@ BEGIN {
     $is_ta = $module eq 'Template::Alloy';
 };
 use strict;
-use Test::More tests => ($is_ta) ? 240 : ($is_ht) ? 75 : 82;
+use Test::More tests => ($is_ta) ? 242 : ($is_ht) ? 75 : 82;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -255,7 +255,8 @@ process_ok('<TMPL_MACRO bar(n) BLOCK>You said <TMPL_VAR n></TMPL_MACRO><TMPL_GET
 print "### TT3 CHOMPING #################################### $is_compile_perl\n";
 
 process_ok("\n<TMPL_GET foo>" => "\nFOO", {foo => "FOO"}) if $is_ta;
-process_ok("<TMPL_GET foo->\n" => "FOO", {foo => "FOO"})  if $is_ta;
+process_ok("<TMPL_GET foo->\n" => "", {foo => "FOO"}) if $is_ta;
+process_ok("<TMPL_GET foo->\n" => "FOO", {foo => "FOO", tt_config => [V2ARROW => 1]})  if $is_ta;
 process_ok("\n<-TMPL_GET foo>" => "FOO", {foo => "FOO"})  if $is_ta;
 
 ###----------------------------------------------------------------###
