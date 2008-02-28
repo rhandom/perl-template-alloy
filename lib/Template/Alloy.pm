@@ -470,27 +470,38 @@ sub play_expr {
     }
 
     my %seen_filters;
+    my $was_dot_call = '';
     while (defined $ref) {
 
-        ### check at each point if the rurned thing was a code
+        ### check at each point if the returned thing was a code
         if (UNIVERSAL::isa($ref, 'CODE')) {
             return $ref if $i >= $#$var && $ARGS->{'return_ref'};
-            my @results = $ref->($args ? map { $self->play_expr($_) } @$args : ());
-            if (defined $results[0]) {
-                $ref = ($#results > 0) ? \@results : $results[0];
-            } elsif (defined $results[1]) {
-                die $results[1]; # TT behavior - why not just throw ?
-            } else {
+            my @args    = $args ? map { $self->play_expr($_) } @$args : ();
+            if ($was_dot_call eq '.?') {
+                $ref = scalar($ref->(@args));
+            } elsif ($was_dot_call eq '.+') {
+                $ref = [$ref->(@args)];
+            } elsif ($was_dot_call eq '.!') {
+                $ref->(@args);
                 $ref = undef;
-                last;
+            } else {
+                my @results = $ref->(@args);
+                if (defined $results[0]) {
+                    $ref = ($#results > 0) ? \@results : $results[0];
+                } elsif (defined $results[1]) {
+                    die $results[1]; # TT behavior - why not just throw ?
+                } else {
+                    $ref = undef;
+                    last;
+                }
             }
         }
 
         ### descend one chained level
         last if $i >= $#$var;
-        my $was_dot_call = $ARGS->{'no_dots'} ? 1 : $var->[$i++] eq '.';
-        $name            = $var->[$i++];
-        $args            = $var->[$i++];
+        $was_dot_call = $ARGS->{'no_dots'} ? 1 : $var->[$i++] eq '|' ? '' : $var->[$i-1];
+        $name         = $var->[$i++];
+        $args         = $var->[$i++];
 
         ### allow for named portions of a variable name (foo.$name.bar)
         if (ref $name) {
@@ -570,8 +581,20 @@ sub play_expr {
             if ($was_dot_call && UNIVERSAL::can($ref, 'can')) {
                 return $ref if $i >= $#$var && $ARGS->{'return_ref'};
                 my @args = $args ? map { $self->play_expr($_) } @$args : ();
+                if ($was_dot_call eq '.?') {
+                    $ref = $ref->$name(@args);
+                    next;
+                } elsif ($was_dot_call eq '.+') {
+                    $ref = [$ref->$name(@args)];
+                    next;
+                } elsif ($was_dot_call eq '.!') {
+                    $ref->$name(@args);
+                    $ref = undef;
+                    next;
+                }
                 my @results = eval { $ref->$name(@args) };
                 if ($@) {
+                    die $@ if $was_dot_call eq '.*';
                     my $class = ref $ref;
                     die $@ if ref $@ || $@ !~ /Can\'t locate object method "\Q$name\E" via package "\Q$class\E"/;
                 } elsif (defined $results[0]) {
@@ -587,7 +610,7 @@ sub play_expr {
             }
 
             if (UNIVERSAL::isa($ref, 'HASH')) {
-                if ($was_dot_call && exists($ref->{$name}) ) {
+                if ($was_dot_call eq '.' && exists($ref->{$name}) ) {
                     return \ $ref->{$name} if $i >= $#$var && $ARGS->{'return_ref'} && ! ref $ref->{$name};
                     $ref = $ref->{$name};
                 } elsif ($HASH_OPS->{$name}) {
@@ -660,25 +683,36 @@ sub set_variable {
         }
     }
 
+    my $was_dot_call = '';
     while (defined $ref) {
 
         ### check at each point if the returned thing was a code
         if (UNIVERSAL::isa($ref, 'CODE')) {
-            my @results = $ref->($args ? map { $self->play_expr($_) } @$args : ());
-            if (defined $results[0]) {
-                $ref = ($#results > 0) ? \@results : $results[0];
-            } elsif (defined $results[1]) {
-                die $results[1]; # TT behavior - why not just throw ?
-            } else {
+            my @args = $args ? map { $self->play_expr($_) } @$args : ();
+            if ($was_dot_call eq '.?') {
+                $ref = scalar($ref->(@args));
+            } elsif ($was_dot_call eq '.+') {
+                $ref = [$ref->(@args)];
+            } elsif ($was_dot_call eq '.!') {
+                $ref->(@args);
                 return;
+            } else {
+                my @results = $ref->(@args);
+                if (defined $results[0]) {
+                    $ref = ($#results > 0) ? \@results : $results[0];
+                } elsif (defined $results[1]) {
+                    die $results[1]; # TT behavior - why not just throw ?
+                } else {
+                    return;
+                }
             }
         }
 
         ### descend one chained level
         last if $i >= $#$var;
-        my $was_dot_call = $ARGS->{'no_dots'} ? 1 : $var->[$i++] eq '.';
-        my $name         = $var->[$i++];
-        my $args         = $var->[$i++];
+        $was_dot_call = $ARGS->{'no_dots'} ? 1 : $var->[$i++] eq '|' ? '' : $var->[$i-1];
+        my $name      = $var->[$i++];
+        my $args      = $var->[$i++];
 
         ### allow for named portions of a variable name (foo.$name.bar)
         if (ref $name) {
@@ -707,8 +741,19 @@ sub set_variable {
                 $lvalueish = 1;
                 push @args, $val;
             }
-            my @results = eval { $ref->$name(@args) };
-            if (! $@) {
+            if ($was_dot_call eq '.?') {
+                $ref = $ref->$name(@args);
+            } elsif ($was_dot_call eq '.+') {
+                $ref = [$ref->$name(@args)];
+            } elsif ($was_dot_call eq '.!') {
+                $ref->$name(@args);
+                return;
+            } else {
+                my @results = eval { $ref->$name(@args) };
+                if ($@) {
+                    my $class = ref $ref;
+                    die $@ if ref $@ || $@ !~ /Can\'t locate object method "\Q$name\E" via package "\Q$class\E"/;
+                }
                 if (defined $results[0]) {
                     $ref = ($#results > 0) ? \@results : $results[0];
                 } elsif (defined $results[1]) {
@@ -716,12 +761,9 @@ sub set_variable {
                 } else {
                     return;
                 }
-                return if $lvalueish;
-                next;
             }
-            my $class = ref $ref;
-            die $@ if ref $@ || $@ !~ /Can\'t locate object method "\Q$name\E" via package "\Q$class\E"/;
-            # fall on down to "normal" accessors
+            return if $lvalueish;
+            next;
         }
 
         if (UNIVERSAL::isa($ref, 'HASH')) {
