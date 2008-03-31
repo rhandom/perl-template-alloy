@@ -312,6 +312,7 @@ sub vmethod_substr {
 
 sub vmethod_uri {
     my $str = shift;
+    return '' if ! defined $str;
     utf8::upgrade($str) if defined &utf8::upgrade;
     $str =~ s/([^A-Za-z0-9\-_.!~*\'()])/sprintf('%%%02X', ord($1))/eg;
     return $str;
@@ -319,6 +320,7 @@ sub vmethod_uri {
 
 sub vmethod_url {
     my $str = shift;
+    return '' if ! defined $str;
     utf8::upgrade($str) if defined &utf8::upgrade;
     $str =~ s/([^;\/?:@&=+\$,A-Za-z0-9\-_.!~*\'()])/sprintf('%%%02X', ord($1))/eg;
     return $str;
