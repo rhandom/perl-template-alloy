@@ -161,6 +161,16 @@ sub play_operator {
         $self->set_variable($tree->[2], $val - 1);
         return $tree->[3] ? $val : $val - 1; # ->[3] is set to 1 during parsing of postfix ops
 
+    } elsif ($op eq '@()') {
+        local $self->{'CALL_CONTEXT'} = 'list';
+        my $val = $self->play_expr($tree->[2]);
+        $val = [$val] if ! UNIVERSAL::isa($val, 'ARRAY');
+        return $val;
+
+    } elsif ($op eq '$()') {
+        local $self->{'CALL_CONTEXT'} = 'item';
+        return $self->play_expr($tree->[2]);
+
     } elsif ($op eq '\\') {
         my $var = $tree->[2];
 

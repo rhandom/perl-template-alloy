@@ -322,9 +322,10 @@ sub parse_expr {
             || $self->throw('parse.missing.curly_bracket', "Missing close \}", undef, pos($$str_ref));
         push @var, $hashref;
 
-    ### looks like a paren grouper
-    } elsif (! $is_aq && $$str_ref =~ m{ \G \( }gcx) {
+    ### looks like a paren grouper or a context specifier
+    } elsif (! $is_aq && $$str_ref =~ m{ \G ([\$\@]?) \( }gcx) {
         local $self->{'_operator_precedence'} = 0; # reset precedence
+        my $ctx = $1;
         my $var = $self->parse_expr($str_ref, {allow_parened_ops => 1});
 
         $$str_ref =~ m{ \G \s* $QR_COMMENTS \) }gcxo
@@ -341,6 +342,10 @@ sub parse_expr {
             push @var, $var, 0;
         } else {
             push @var, @$var;
+        }
+        if ($ctx) {
+            my $copy = [@var];
+            @var = ([undef, "$ctx()", $copy]);
         }
 
     ### nothing to find - return failure
