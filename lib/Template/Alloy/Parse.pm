@@ -369,7 +369,7 @@ sub parse_expr {
     }
 
     ### allow for nested items
-    while ($$str_ref =~ m{ \G \s* $QR_COMMENTS ( \.(?!\.) [*+?!]? | \|(?!\|) ) }gcx) {
+    while ($$str_ref =~ m{ \G \s* $QR_COMMENTS ( \.(?!\.) | \|(?!\|) ) }gcx) {
         if ($1 eq '|' && $self->{'V2PIPE'}) {
             pos($$str_ref) -= 1;
             last;
