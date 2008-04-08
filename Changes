@@ -2,6 +2,9 @@
         * Allow scalar refs passed as variables to be processed
         * Allow ADD_LOCAL_PATH to function in more areas (including INSERT)
         * Stream cleanup
+        * Added CALL_CONTEXT configuration item
+        * Added @( ) list context specifier
+        * Added $( ) item context specifier
 
 1.011
       2007-12-10
