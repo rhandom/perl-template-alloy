@@ -333,8 +333,8 @@ sub parse_expr {
 
         $self->throw('parse', 'Paren group cannot be followed by an open paren', undef, pos($$str_ref))
             if $$str_ref =~ m{ \G \( }gcx;
-
         $already_parsed_args = 1;
+
         if (! ref $var) {
             push @var, \$var, 0;
             $is_literal = 1;
@@ -345,7 +345,7 @@ sub parse_expr {
         }
         if ($ctx) {
             my $copy = [@var];
-            @var = ([undef, "$ctx()", $copy]);
+            @var = ([undef, "$ctx()", $copy], 0);
         }
 
     ### nothing to find - return failure
