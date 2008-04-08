@@ -26,7 +26,7 @@ our $QR_INDEX           = '(?:\d*\.\d+ | \d+)';
 our @CONFIG_COMPILETIME = qw(SYNTAX CACHE_STR_REFS ANYCASE INTERPOLATE PRE_CHOMP POST_CHOMP ENCODING
                              SEMICOLONS V1DOLLAR V2PIPE V2EQUALS AUTO_EVAL SHOW_UNDEFINED_INTERP
                              ADD_LOCAL_PATH);
-our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS);
+our @CONFIG_RUNTIME     = qw(DUMP VMETHOD_FUNCTIONS CALL_CONTEXT);
 our $EVAL_CONFIG        = {map {$_ => 1} @CONFIG_COMPILETIME, @CONFIG_RUNTIME};
 our $EXTRA_COMPILE_EXT  = '.sto';
 our $PERL_COMPILE_EXT   = '.pl';
@@ -472,17 +472,25 @@ sub play_expr {
     my %seen_filters;
     while (defined $ref) {
 
-        ### check at each point if the rurned thing was a code
+        ### check at each point if the returned thing was a code
         if (UNIVERSAL::isa($ref, 'CODE')) {
             return $ref if $i >= $#$var && $ARGS->{'return_ref'};
-            my @results = $ref->($args ? map { $self->play_expr($_) } @$args : ());
-            if (defined $results[0]) {
-                $ref = ($#results > 0) ? \@results : $results[0];
-            } elsif (defined $results[1]) {
-                die $results[1]; # TT behavior - why not just throw ?
+            my @args = $args ? map { $self->play_expr($_) } @$args : ();
+            my $type = lc($self->{'CALL_CONTEXT'} || '');
+            if ($type eq 'item') {
+                $ref = $ref->(@args);
             } else {
-                $ref = undef;
-                last;
+                my @results = $ref->(@args);
+                if ($type eq 'list') {
+                    $ref = \@results;
+                } elsif (defined $results[0]) {
+                    $ref = ($#results > 0) ? \@results : $results[0];
+                } elsif (defined $results[1]) {
+                    die $results[1]; # TT behavior - why not just throw ?
+                } else {
+                    $ref = undef;
+                    last;
+                }
             }
         }
 
@@ -569,11 +577,19 @@ sub play_expr {
             ### method calls on objects
             if ($was_dot_call && UNIVERSAL::can($ref, 'can')) {
                 return $ref if $i >= $#$var && $ARGS->{'return_ref'};
+                my $type = lc($self->{'CALL_CONTEXT'} || '');
                 my @args = $args ? map { $self->play_expr($_) } @$args : ();
+                if ($type eq 'item') {
+                    $ref = $ref->$name(@args);
+                    next;
+                }
                 my @results = eval { $ref->$name(@args) };
                 if ($@) {
                     my $class = ref $ref;
-                    die $@ if ref $@ || $@ !~ /Can\'t locate object method "\Q$name\E" via package "\Q$class\E"/;
+                    die $@ if ref $@ || $@ !~ /Can\'t locate object method "\Q$name\E" via package "\Q$class\E"/ || $type eq 'list';
+                } elsif ($type eq 'list') {
+                    $ref = \@results;
+                    next;
                 } elsif (defined $results[0]) {
                     $ref = ($#results > 0) ? \@results : $results[0];
                     next;
@@ -638,18 +654,22 @@ sub set_variable {
     my $args = $var->[$i++];
     if (ref $ref) {
         ### non-named types can't be set
-        return if ref($ref) ne 'ARRAY' || ! defined $ref->[0];
-
-        # named access (ie via $name.foo)
-        $ref = $self->play_expr($ref);
-        if (defined $ref && (! $QR_PRIVATE || $ref !~ $QR_PRIVATE)) { # don't allow vars that begin with _
-            if ($#$var <= $i) {
-                return $self->{'_vars'}->{$ref} = $val;
-            } else {
-                $ref = $self->{'_vars'}->{$ref} ||= {};
-            }
+        return if ref($ref) ne 'ARRAY';
+        if (! defined $ref->[0]) {
+            return if ! $ref->[1] || $ref->[1] !~ /^[\$\@]\(\)$/; # do allow @( )
+            $ref = $self->play_operator($ref);
         } else {
-            return;
+            # named access (ie via $name.foo)
+            $ref = $self->play_expr($ref);
+            if (defined $ref && (! $QR_PRIVATE || $ref !~ $QR_PRIVATE)) { # don't allow vars that begin with _
+                if ($#$var <= $i) {
+                    return $self->{'_vars'}->{$ref} = $val;
+                } else {
+                    $ref = $self->{'_vars'}->{$ref} ||= {};
+                }
+            } else {
+                return;
+            }
         }
     } elsif (defined $ref) {
         return if $QR_PRIVATE && $ref =~ $QR_PRIVATE; # don't allow vars that begin with _
@@ -664,13 +684,21 @@ sub set_variable {
 
         ### check at each point if the returned thing was a code
         if (UNIVERSAL::isa($ref, 'CODE')) {
-            my @results = $ref->($args ? map { $self->play_expr($_) } @$args : ());
-            if (defined $results[0]) {
-                $ref = ($#results > 0) ? \@results : $results[0];
-            } elsif (defined $results[1]) {
-                die $results[1]; # TT behavior - why not just throw ?
+            my $type = lc($self->{'CALL_CONTEXT'} || '');
+            my @args = $args ? map { $self->play_expr($_) } @$args : ();
+            if ($type eq 'item') {
+                $ref = $ref->(@args);
             } else {
-                return;
+                my @results = $ref->(@args);
+                if ($type eq 'list') {
+                    $ref = \@results;
+                } elsif (defined $results[0]) {
+                    $ref = ($#results > 0) ? \@results : $results[0];
+                } elsif (defined $results[1]) {
+                    die $results[1]; # TT behavior - why not just throw ?
+                } else {
+                    return;
+                }
             }
         }
 
@@ -702,14 +730,22 @@ sub set_variable {
         ### method calls on objects
         } elsif (UNIVERSAL::can($ref, 'can')) {
             my $lvalueish;
+            my $type = lc($self->{'CALL_CONTEXT'} || '');
             my @args = $args ? map { $self->play_expr($_) } @$args : ();
             if ($i >= $#$var) {
                 $lvalueish = 1;
                 push @args, $val;
             }
+            if ($type eq 'item') {
+                $ref = $ref->$name(@args);
+                return if $lvalueish;
+                next;
+            }
             my @results = eval { $ref->$name(@args) };
             if (! $@) {
-                if (defined $results[0]) {
+                if ($type eq 'list') {
+                    $ref = \@results;
+                } elsif (defined $results[0]) {
                     $ref = ($#results > 0) ? \@results : $results[0];
                 } elsif (defined $results[1]) {
                     die $results[1]; # TT behavior - why not just throw ?
