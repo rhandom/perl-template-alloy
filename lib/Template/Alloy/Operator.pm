@@ -163,9 +163,7 @@ sub play_operator {
 
     } elsif ($op eq '@()') {
         local $self->{'CALL_CONTEXT'} = 'list';
-        my $val = $self->play_expr($tree->[2]);
-        $val = [$val] if ! UNIVERSAL::isa($val, 'ARRAY');
-        return $val;
+        return $self->play_expr($tree->[2]);
 
     } elsif ($op eq '$()') {
         local $self->{'CALL_CONTEXT'} = 'item';
@@ -533,6 +531,19 @@ execution of the compiled template.
 This operator is not exposed for external use.  It is used internally
 by Template::Alloy to delay the creation of an array until the
 execution of the compiled template.
+
+=item C<@()>
+
+List context specifier.  Methods or functions inside this operator
+will always be called in list context and will always return an
+arrayref of the results.  See the CALL_CONTEXT configuration
+directive.
+
+=item C<$()>
+
+Item context specifier.  Methods or functions inside this operator
+will always be called in item (scalar) context.  See the CALL_CONTEXT
+configuration directive.
 
 =item C<qr>
 
