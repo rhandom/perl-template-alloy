@@ -1035,6 +1035,7 @@ The following compile time configuration options may be set:
 
 The following runtime configuration options may be set:
 
+    CALL_CONTEXT
     DUMP
     VMETHOD_FUNCTIONS
 
@@ -2026,6 +2027,65 @@ will then be used for caching the document - both in memory and on
 the file system (if configured).  This will give a significant speed
 boost.  Note that this affects strings passed to the EVALUATE directive
 or eval filters as well.  It may be set using the CONFIG directive.
+
+=item CALL_CONTEXT (Not in TT)
+
+Can be one of 'item', 'list', or 'smart'.  The default type is
+'smart'.  The CALL_CONTEXT configuration specifies in what Perl
+context coderefs and methods used in the processed templates will be
+called.  TT historically has avoided the distinction of item (scalar)
+vs list context.  To avoid worrying about this, TT introduced 'smart'
+context.  The C<@()> and C<$()> context specifiers make it easier to use
+CALL_CONTEXT in some situations.
+
+The following table shows the relationship between the various contexts:
+
+       return values      smart context   list context    item context
+       -------------      -------------   ------------    ------------
+    A   'foo'              'foo'           ['foo']         'foo'
+    B   undef              undef           [undef]         undef
+    C   (no return value)  undef           []              undef
+    D   (7)                7               [7]             7
+    E   (7,8,9)            [7,8,9]         [7,8,9]         9
+    F   @a = (7)           7               [7]             1
+    G   @a = (7,8,9)       [7,8,9]         [7,8,9]         3
+    H   ({b=>"c"})         {b=>"c"}        [{b=>"c"}]      {b=>"c"}
+    I   ([1])              [1]             [[1]]           [1]
+    J   ([1],[2])          [[1],[2]]       [[1],[2]]       [2]
+    K   [7,8,9]            [7,8,9]         [[7,8,9]]       [7,8,9]
+    L   (undef, "foo")     die "foo"       [undef, "foo"]  "foo"
+    M   wantarray?1:0      1               1               0
+
+Cases F, H, I and M are common sticking points of the the smart context
+in TT2.  Note that list context always returns an arrayref from a method
+or function call.  Smart context can give confusing results sometimes,
+especially the I and J cases.  Case L for smart match is very surprising.
+
+The list and item context provide another feature for method calls.  In
+smart context, TT will look for a hash key in the object by the same name
+as the method, if a method by that name doesn't exist.  In item and list
+context Alloy will die if a method by that name cannot be found.
+
+The CALL_CONTEXT configuration item can be passed to new or it may
+also be set during runtime using the CONFIG directive.  The following
+method call would be in list context:
+
+    [% CONFIG CALL_CONTEXT => 'list';
+       results = my_obj.get_results;
+       CONFIG CALL_CONTEXT => 'smart'
+    %]
+
+Note that we needed to restore CALL_CONTEXT to the default 'smart' value.
+Template::Alloy has added the C<@()> (list) and the C<$()> (item) context
+specifiers.  The previous example could be written as:
+
+    [% results = @( my_obj.get_results ) %]
+
+To call that same method in item (scalar) context you would do the following:
+
+    [% results = $( my_obj.get_results ) %]
+
+The C<@()> and C<$()> operators are based on the Perl 6 counterpart.
 
 =item COMPILE_DIR
 
