@@ -474,7 +474,8 @@ sub parse_expr {
                     undef $found;
                 }
                 $var = [[undef, $has_prefix->[-1], $var ], 0];
-                if (! @$has_prefix) { undef $has_prefix } else { pop @$has_prefix }
+                pop @$has_prefix;
+                $has_prefix = undef if ! @$has_prefix;
             }
 
             ### add the operator to the tree
