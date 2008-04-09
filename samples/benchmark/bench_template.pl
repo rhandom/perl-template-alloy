@@ -387,8 +387,8 @@ if ($#run > 0) {
     }
     $output .= "#\n";
 
-    print $output;
 }
+print $output;
 
 
 
