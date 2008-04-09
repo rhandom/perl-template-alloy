@@ -427,11 +427,18 @@ sub play_MACRO {
         $sub_tree = $sub_tree->[0]->[4];
     }
 
-    my $self_copy = $self;
-    eval {require Scalar::Util; Scalar::Util::weaken($self_copy)};
-
     ### install a closure in the stash that will handle the macro
-    $self->set_variable($name, sub {
+    $self->set_variable($name, $self->_macro_sub($args, $sub_tree));
+
+    return;
+}
+
+sub _macro_sub {
+    my ($self, $args, $sub_tree) = @_;
+
+    my $self_copy = $self;
+
+    my $sub = sub {
         ### macros localize
         my $copy = $self_copy->{'_vars'};
         local $self_copy->{'_vars'}= {%$copy};
@@ -454,11 +461,13 @@ sub play_MACRO {
 
         ### finally - run the sub tree
         my $out = '';
+        local $self->{'STREAM'} = undef;
         $self_copy->play_tree($sub_tree, \$out);
         return $out;
-    });
+    };
 
-    return;
+    eval {require Scalar::Util; Scalar::Util::weaken($self_copy)};
+    return $sub;
 }
 
 sub play_META {
