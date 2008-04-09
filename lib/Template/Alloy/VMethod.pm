@@ -10,13 +10,19 @@ use strict;
 use warnings;
 use Template::Alloy;
 use base qw(Exporter);
-our @EXPORT_OK = qw(define_vmethod $ITEM_OPS $SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
+our @EXPORT_OK = qw(define_vmethod
+                    $ITEM_OPS   $ITEM_METHODS
+                    $SCALAR_OPS
+                    $LIST_OPS
+                    $HASH_OPS
+                    $FILTER_OPS
+                    $VOBJS);
 
 sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
 ###----------------------------------------------------------------###
 
-our $ITEM_OPS = our $SCALAR_OPS = {
+our $SCALAR_OPS = our $ITEM_OPS = {
     '0'      => sub { $_[0] },
     abs      => sub { no warnings; abs shift },
     atan2    => sub { no warnings; atan2($_[0], $_[1]) },
@@ -65,12 +71,14 @@ our $ITEM_OPS = our $SCALAR_OPS = {
     url      => \&vmethod_url,
 };
 
-our $FILTER_OPS = { # generally - non-dynamic filters belong in scalar ops
-    eval     => [\&filter_eval, 1],
-    evaltt   => [\&filter_eval, 1],
-    file     => [\&filter_redirect, 1],
-    redirect => [\&filter_redirect, 1],
+our $ITEM_METHODS = {
+    eval     => \&item_method_eval,
+    evaltt   => \&item_method_eval,
+    file     => \&item_method_redirect,
+    redirect => \&item_method_redirect,
 };
+
+our $FILTER_OPS = {}; # generally - non-dynamic filters belong in scalar ops
 
 our $LIST_OPS = {
     defined => sub { return 1 if @_ == 1; defined $_[0]->[ defined($_[1]) ? $_[1] : 0 ] },
@@ -326,46 +334,42 @@ sub vmethod_url {
     return $str;
 }
 
-sub filter_eval {
-    my $context = shift;
-    my $args    = pop || {};
+sub item_method_eval {
+    my $t    = shift;
+    my $text = shift; return '' if ! defined $text;
+    my $args = shift || {};
+
+    local $t->{'_eval_recurse'} = $t->{'_eval_recurse'} || 0;
+    $t->throw('eval_recurse', "MAX_EVAL_RECURSE $Template::Alloy::MAX_EVAL_RECURSE reached")
+        if ++$t->{'_eval_recurse'} > ($t->{'MAX_EVAL_RECURSE'} || $Template::Alloy::MAX_EVAL_RECURSE);
+
     my %ARGS;
     @ARGS{ map {uc} keys %$args } = values %$args;
-    foreach (keys %ARGS) { delete $ARGS{$_} if ! $Template::Alloy::EVAL_CONFIG->{$_} }
+    delete @ARGS{ grep {! $Template::Alloy::EVAL_CONFIG->{$_}} keys %ARGS };
 
-    return sub {
-        ### prevent recursion
-        my $t = $context->_template;
-        local $t->{'_eval_recurse'} = $t->{'_eval_recurse'} || 0;
-        $context->throw('eval_recurse', "MAX_EVAL_RECURSE $Template::Alloy::MAX_EVAL_RECURSE reached")
-            if ++$t->{'_eval_recurse'} > ($t->{'MAX_EVAL_RECURSE'} || $Template::Alloy::MAX_EVAL_RECURSE);
-
-        my $text = shift;
-        local @{ $t }{ keys %ARGS } = values %ARGS;
-        return $context->process(\$text);
-    };
+    local @{ $t }{ keys %ARGS } = values %ARGS;
+    my $out = '';
+    $t->process_simple(\$text, $t->_vars, \$out) || $t->throw($t->error);
+    return $out;
 }
 
-sub filter_redirect {
-    my ($context, $file, $options) = @_;
-    my $path = $context->config->{'OUTPUT_PATH'} || $context->throw('redirect', 'OUTPUT_PATH is not set');
-    $context->throw('redirect', 'Invalid filename - cannot include "/../"')
+sub item_method_redirect {
+    my ($t, $text, $file, $options) = @_;
+    my $path = $t->{'OUTPUT_PATH'} || $t->throw('redirect', 'OUTPUT_PATH is not set');
+    $t->throw('redirect', 'Invalid filename - cannot include "/../"')
         if $file =~ m{(^|/)\.\./};
 
-    return sub {
-        my $text = shift;
-        if (! -d $path) {
-            require File::Path;
-            File::Path::mkpath($path) || $context->throw('redirect', "Couldn't mkpath \"$path\": $!");
-        }
-        open (my $fh, '>', "$path/$file") || $context->throw('redirect', "Couldn't open \"$file\": $!");
-        if (my $bm = (! $options) ? 0 : ref($options) ? $options->{'binmode'} : $options) {
-            if (+$bm == 1) { binmode $fh }
-            else { binmode $fh, $bm}
-        }
-        print $fh $text;
-        return '';
-    };
+    if (! -d $path) {
+        require File::Path;
+        File::Path::mkpath($path) || $t->throw('redirect', "Couldn't mkpath \"$path\": $!");
+    }
+    open (my $fh, '>', "$path/$file") || $t->throw('redirect', "Couldn't open \"$file\": $!");
+    if (my $bm = (! $options) ? 0 : ref($options) ? $options->{'binmode'} : $options) {
+        if (+$bm == 1) { binmode $fh }
+        else { binmode $fh, $bm}
+    }
+    print $fh $text;
+    return '';
 }
 
 ###----------------------------------------------------------------###
@@ -795,6 +799,8 @@ is a space.
 In Template::Alloy and TT3 you may also use normal regular expression notation.
 
     [% mylist.grep(/^\w+\.\w+$/) %] Same as before.
+
+    [% mylist.grep(->(a){ a.foo.bar }
 
 =item hash
 
