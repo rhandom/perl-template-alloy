@@ -13,7 +13,7 @@ use base qw(Exporter);
 our @EXPORT_OK = qw(define_vmethod
                     $ITEM_OPS   $ITEM_METHODS
                     $SCALAR_OPS
-                    $LIST_OPS
+                    $LIST_OPS   $LIST_METHODS
                     $HASH_OPS
                     $FILTER_OPS
                     $VOBJS);
@@ -50,6 +50,7 @@ our $SCALAR_OPS = our $ITEM_OPS = {
     new      => sub { defined $_[0] ? $_[0] : '' },
     null     => sub { '' },
     oct      => sub { no warnings; oct $_[0] },
+    print    => sub { no warnings; "@_" },
     rand     => sub { no warnings; rand shift },
     remove   => sub { vmethod_replace(shift, shift, '', 1) },
     repeat   => \&vmethod_repeat,
@@ -84,13 +85,14 @@ our $LIST_OPS = {
     defined => sub { return 1 if @_ == 1; defined $_[0]->[ defined($_[1]) ? $_[1] : 0 ] },
     first   => sub { my ($ref, $i) = @_; return $ref->[0] if ! $i; return [@{$ref}[0 .. $i - 1]]},
     fmt     => \&vmethod_fmt_list,
-    grep    => sub { no warnings; my ($ref, $pat) = @_; [grep {/$pat/} @$ref] },
+    grep    => sub { no warnings; my ($ref, $pat) = @_; UNIVERSAL::isa($pat, 'CODE') ? [grep {$pat->($_)} @$ref] : [grep {/$pat/} @$ref] },
     hash    => sub { no warnings; my $list = shift; return {@$list} if ! @_; my $i = shift || 0; return {map {$i++ => $_} @$list} },
     import  => sub { my $ref = shift; push @$ref, grep {defined} map {ref eq 'ARRAY' ? @$_ : undef} @_; '' },
     item    => sub { $_[0]->[ $_[1] || 0 ] },
     join    => sub { my ($ref, $join) = @_; $join = ' ' if ! defined $join; no warnings; return join $join, @$ref },
     last    => sub { my ($ref, $i) = @_; return $ref->[-1] if ! $i; return [@{$ref}[-$i .. -1]]},
     list    => sub { $_[0] },
+    map     => sub { no warnings; my ($ref, $code) = @_; UNIVERSAL::isa($code, 'CODE') ? [map {$code->($_)} @$ref] : [map {$code} @$ref] },
     max     => sub { no warnings; $#{ $_[0] } },
     merge   => sub { my $ref = shift; return [ @$ref, grep {defined} map {ref eq 'ARRAY' ? @$_ : undef} @_ ] },
     new     => sub { no warnings; return [@_] },
@@ -107,6 +109,9 @@ our $LIST_OPS = {
     splice  => \&vmethod_splice,
     unique  => sub { my %u; return [ grep { ! $u{$_}++ } @{ $_[0] } ] },
     unshift => sub { my $ref = shift; unshift @$ref, @_; return '' },
+};
+
+our $LIST_METHODS = {
 };
 
 our $HASH_OPS = {
@@ -282,11 +287,15 @@ sub vmethod_replace {
 
 sub vmethod_sort {
     my ($list, $field) = @_;
-    return defined($field)
-        ? [map {$_->[0]} sort {$a->[1] cmp $b->[1]} map {[$_, lc(ref $_ eq 'HASH' ? $_->{$field}
-                                                                 : UNIVERSAL::can($_, $field) ? $_->$field()
-                                                                 : $_)]} @$list ]
-        : [map {$_->[0]} sort {$a->[1] cmp $b->[1]} map {[$_, lc $_]} @$list ]; # case insensitive
+    if (! defined $field) {
+        return [map {$_->[0]} sort {$a->[1] cmp $b->[1]} map {[$_, lc $_]} @$list ]; # case insensitive
+    } elsif (UNIVERSAL::isa($field, 'CODE')) {
+        return [sort {int($field->($a, $b))} @$list];
+    } else {
+        return [map {$_->[0]} sort {$a->[1] cmp $b->[1]} map {[$_, lc(ref $_ eq 'HASH' ? $_->{$field}
+                                                                      : UNIVERSAL::can($_, $field) ? $_->$field()
+                                                                      : $_)]} @$list ];
+    }
 }
 
 sub vmethod_splice {
