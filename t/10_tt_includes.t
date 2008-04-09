@@ -16,7 +16,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt) ? 306 : 93;
+use Test::More tests => (! $is_tt) ? 312 : 93;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -215,10 +215,12 @@ process_ok("[% SET baz = 21 %]([% PROCESS baz.tt %])[% baz %]" => '(42)42');
 process_ok("[% PROCESS nested/foo.tt %]" => '(Nested foo BAR)');
 process_ok("[% PROCESS nested/foo.tt %]" => '(Nested foo Nested bar)', {tt_config => [ADD_LOCAL_PATH => 1]}) if ! $is_tt;
 process_ok("[% PROCESS nested/foo.tt %]" => '(Nested foo BAR)', {tt_config => [ADD_LOCAL_PATH => -1]}) if ! $is_tt;
+process_ok("[% CONFIG ADD_LOCAL_PATH => 1 ; PROCESS nested/foo.tt %]" => '(Nested foo Nested bar)') if ! $is_tt;
 
 process_ok("[% PROCESS nested/foo2.tt %]" => ($use_stream ? '(Nested foo ' : ''));
 process_ok("[% PROCESS nested/foo2.tt %]" => '(Nested foo Nested bar2)', {tt_config => [ADD_LOCAL_PATH => 1]}) if ! $is_tt;
 process_ok("[% PROCESS nested/foo2.tt %]" => '(Nested foo Nested bar2)', {tt_config => [ADD_LOCAL_PATH => -1]}) if ! $is_tt;
+process_ok("[% CONFIG ADD_LOCAL_PATH => 1 ; PROCESS nested/foo2.tt %]" => '(Nested foo Nested bar2)') if ! $is_tt;
 
 ###----------------------------------------------------------------###
 print "### WRAPPER ######################################### $engine_option\n";

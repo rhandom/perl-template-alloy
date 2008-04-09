@@ -1018,7 +1018,6 @@ options.
 
 The following compile time configuration options may be set:
 
-    ADD_LOCAL_PATH
     ANYCASE
     AUTO_EVAL
     CACHE_STR_REFS
@@ -1035,6 +1034,7 @@ The following compile time configuration options may be set:
 
 The following runtime configuration options may be set:
 
+    ADD_LOCAL_PATH
     CALL_CONTEXT
     DUMP
     VMETHOD_FUNCTIONS
@@ -1982,6 +1982,10 @@ arrayref.  This allows templates to refer to files in the local
 template directory without specifying the local directory as part of
 the filename.  Default is 0.  If set to a negative value, the current
 directory will be added to the end of the current INCLUDE_PATHS.
+
+This property may also be set in the template using the CONFIG directive.
+
+    [% CONFIG ADD_LOCAL_PATH => 1 %]
 
 =item ANYCASE
 
