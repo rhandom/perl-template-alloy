@@ -159,6 +159,20 @@ sub parse_expr {
 
     $$str_ref =~ m{ \G \s* $QR_COMMENTS }gcxo;
 
+    ### allow for macro definer
+    if ($$str_ref =~ m{ \G -> \s* }gcxo) { # longest token would be nice - until then this comes before prefix
+        local $self->{'_operator_precedence'} = 0; # reset presedence
+        my $args;
+        if ($$str_ref =~ m{ \G \( \s* }gcx) {
+            $args = $self->parse_args($str_ref, {positional_only => 1});
+            $$str_ref =~ m{ \G \) \s* }gcx || $self->throw('parse.missing', "Missing close ')'", undef, pos($$str_ref));
+        }
+        $$str_ref =~ m{ \G \{ $QR_COMMENTS }gcx || $self->throw('parse.missing', "Missing open '{'", undef, pos($$str_ref));
+        local $self->{'END_TAG'} = qr{ \} }x;
+        my $tree = $self->parse_tree_tt3($str_ref, 'one_tag_only');
+        return [[undef, '->', $args || [['this',0]], $tree]];
+    }
+
     ### test for leading prefix operators
     my $has_prefix;
     while (! $is_aq && $$str_ref =~ m{ \G ($QR_OP_PREFIX) }gcxo) {
