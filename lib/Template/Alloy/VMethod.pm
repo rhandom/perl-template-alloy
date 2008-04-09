@@ -10,13 +10,13 @@ use strict;
 use warnings;
 use Template::Alloy;
 use base qw(Exporter);
-our @EXPORT_OK = qw(define_vmethod $SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
+our @EXPORT_OK = qw(define_vmethod $ITEM_OPS $SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
 
 sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
 ###----------------------------------------------------------------###
 
-our $SCALAR_OPS = {
+our $ITEM_OPS = our $SCALAR_OPS = {
     '0'      => sub { $_[0] },
     abs      => sub { no warnings; abs shift },
     atan2    => sub { no warnings; atan2($_[0], $_[1]) },
@@ -564,11 +564,11 @@ Not available in TT - available in HTML::Template::Expr.
 
 =item html
 
-    [% item.html %] Performs a very basic html encoding (swaps out &, <, > and " for the html entities)
+    [% item.html %] Performs a very basic html encoding (swaps out &, <, >, ' and " with the corresponding html entities)
 
 =item indent
 
-    [% item.indent(3) %] Indent that number of spaces.
+    [% item.indent(3) %] Indent by that number of spaces if an integer is passed (default is 4).
 
     [% item.indent("Foo: ") %] Add the string "Foo: " to the beginning of every line.
 
@@ -578,11 +578,11 @@ Not available in TT - available in HTML::Template::Expr.
 
 =item lc
 
-Same as the lower vmethod.  Returns the lower cased version of the item.
+Same as the lower vmethod.  Returns the lowercased version of the item.
 
 =item lcfirst
 
-    [% item.lcfirst %] Capitalize the leading letter.
+    [% item.lcfirst %] Lowercase the leading letter.
 
 =item length
 
@@ -590,7 +590,7 @@ Same as the lower vmethod.  Returns the lower cased version of the item.
 
 =item list
 
-    [% item.list %] Returns a list with a single value of the item.
+    [% item.list %] Returns a list (arrayref) with a single value of the item.
 
 =item log
 
@@ -602,7 +602,7 @@ Not available in TT - available in HTML::Template::Expr.
 
 =item lower
 
-    [% item.lower %] Return a lower-casified string.
+    [% item.lower %] Return the string lowercased.
 
 =item match
 
@@ -616,9 +616,15 @@ In Template::Alloy and TT3 you can use regular expressions notation as well.
 
     [% item.match( m{(\w+) (\w+)} ) %] Same as before.
 
+Note that you can't use the 'g' regex modifier - you must pass the second
+argument to turn on global match.
+
 =item null
 
-    [% item.null %] Do nothing.
+    [% item.null %] Return nonthing.
+
+If the item contains a coderef it will still be executed, but the result would
+be ignored.
 
 =item oct
 
@@ -669,13 +675,16 @@ In Template::Alloy and TT3 you may also use normal regular expression notation.
 
     [% item.replace(/(\w+)/, "($1)") %] Same as before.
 
+Note that you can't use the 'g' regex modifier - global match is on by default.
+You must pass the third argument of false to turn off global match.
+
 =item search
 
     [% item.search("(\w+)") %] Tests if the given pattern is in the string.
 
 In Template::Alloy and TT3 you may also use normal regular expression notation.
 
-    [% item.search(/(\w+)/, "($1)") %] Same as before.
+    [% item.search(/(\w+)/) %] Same as before.
 
 =item sin
 
@@ -732,15 +741,15 @@ will affect future calls to the rand vmethod.
 
 =item uc
 
-Same as the upper command.  Returns upper cased string.
+Same as the upper command.  Returns uppercased string.
 
 =item ucfirst
 
-    [% item.ucfirst %] Lower-case the leading letter.
+    [% item.ucfirst %] Uppercase the leading letter.
 
 =item upper
 
-    [% item.upper %] Return a upper cased string.
+    [% item.upper %] Return the string uppercased.
 
 =item uri
 
@@ -782,6 +791,10 @@ is a space.
 =item grep
 
     [% mylist.grep("^\w+\.\w+$") %] Returns a list of all items matching the pattern.
+
+In Template::Alloy and TT3 you may also use normal regular expression notation.
+
+    [% mylist.grep(/^\w+\.\w+$/) %] Same as before.
 
 =item hash
 
@@ -941,7 +954,7 @@ and represent the keys to be deleted.
 
 =item nsort
 
-    [% myhash.nsort.join(", ") %] Returns a numerically sorted list of the keys.
+    [% myhash.nsort.join(", ") %] Returns a list of keys numerically sorted by the values.
 
 =item size
 
@@ -949,7 +962,7 @@ and represent the keys to be deleted.
 
 =item sort
 
-    [% myhash.sort.join(", ") Returns an alphabetically sorted list.
+    [% myhash.sort.join(", ") Returns a list of keys alphabetically sorted by the values.
 
 =item values
 
