@@ -1372,6 +1372,15 @@ Would print:
 
     (1)(2)(3)(4)
 
+Starting with version 1.012 of Template::Alloy there is also
+a macro operator.
+
+    [% foo = ->(i,j){ "You passed me $i and $j" } %]
+
+    [% bar = ->(max){ FOREACH i = [1 .. max]; i ; END } %]
+
+See the Template::Alloy::Operator documentation for more examples.
+
 =item C<META>
 
 Used to define variables that will be available via either the

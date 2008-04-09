@@ -185,6 +185,9 @@ sub play_operator {
             $last->[-1] = (ref $last->[-1] ? [@{ $last->[-1] }, @_] : [@_]) if @_;
             return $self->play_expr($last);
         } };
+    } elsif ($op eq '->') {
+        my $code = $self->_macro_sub($tree->[2], $tree->[3]);
+        return sub { $code }; # do the double sub dance
     } elsif ($op eq 'qr') {
         return $tree->[3] ? qr{(?$tree->[3]:$tree->[2])} : qr{$tree->[2]};
     }
@@ -519,6 +522,32 @@ Right associative. Lower precedence version of the '||' operator.
 =item C<err ERR>
 
 Right associative.  Lower precedence version of the '//' operator.
+
+=item C<-E<gt>> (Not in TT2)
+
+Macro operator.  Works like the MACRO directive but can be used in
+map, sort, and grep list operations.  There are two diffences from
+the MACRO directive.  First is that if no argument list is specified,
+a default argument list with a single parameter named "this" will
+be used.  Second, the C<-E<gt>> operator parses its block as if
+it was already in a template tag.
+
+    [% foo = ->{ "Hi" } %][% foo %] => Hi
+    [% foo = ->{ this.repeat(2) } %][% foo("Hi") %] => HiHi
+    [% foo = ->(n){ n.repeat(2) } %][% foo("Hi") %] => HiHi
+    [% foo = ->(a,b){ a; "|"; b } %][% foo(2,3) %]  => 2|3
+
+    [% [0..10].grep(->{ this % 2 }).join %] => 1 3 5 7 9
+    [% ['a'..'c'].map(->{ this.upper }).join %] => A B C
+
+    [% c = [{k => "wow"}, {k => "wee"}, {k => "a"}] %]
+    [% c.sort(->(a,b){ a.k cmp b.k }).map(->{this.k}).join %] => a wee wow
+
+Note: Care should be used when attempting to sort large lists.
+The mini-language of Template::Alloy is a interpreted language running
+in Perl which is an interpreted language.  There are likely to be
+performance issues when trying to do low level functions such as sort
+on large lists.
 
 =item C<{}>
 
