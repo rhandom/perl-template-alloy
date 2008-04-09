@@ -447,18 +447,18 @@ sub process {
         }
 
     };
+
+    ### clear blocks as asked (AUTO_RESET) defaults to on
+    $self->{'BLOCKS'} = $blocks if exists($self->{'AUTO_RESET'}) && ! $self->{'AUTO_RESET'};
+
     if (my $err = $@) {
         $err = $self->exception('undef', $err) if ! UNIVERSAL::can($err, 'type');
         if ($err->type !~ /stop|return|next|last|break/) {
             $self->{'error'} = $err;
+            die $err if $self->{'RAISE_ERROR'};
             return;
         }
     }
-
-
-
-    ### clear blocks as asked (AUTO_RESET) defaults to on
-    $self->{'BLOCKS'} = $blocks if exists($self->{'AUTO_RESET'}) && ! $self->{'AUTO_RESET'};
 
     ### send the content back out
     $out ||= $self->{'OUTPUT'};
