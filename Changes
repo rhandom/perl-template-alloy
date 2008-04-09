@@ -1,10 +1,16 @@
 1.012
         * Allow scalar refs passed as variables to be processed
         * Allow ADD_LOCAL_PATH to function in more areas (including INSERT)
+        * Don't let ADD_LOCAL_PATH modify INCLUDE_PATHS
+        * Let ADD_LOCAL_PATH be modified at runtime
         * Stream cleanup
         * Added CALL_CONTEXT configuration item
-        * Added @( ) list context specifier
-        * Added $( ) item context specifier
+        * Added @() list context specifier
+        * Added $() item context specifier
+        * Cleanup some of the pod on vmethods.
+        * Add the ITEM_METHOD API which is hybrid SCALAR_OPS and filters
+        * Add the ->() MACRO operator
+        * Allow map, grep, and sort to use the new operator
 
 1.011
       2007-12-10
