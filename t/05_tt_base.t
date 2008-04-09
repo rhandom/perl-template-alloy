@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 2957 : 646) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 2966 : 646) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -456,6 +456,7 @@ process_ok("[% a.fmt('%02d','|') %]" => '02|03', {a => [2,3]}) if ! $is_tt;
 process_ok("[% a.fmt('%0*d','|', 3) %]" => '002|003', {a => [2,3]}) if ! $is_tt;
 process_ok("[% a.grep.join %]" => '2 3', {a => [2,3]});
 process_ok("[% a.grep(2).join %]" => '2', {a => [2,3]});
+process_ok("[% a.grep(->(n){n % 2}).join %]" => '3 5 7', {a => [2..7]}) if ! $is_tt;
 process_ok("[% a.hash.items.join %]" => '2 3', {a => [2,3]});
 process_ok("[% a.hash(5).items.sort.join %]" => '2 3 5 6', {a => [2,3]});
 process_ok("[% a.import(5) %]|[% a.join %]" => '|2 3', {a => [2,3]}) if ! $is_tt;
@@ -469,6 +470,7 @@ process_ok("[% a.join('|') %]" => '2|3', {a => [2,3]});
 process_ok("[% a.last %]" => '10', {a => [2..10]});
 process_ok("[% a.last(3).join %]" => '8 9 10', {a => [2..10]});
 process_ok("[% a.list.join %]" => '2 3', {a => [2, 3]});
+process_ok("[% a.map(->(n){ n.repeat(3) }).join %]" => '222 333', {a => [2,3]}) if ! $is_tt;
 process_ok("[% a.max %]" => '1', {a => [2, 3]});
 process_ok("[% a.merge(5).join %]" => '2 3', {a => [2,3]});
 process_ok("[% a.merge([5]).join %]" => '2 3 5', {a => [2,3]});
@@ -1166,6 +1168,7 @@ process_ok('[% MACRO f BLOCK %]>[% TRY; f ; CATCH ;  "caught" ; END %][% END %][
 
 if (! $is_tt) {
     process_ok("[% foo = ->{ 'Hi' } %][% foo %]" => 'Hi');
+    process_ok("[% foo = ->{ 'Hi'; this } %][% foo(2) %]" => 'Hi2');
     process_ok("[% foo = ->(n){ 'Hi'; n } %][% foo(2) %]" => 'Hi2');
     process_ok("[%n=1%][% foo = ->(n) { 'Hi' ; n } %][% foo(2) %][%n%]" => 'Hi21');
     process_ok("[% foo = ->(n) { FOREACH i=[1..n]; i ; END } %][% foo(3) %]" => '123');
