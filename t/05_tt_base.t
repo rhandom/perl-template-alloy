@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 2945 : 646) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 2957 : 646) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -1163,6 +1163,13 @@ process_ok("[%n=1%][% MACRO foo BLOCK %]Hi[% n = 2%][% END %][% foo %][%n%]" => 
 process_ok("[% MACRO foo(n) FOREACH i=[1..n] %][% i %][% END %][% foo(3) %]" => '123');
 
 process_ok('[% MACRO f BLOCK %]>[% TRY; f ; CATCH ;  "caught" ; END %][% END %][% f %]' => '>>>caught', {tt_config => [MAX_MACRO_RECURSE => 3]}) if ! $is_tt;
+
+if (! $is_tt) {
+    process_ok("[% foo = ->{ 'Hi' } %][% foo %]" => 'Hi');
+    process_ok("[% foo = ->(n){ 'Hi'; n } %][% foo(2) %]" => 'Hi2');
+    process_ok("[%n=1%][% foo = ->(n) { 'Hi' ; n } %][% foo(2) %][%n%]" => 'Hi21');
+    process_ok("[% foo = ->(n) { FOREACH i=[1..n]; i ; END } %][% foo(3) %]" => '123');
+}
 
 ###----------------------------------------------------------------###
 print "### DEBUG ########################################### $engine_option\n";
