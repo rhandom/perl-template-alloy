@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 2966 : 646) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 2969 : 646) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -489,6 +489,7 @@ process_ok("[% a.slice(2).join %]" => '4 5', {a => [2..5]});
 process_ok("[% a.slice(0,2).join %]" => '2 3 4', {a => [2..5]});
 process_ok("[% a.sort.join %]" => '1 2 3', {a => [2, 3, 1]});
 process_ok("[% a.sort('b').0.b %]" => 'wee', {a => [{b => "wow"}, {b => "wee"}]});
+process_ok("[% c.sort(->(a,b){ a.k cmp b.k }).map(->{this.k}).join %]" => 'a wee wow', {c => [{k => "wow"}, {k => "wee"}, {k => "a"}]});
 process_ok("[% a.splice.join %]|[% a.join %]" => '2 3 4 5|', {a => [2..5]});
 process_ok("[% a.splice(2).join %]|[% a.join %]" => '4 5|2 3', {a => [2..5]});
 process_ok("[% a.splice(0,2).join %]|[% a.join %]" => '2 3|4 5', {a => [2..5]});
