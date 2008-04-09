@@ -21,6 +21,7 @@ sub new { die "This class is a role for use by packages such as Template::Alloy"
 sub parse_tree_tt3 {
     my $self    = shift;
     my $str_ref = shift;
+    my $one_tag_only = shift() ? 1 : 0;
     if (! $str_ref || ! defined $$str_ref) {
         $self->throw('parse.no_string', "No string or undefined during parse", undef, 1);
     }
@@ -50,12 +51,15 @@ sub parse_tree_tt3 {
     my $capture;          # flag to start capture
     my $func;
     my $node;
-    local pos($$str_ref) = 0;
+    local pos($$str_ref) = 0 if ! $one_tag_only;
 
     while (1) {
         ### continue looking for information in a semi-colon delimited tag
         if ($continue) {
             $node = [undef, $continue, undef];
+
+        } elsif ($one_tag_only) {
+            $node = [undef, pos($$str_ref), undef];
 
         ### find the next opening tag
         } else {
@@ -264,6 +268,12 @@ sub parse_tree_tt3 {
 
         ### look for the closing tag
         if ($$str_ref =~ m{ \G \s* $QR_COMMENTS (?: ; \s* $QR_COMMENTS)? ([+=~-]?) $self->{'_end_tag'} }gcxs) {
+            if ($one_tag_only) {
+                $self->throw('parse', "Invalid char \"$1\" found at end of block") if $1;
+                $self->throw('parse', "Missing END directive", $state[-1], pos($$str_ref)) if @state > 0;
+                return \@tree;
+            }
+
             $post_chomp = $1 || $self->{'POST_CHOMP'};
             $post_chomp =~ y/-=~+/1230/ if $post_chomp;
             $continue = 0;
