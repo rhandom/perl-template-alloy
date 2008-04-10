@@ -540,6 +540,8 @@ it was already in a template tag.
     [% [0..10].grep(->{ this % 2 }).join %] => 1 3 5 7 9
     [% ['a'..'c'].map(->{ this.upper }).join %] => A B C
 
+    [% [1,2,3].sort(->(a,b){ b <=> a }).join %] prints 3 2 1
+
     [% c = [{k => "wow"}, {k => "wee"}, {k => "a"}] %]
     [% c.sort(->(a,b){ a.k cmp b.k }).map(->{this.k}).join %] => a wee wow
 
