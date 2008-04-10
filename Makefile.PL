@@ -38,8 +38,8 @@ sub postamble {
     
 pm_to_blib: README
 
-README: \$(VERSION_FROM)
-	pod2text \$(VERSION_FROM) > README
+README: lib/Template/Alloy.pod
+	pod2text lib/Template/Alloy.pod > README
 ^;
 }
 
