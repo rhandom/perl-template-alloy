@@ -467,6 +467,8 @@ sub process {
             $self->{'error'} = $err;
             die $err if $self->{'RAISE_ERROR'};
             return;
+        } elsif ($err->type == 'return' && UNIVERSAL::isa($err->info, 'HASH')) {
+            return $err->info->{'return_val'};
         }
     }
 

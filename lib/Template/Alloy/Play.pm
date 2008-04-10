@@ -48,7 +48,7 @@ our $DIRECTIVES = {
     PERL    => \&play_PERL,
     PROCESS => \&play_PROCESS,
     RAWPERL => \&play_RAWPERL,
-    RETURN  => \&play_control,
+    RETURN  => \&play_RETURN,
     SET     => \&play_SET,
     STOP    => \&play_control,
     SWITCH  => \&play_SWITCH,
@@ -428,13 +428,13 @@ sub play_MACRO {
     }
 
     ### install a closure in the stash that will handle the macro
-    $self->set_variable($name, $self->_macro_sub($args, $sub_tree));
+    $self->set_variable($name, $self->_macro_sub($args, $sub_tree, $out_ref));
 
     return;
 }
 
 sub _macro_sub {
-    my ($self, $args, $sub_tree) = @_;
+    my ($self, $args, $sub_tree, $out_ref) = @_;
 
     my $self_copy = $self;
 
@@ -459,10 +459,16 @@ sub _macro_sub {
             $self_copy->set_variable([$name, 0], $named->{$name});
         }
 
+        local $self->{'STREAM'} = undef;
+
         ### finally - run the sub tree
         my $out = '';
-        local $self->{'STREAM'} = undef;
-        $self_copy->play_tree($sub_tree, \$out);
+        eval { $self_copy->play_tree($sub_tree, \$out) };
+        if (my $err = $@) {
+            die $err if $err->type ne 'return';
+            return $err->info->{'return_val'} if UNIVERSAL::isa($err->info, 'HASH');
+            return;
+        }
         return $out;
     };
 
@@ -642,6 +648,13 @@ sub play_RAWPERL {
     }
 
     return;
+}
+
+sub play_RETURN {
+    my ($self, $undef, $node) = @_;
+    my $var = $node->[3];
+    $var = {return_val => $self->play_expr($var)} if defined $var;
+    $self->throw('return', $var, $node);
 }
 
 sub play_SET {

@@ -128,8 +128,8 @@ sub process_simple {
             $self->{'error'} = $err;
             die $err if $self->{'RAISE_ERROR'};
             return;
-        } elsif ($err->type == 'return') {
-            return $err->info->{'return_val'} if UNIVERSAL::isa($err->info, 'HASH');
+        } elsif ($err->type == 'return' && UNIVERSAL::isa($err->info, 'HASH')) {
+            return $err->info->{'return_val'};
         }
     }
     return 1;
