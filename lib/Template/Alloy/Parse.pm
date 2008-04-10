@@ -80,7 +80,7 @@ our $DIRECTIVES = {
     PERL    => [sub {},          \&play_PERL,     1,       0,       0,        1],
     PROCESS => [\&parse_PROCESS, \&play_PROCESS],
     RAWPERL => [sub {},          \&play_RAWPERL,  1,       0,       0,        1],
-    RETURN  => [sub {},          \&play_control],
+    RETURN  => [\&parse_RETURN,  \&play_control],
     SET     => [\&parse_SET,     \&play_SET],
     STOP    => [sub {},          \&play_control],
     SWITCH  => [\&parse_SWITCH,  \&play_SWITCH,   1],
@@ -873,6 +873,12 @@ sub parse_PROCESS {
         allow_bare_filenames => 1,
         require_arg          => 1,
     });
+}
+
+sub parse_RETURN {
+    my ($self, $str_ref) = @_;
+    my $ref = $self->parse_expr($str_ref); # optional return value
+    return $ref;
 }
 
 sub parse_SET {
