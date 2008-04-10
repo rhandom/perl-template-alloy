@@ -130,7 +130,7 @@ sub process_simple {
             $self->{'error'} = $err;
             die $err if $self->{'RAISE_ERROR'};
             return;
-        } elsif ($err->type == 'return' && UNIVERSAL::isa($err->info, 'HASH')) {
+        } elsif ($err->type eq 'return' && UNIVERSAL::isa($err->info, 'HASH')) {
             return $err->info->{'return_val'};
         }
     }
@@ -182,7 +182,8 @@ sub _process {
     if (my $err = $@) {
         $err = $self->exception('undef', $err) if ! UNIVERSAL::can($err, 'type');
         $err->doc($doc) if $doc && $err->can('doc') && ! $err->doc;
-        die $err if ! $self->{'_top_level'} || $err->type !~ /stop|return/;
+        die $err if ! $self->{'_top_level'};
+        die $err if $err->type ne 'stop' && ($err->type ne 'return' || $err->info);
     }
 
     return 1;

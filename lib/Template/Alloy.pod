@@ -1465,6 +1465,18 @@ to the $output variable rather than just calling PRINT.
 Used to exit the innermost block or template and continue processing
 in the surrounding block or template.
 
+There are two changes from TT2 behavior.  First, In Alloy, a RETURN during
+a MACRO call will only exit the MACRO.  Second, the RETURN directive
+takes an optional variable name or expression, if passed, the MACRO will
+return this value instead of the normal text from the MACRO.  The process_simple
+method will also return this value.
+
+You can also use the item, list, and hash return vmethods.
+
+    [% RETURN %]       # just exits
+    [% RETURN "foo" %] # return value is foo
+    [% "foo".return %] # same thing
+
 =item C<SET>
 
 Used to set variables.
