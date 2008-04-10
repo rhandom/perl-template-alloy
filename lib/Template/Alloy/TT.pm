@@ -974,12 +974,54 @@ included templates or eval'ed strings.
 
 =item
 
+Added @() and $() and CALL_CONTEXT.  Template::Toolkit uses a
+concept that Alloy refers to as "smart" context.  All function
+calls or method calls of variables in Template::Toolkit are made
+in list context.  If one item is in the list, it is returned.  If
+two or more items are returned - it returns an arrayref.  This
+"does the right thing" most of the time - but can cause confusion
+in some cases and is difficult to work around without writing
+wrappers for the functions or methods in Perl.
+
+Alloy has introduced the CALL_CONTEXT configuration item which
+defaults to "smart," but can also be set to "list" or "item."
+List context will always return an arrayref from called functions
+and methods and will call in list context.  Item context will
+always call in item (scalar) context and will return one item.
+
+The @() and $() operators allow for functions embedded inside
+to use list and item context (respectively).  They are modelled
+after the corresponding Perl 6 context specifiers.  See the
+Template::Alloy::Operators perldoc and CALL_CONTEXT configuration
+documentation for more information.
+
+    [% array = @( this.get_rows ) %]
+
+    [% item  = $( this.get_something ) %]
+
+=item
+
+Added -E<gt>() MACRO operator.
+
+The -E<gt>() operator behaves similarly to the MACRO directive,
+but can be used to pass functions to map, grep, and sort vmethods.
+
+    [% MACRO foo(n) BLOCK %]Say [% n %][% END %]
+    [% foo = ->(n){ "Say $n" } %]
+
+    [% [0..10].grep(->(this % 2)).join %] prints 3 5 7 9
+    [% ['a' .. 'c'].map(->(a){ a.upper }).join %] prints A B C
+    [% [1,2,3].sort(->(a,b){ b <=> a }).join %] prints 3 2 1
+
+=item
+
 Alloy does not generate Perl code.
 
 It generates an "opcode" tree.  The opcode tree is an arrayref
 of scalars and array refs nested as deeply as possible.  This "simple"
 structure could be shared TT implementations in other languages
-via JSON or YAML.
+via JSON or YAML.  You can optionally enable generating Perl code by
+setting COMPILE_PERL = 1.
 
 =item
 
