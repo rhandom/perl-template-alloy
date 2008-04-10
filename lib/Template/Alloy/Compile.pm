@@ -525,8 +525,15 @@ sub compile_RAWPERL {
 
 sub compile_RETURN {
     my ($self, $node, $str_ref, $indent) = @_;
-    $$str_ref .= "
-${indent}\$self->throw('return', 'Control Exception');";
+
+    if (defined($node->[3])) {
+        $$str_ref .= "
+${indent}\$var = {return_val => ".$self->compile_expr($node->[3])."};
+${indent}\$self->throw('return', \$var);";
+    } else {
+        $$str_ref .= "
+${indent}\$self->throw('return', undef);";
+    }
 }
 
 sub compile_SET {
