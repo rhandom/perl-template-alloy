@@ -15,7 +15,7 @@ use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $ITEM_OPS $ITEM_METH
 
 use vars qw($VERSION);
 BEGIN {
-    $VERSION            = '1.011';
+    $VERSION            = '1.012';
 };
 our $QR_PRIVATE         = qr/^[_.]/;
 our $WHILE_MAX          = 1000;
