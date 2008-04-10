@@ -110,6 +110,8 @@ sub new {
 
 ###----------------------------------------------------------------###
 
+sub run { shift->process_simple(@_) }
+
 sub process_simple {
     my $self = shift;
     my $in   = shift || die "Missing input";
