@@ -187,6 +187,7 @@ The following is a list of roles used by Template::Alloy.
     Template::Alloy::Operator - Operator role
     Template::Alloy::Parse    - Parse-to-AST role
     Template::Alloy::Play     - Play-AST role
+    Template::Alloy::Stream   - Stream output role
     Template::Alloy::Tmpl     - Text::Tmpl role
     Template::Alloy::TT       - Template::Toolkit role
     Template::Alloy::Velocity - Velocity role
@@ -269,37 +270,6 @@ broken).  However Template::Alloy doesn't support 100% of the interface
 of any of the template systems.  If you are using "features-on-the-edge"
 then you may need to re-write portions of your code that interact with
 the template system.
-
-=head1 TODO
-
-=over 4
-
-=item
-
-Add more POD and examples for all of the various syntaxes.
-
-=item
-
-Allow dispatch to different syntaxes based on file extension.
-
-=item
-
-Cleanup operator API to allow for easier full customization of
-operators.
-
-=item
-
-Give better examples of overriding directives, syntax, and operators.
-
-=item
-
-Include ASP style.
-
-=item
-
-Include HTML::Parser variants such as TAL and Seamstress.
-
-=back
 
 =head1 PUBLIC METHODS
 
@@ -1468,7 +1438,14 @@ in the surrounding block or template.
 There are two changes from TT2 behavior.  First, In Alloy, a RETURN during
 a MACRO call will only exit the MACRO.  Second, the RETURN directive
 takes an optional variable name or expression, if passed, the MACRO will
-return this value instead of the normal text from the MACRO.
+return this value instead of the normal text from the MACRO.  The process_simple
+method will also return this value.
+
+You can also use the item, list, and hash return vmethods.
+
+    [% RETURN %]       # just exits
+    [% RETURN "foo" %] # return value is foo
+    [% "foo".return %] # same thing
 
 =item C<SET>
 
