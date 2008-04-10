@@ -977,7 +977,7 @@ included templates or eval'ed strings.
 =item
 
 Added @() and $() and CALL_CONTEXT.  Template::Toolkit uses a
-concept that Alloy refers to as "smart" context.  All function
+\concept that Alloy refers to as "smart" context.  All function
 calls or method calls of variables in Template::Toolkit are made
 in list context.  If one item is in the list, it is returned.  If
 two or more items are returned - it returns an arrayref.  This
@@ -1014,6 +1014,14 @@ but can be used to pass functions to map, grep, and sort vmethods.
     [% [0..10].grep(->(this % 2)).join %] prints 3 5 7 9
     [% ['a' .. 'c'].map(->(a){ a.upper }).join %] prints A B C
     [% [1,2,3].sort(->(a,b){ b <=> a }).join %] prints 3 2 1
+
+=item
+
+The RETURN directive can take a variable or expression as a return
+value.  Their are also "return" list, item, and hash vmethods.  Return
+will also return from an enclosing MACRO.
+
+    [% a = ->(n){ [1..n].return } %]
 
 =item
 
