@@ -11,6 +11,8 @@
         * Add the ITEM_METHOD API which is hybrid SCALAR_OPS and filters
         * Add the ->() MACRO operator
         * Allow map, grep, and sort to use the new operator
+        * Add return values to RETURN directive
+        * Add return item, list, and hash vmethods
 
 1.011
       2007-12-10
