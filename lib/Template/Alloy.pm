@@ -128,6 +128,8 @@ sub process_simple {
             $self->{'error'} = $err;
             die $err if $self->{'RAISE_ERROR'};
             return;
+        } elsif ($err->type == 'return') {
+            return $err->info->{'return_val'} if UNIVERSAL::isa($err->info, 'HASH');
         }
     }
     return 1;
@@ -862,7 +864,7 @@ sub slurp {
 sub error { shift->{'error'} }
 
 sub exception {
-    my $self = shift;
+    my $self_or_class = shift;
     my $type = shift;
     my $info = shift;
     return $type if UNIVERSAL::can($type, 'type');
