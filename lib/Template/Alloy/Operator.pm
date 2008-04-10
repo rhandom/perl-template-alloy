@@ -526,11 +526,11 @@ Right associative.  Lower precedence version of the '//' operator.
 =item C<-E<gt>> (Not in TT2)
 
 Macro operator.  Works like the MACRO directive but can be used in
-map, sort, and grep list operations.  There are two diffences from
-the MACRO directive.  First is that if no argument list is specified,
-a default argument list with a single parameter named "this" will
-be used.  Second, the C<-E<gt>> operator parses its block as if
-it was already in a template tag.
+map, sort, and grep list operations.  Syntax is based on the Perl 6
+pointy sub.  There are two diffences from the MACRO directive.  First
+is that if no argument list is specified, a default argument list with
+a single parameter named "this" will be used.  Second, the C<-E<gt>>
+operator parses its block as if it was already in a template tag.
 
     [% foo = ->{ "Hi" } %][% foo %] => Hi
     [% foo = ->{ this.repeat(2) } %][% foo("Hi") %] => HiHi
@@ -550,6 +550,22 @@ The mini-language of Template::Alloy is a interpreted language running
 in Perl which is an interpreted language.  There are likely to be
 performance issues when trying to do low level functions such as sort
 on large lists.
+
+The RETURN directive and return item, list, and hash vmethods can be
+used to return more interesting values from a MACRO.
+
+  [% a = ->(n){ [1..n].return } %]
+  [% a(3).join %]    => 1 2 3
+  [% a(10).join %]   => 1 2 3 4 5 6 7 8 9 10
+
+The Schwartzian transform is now possible in Template::Alloy (somebody
+somewhere is rolling over in their grave).
+
+  [%- qw(Z a b D y M)
+        .map(->{ [this.lc, this].return })
+        .sort(->(a,b){a.0 cmp b.0})
+        .map(->{this.1})
+        .join %]          => a b D M y Z
 
 =item C<{}>
 
