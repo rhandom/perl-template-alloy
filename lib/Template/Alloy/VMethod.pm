@@ -844,6 +844,16 @@ In Template::Alloy and TT3 you may also use normal regular expression notation.
 
     [% mylist.list %] Returns a reference to the list.
 
+=item map (Not in TT2)
+
+    [% mylist.map(->{ this.upper }) %] Returns a list with the macro played on each item.
+    [% mylist.map(->(a){ a.upper }) %] Same thing
+
+The RETURN directive or return list, item, and hash vmethods allow for returning more interesing
+items.
+
+    [% [1..3].map(->(a){ [1..a].return }) %]
+
 =item max
 
     [% mylist.max %] Returns the last item in the array.
