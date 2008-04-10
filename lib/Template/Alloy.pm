@@ -11,7 +11,7 @@ use warnings;
 use 5.006;
 use Template::Alloy::Exception;
 use Template::Alloy::Operator qw(play_operator define_operator);
-use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
+use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $ITEM_OPS $ITEM_METHODS $FILTER_OPS $LIST_OPS $HASH_OPS $VOBJS);
 
 use vars qw($VERSION);
 BEGIN {
@@ -37,7 +37,7 @@ our $AUTOROLE = {
     Compile  => [qw(compile_template compile_tree compile_expr)],
     HTE      => [qw(parse_tree_hte param output register_function clear_param query new_file new_scalar_ref new_array_ref new_filehandle)],
     Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse_tree dump_parse_expr define_directive define_syntax)],
-    Play     => [qw(play_tree list_plugins)],
+    Play     => [qw(play_tree list_plugins _macro_sub)],
     Stream   => [qw(stream_tree)],
     TT       => [qw(parse_tree_tt3 process)],
     Tmpl     => [qw(parse_tree_tmpl set_delimiters set_strip set_value set_values parse_string set_dir parse_file loop_iteration fetch_loop_iteration)],
@@ -126,6 +126,7 @@ sub process_simple {
     if (my $err = $@) {
         if ($err->type !~ /stop|return|next|last|break/) {
             $self->{'error'} = $err;
+            die $err if $self->{'RAISE_ERROR'};
             return;
         }
     }
@@ -463,7 +464,7 @@ sub play_expr {
         $ref = $self->{'_vars'}->{$name};
         if (! defined $ref) {
             $ref = ($name eq 'template' || $name eq 'component') ? $self->{"_$name"} : $VOBJS->{$name};
-            $ref = $SCALAR_OPS->{$name} if ! $ref && (! defined($self->{'VMETHOD_FUNCTIONS'}) || $self->{'VMETHOD_FUNCTIONS'});
+            $ref = $ITEM_METHODS->{$name} || $ITEM_OPS->{$name} if ! $ref && (! defined($self->{'VMETHOD_FUNCTIONS'}) || $self->{'VMETHOD_FUNCTIONS'});
             $ref = $self->{'_vars'}->{lc $name} if ! defined $ref && $self->{'LOWER_CASE_VAR_FALLBACK'};
         }
     }
@@ -518,8 +519,11 @@ sub play_expr {
 
         ### allow for scalar and filter access (this happens for every non virtual method call)
         if (! ref $ref) {
-            if ($SCALAR_OPS->{$name}) {                        # normal scalar op
-                $ref = $SCALAR_OPS->{$name}->($ref, $args ? map { $self->play_expr($_) } @$args : ());
+            if ($ITEM_METHODS->{$name}) {                      # normal scalar op
+                $ref = $ITEM_METHODS->{$name}->($self, $ref, $args ? map { $self->play_expr($_) } @$args : ());
+
+            } elsif ($ITEM_OPS->{$name}) {                     # normal scalar op
+                $ref = $ITEM_OPS->{$name}->($ref, $args ? map { $self->play_expr($_) } @$args : ());
 
             } elsif ($LIST_OPS->{$name}) {                     # auto-promote to list and use list op
                 $ref = $LIST_OPS->{$name}->([$ref], $args ? map { $self->play_expr($_) } @$args : ());
