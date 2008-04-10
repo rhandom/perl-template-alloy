@@ -43,9 +43,15 @@ use_ok($module);
 
 my $skipped;
 SKIP: {
-    if (! eval { require Template::View }) {
+    if (! eval { require Template::View } || ! $Template::View::VERSION) {
         $skipped = 1;
-        skip("Template::View is not installed - skipping VIEW tests", $N - 1);
+        skip("Template::View is not installed - skipping Template::View integration tests", $N - 1);
+    } elsif (! UNIVERSAL::isa('Template::View', 'Template::Base')) {
+        $skipped = 1;
+        skip("Template::View doesn't appear to be from the Template Toolkit installation - skipping Template::View integration tests", $N - 1);
+    } elsif ($Template::View::VERSION < 2.09) {
+        $skipped = 1;
+        skip("Template::View is not recent version - skipping Template::View integration tests", $N - 1);
     }
 };
 exit if $skipped;
