@@ -55,6 +55,7 @@ our $SCALAR_OPS = our $ITEM_OPS = {
     remove   => sub { vmethod_replace(shift, shift, '', 1) },
     repeat   => \&vmethod_repeat,
     replace  => \&vmethod_replace,
+    'return' => \&vmethod_return,
     search   => sub { my ($str, $pat) = @_; return $str if ! defined $str || ! defined $pat; return $str =~ /$pat/ },
     sin      => sub { no warnings; sin $_[0] },
     size     => sub { 1 },
@@ -82,57 +83,59 @@ our $ITEM_METHODS = {
 our $FILTER_OPS = {}; # generally - non-dynamic filters belong in scalar ops
 
 our $LIST_OPS = {
-    defined => sub { return 1 if @_ == 1; defined $_[0]->[ defined($_[1]) ? $_[1] : 0 ] },
-    first   => sub { my ($ref, $i) = @_; return $ref->[0] if ! $i; return [@{$ref}[0 .. $i - 1]]},
-    fmt     => \&vmethod_fmt_list,
-    grep    => sub { no warnings; my ($ref, $pat) = @_; UNIVERSAL::isa($pat, 'CODE') ? [grep {$pat->($_)} @$ref] : [grep {/$pat/} @$ref] },
-    hash    => sub { no warnings; my $list = shift; return {@$list} if ! @_; my $i = shift || 0; return {map {$i++ => $_} @$list} },
-    import  => sub { my $ref = shift; push @$ref, grep {defined} map {ref eq 'ARRAY' ? @$_ : undef} @_; '' },
-    item    => sub { $_[0]->[ $_[1] || 0 ] },
-    join    => sub { my ($ref, $join) = @_; $join = ' ' if ! defined $join; no warnings; return join $join, @$ref },
-    last    => sub { my ($ref, $i) = @_; return $ref->[-1] if ! $i; return [@{$ref}[-$i .. -1]]},
-    list    => sub { $_[0] },
-    map     => sub { no warnings; my ($ref, $code) = @_; UNIVERSAL::isa($code, 'CODE') ? [map {$code->($_)} @$ref] : [map {$code} @$ref] },
-    max     => sub { no warnings; $#{ $_[0] } },
-    merge   => sub { my $ref = shift; return [ @$ref, grep {defined} map {ref eq 'ARRAY' ? @$_ : undef} @_ ] },
-    new     => sub { no warnings; return [@_] },
-    null    => sub { '' },
-    nsort   => \&vmethod_nsort,
-    pick    => \&vmethod_pick,
-    pop     => sub { pop @{ $_[0] } },
-    push    => sub { my $ref = shift; push @$ref, @_; return '' },
-    reverse => sub { [ reverse @{ $_[0] } ] },
-    shift   => sub { shift  @{ $_[0] } },
-    size    => sub { no warnings; scalar @{ $_[0] } },
-    slice   => sub { my ($ref, $a, $b) = @_; $a ||= 0; $b = $#$ref if ! defined $b; return [@{$ref}[$a .. $b]] },
-    sort    => \&vmethod_sort,
-    splice  => \&vmethod_splice,
-    unique  => sub { my %u; return [ grep { ! $u{$_}++ } @{ $_[0] } ] },
-    unshift => sub { my $ref = shift; unshift @$ref, @_; return '' },
+    defined  => sub { return 1 if @_ == 1; defined $_[0]->[ defined($_[1]) ? $_[1] : 0 ] },
+    first    => sub { my ($ref, $i) = @_; return $ref->[0] if ! $i; return [@{$ref}[0 .. $i - 1]]},
+    fmt      => \&vmethod_fmt_list,
+    grep     => sub { no warnings; my ($ref, $pat) = @_; UNIVERSAL::isa($pat, 'CODE') ? [grep {$pat->($_)} @$ref] : [grep {/$pat/} @$ref] },
+    hash     => sub { no warnings; my $list = shift; return {@$list} if ! @_; my $i = shift || 0; return {map {$i++ => $_} @$list} },
+    import   => sub { my $ref = shift; push @$ref, grep {defined} map {ref eq 'ARRAY' ? @$_ : undef} @_; '' },
+    item     => sub { $_[0]->[ $_[1] || 0 ] },
+    join     => sub { my ($ref, $join) = @_; $join = ' ' if ! defined $join; no warnings; return join $join, @$ref },
+    last     => sub { my ($ref, $i) = @_; return $ref->[-1] if ! $i; return [@{$ref}[-$i .. -1]]},
+    list     => sub { $_[0] },
+    map      => sub { no warnings; my ($ref, $code) = @_; UNIVERSAL::isa($code, 'CODE') ? [map {$code->($_)} @$ref] : [map {$code} @$ref] },
+    max      => sub { no warnings; $#{ $_[0] } },
+    merge    => sub { my $ref = shift; return [ @$ref, grep {defined} map {ref eq 'ARRAY' ? @$_ : undef} @_ ] },
+    new      => sub { no warnings; return [@_] },
+    null     => sub { '' },
+    nsort    => \&vmethod_nsort,
+    pick     => \&vmethod_pick,
+    pop      => sub { pop @{ $_[0] } },
+    push     => sub { my $ref = shift; push @$ref, @_; return '' },
+    'return' => \&vmethod_return,
+    reverse  => sub { [ reverse @{ $_[0] } ] },
+    shift    => sub { shift  @{ $_[0] } },
+    size     => sub { no warnings; scalar @{ $_[0] } },
+    slice    => sub { my ($ref, $a, $b) = @_; $a ||= 0; $b = $#$ref if ! defined $b; return [@{$ref}[$a .. $b]] },
+    sort     => \&vmethod_sort,
+    splice   => \&vmethod_splice,
+    unique   => sub { my %u; return [ grep { ! $u{$_}++ } @{ $_[0] } ] },
+    unshift  => sub { my $ref = shift; unshift @$ref, @_; return '' },
 };
 
 our $LIST_METHODS = {
 };
 
 our $HASH_OPS = {
-    defined => sub { return 1 if @_ == 1; defined $_[0]->{ defined($_[1]) ? $_[1] : '' } },
-    delete  => sub { my $h = shift; delete @{ $h }{map {defined($_) ? $_ : ''} @_}; '' },
-    each    => sub { [%{ $_[0] }] },
-    exists  => sub { exists $_[0]->{ defined($_[1]) ? $_[1] : '' } },
-    fmt     => \&vmethod_fmt_hash,
-    hash    => sub { $_[0] },
-    import  => sub { my ($a, $b) = @_; @{$a}{keys %$b} = values %$b if ref($b) eq 'HASH'; '' },
-    item    => sub { my ($h, $k) = @_; $k = '' if ! defined $k; $Template::Alloy::QR_PRIVATE && $k =~ $Template::Alloy::QR_PRIVATE ? undef : $h->{$k} },
-    items   => sub { [ %{ $_[0] } ] },
-    keys    => sub { [keys %{ $_[0] }] },
-    list    => \&vmethod_list_hash,
-    new     => sub { no warnings; return (@_ == 1 && ref $_[-1] eq 'HASH') ? $_[-1] : {@_} },
-    null    => sub { '' },
-    nsort   => sub { my $ref = shift; [sort {   $ref->{$a} <=>    $ref->{$b}} keys %$ref] },
-    pairs   => sub { [map { {key => $_, value => $_[0]->{$_}} } sort keys %{ $_[0] } ] },
-    size    => sub { scalar keys %{ $_[0] } },
-    sort    => sub { my $ref = shift; [sort {lc $ref->{$a} cmp lc $ref->{$b}} keys %$ref] },
-    values  => sub { [values %{ $_[0] }] },
+    defined  => sub { return 1 if @_ == 1; defined $_[0]->{ defined($_[1]) ? $_[1] : '' } },
+    delete   => sub { my $h = shift; delete @{ $h }{map {defined($_) ? $_ : ''} @_}; '' },
+    each     => sub { [%{ $_[0] }] },
+    exists   => sub { exists $_[0]->{ defined($_[1]) ? $_[1] : '' } },
+    fmt      => \&vmethod_fmt_hash,
+    hash     => sub { $_[0] },
+    import   => sub { my ($a, $b) = @_; @{$a}{keys %$b} = values %$b if ref($b) eq 'HASH'; '' },
+    item     => sub { my ($h, $k) = @_; $k = '' if ! defined $k; $Template::Alloy::QR_PRIVATE && $k =~ $Template::Alloy::QR_PRIVATE ? undef : $h->{$k} },
+    items    => sub { [ %{ $_[0] } ] },
+    keys     => sub { [keys %{ $_[0] }] },
+    list     => \&vmethod_list_hash,
+    new      => sub { no warnings; return (@_ == 1 && ref $_[-1] eq 'HASH') ? $_[-1] : {@_} },
+    null     => sub { '' },
+    nsort    => sub { my $ref = shift; [sort {   $ref->{$a} <=>    $ref->{$b}} keys %$ref] },
+    pairs    => sub { [map { {key => $_, value => $_[0]->{$_}} } sort keys %{ $_[0] } ] },
+    'return' => \&vmethod_return,
+    size     => sub { scalar keys %{ $_[0] } },
+    sort     => sub { my $ref = shift; [sort {lc $ref->{$a} cmp lc $ref->{$b}} keys %$ref] },
+    values   => sub { [values %{ $_[0] }] },
 };
 
 our $VOBJS = {
@@ -283,6 +286,11 @@ sub vmethod_replace {
         $text =~ s{$pattern}{ $expand->($replace, [@-], [@+]) }e;
     }
     return $text;
+}
+
+sub vmethod_return {
+    my $obj = shift;
+    Template::Alloy->throw('return', {return_val => $obj});
 }
 
 sub vmethod_sort {
@@ -691,6 +699,14 @@ In Template::Alloy and TT3 you may also use normal regular expression notation.
 Note that you can't use the 'g' regex modifier - global match is on by default.
 You must pass the third argument of false to turn off global match.
 
+=item return
+
+Returns the item from the inner most block, macro, or file.  Similar to the
+RETURN directive.
+
+    [% item.return %]
+    [% RETURN item %]
+
 =item search
 
     [% item.search("(\w+)") %] Tests if the given pattern is in the string.
@@ -860,6 +876,14 @@ An additional numeric argument is how many items to return.
 
 Note: This filter is not available as of TT2.15.
 
+=item return
+
+Returns the list from the inner most block, macro, or file.  Similar to the
+RETURN directive.
+
+    [% mylist.return %]
+    [% RETURN mylist %]
+
 =item reverse
 
     [% mylist.reverse %] Returns the list in reverse order.
@@ -970,6 +994,14 @@ and represent the keys to be deleted.
 =item nsort
 
     [% myhash.nsort.join(", ") %] Returns a list of keys numerically sorted by the values.
+
+=item return
+
+Returns the hash from the inner most block, macro, or file.  Similar to the
+RETURN directive.
+
+    [% myhash.return %]
+    [% RETURN myhash %]
 
 =item size
 
