@@ -2051,7 +2051,7 @@ The following table shows the relationship between the various contexts:
     L   (undef, "foo")     die "foo"       [undef, "foo"]  "foo"
     M   wantarray?1:0      1               1               0
 
-Cases F, H, I and M are common sticking points of the the smart context
+Cases F, H, I and M are common sticking points of the smart context
 in TT2.  Note that list context always returns an arrayref from a method
 or function call.  Smart context can give confusing results sometimes,
 especially the I and J cases.  Case L for smart match is very surprising.
