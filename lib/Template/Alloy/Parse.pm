@@ -230,7 +230,7 @@ sub parse_expr {
         push @var, [undef, 'qr', $str, $opts];
 
     ### allow for single quoted strings
-    } elsif ($$str_ref =~ m{ \G \' (.*?) (?<! \\) \' }gcx) {
+    } elsif ($$str_ref =~ m{ \G \' (.*?) (?<! \\) \' }gcxs) {
         my $str = $1;
         $str =~ s{ \\\' }{\'}xg;
         return $str if $is_aq;
