@@ -34,8 +34,8 @@ my $swap = {
 
 use Template::Stash;;
 my $s = Template::Stash->new($swap);
-use Template::Stash::XS;
-$s = Template::Stash::XS->new($swap);
+#use Template::Stash::XS;
+#$s = Template::Stash::XS->new($swap);
 
 ###----------------------------------------------------------------###
 ### get objects ready
@@ -47,9 +47,9 @@ my @config2 = (@config1, COMPILE_EXT => '.ttc');
 my $tt1 = Template->new(@config1);
 my $tap = Template::Alloy->new(@config1, COMPILE_PERL => 1);
 
-use Template::Alloy::XS;
-my $tt1 = Template::Alloy::XS->new(@config1);
-my $tap = Template::Alloy::XS->new(@config1, COMPILE_PERL => 1);
+#use Template::Alloy::XS;
+#my $tt1 = Template::Alloy::XS->new(@config1);
+#my $tap = Template::Alloy::XS->new(@config1, COMPILE_PERL => 1);
 
 #$swap->{$_} = $_ for (1 .. 1000); # swap size affects benchmark speed
 
