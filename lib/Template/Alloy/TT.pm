@@ -51,7 +51,7 @@ sub parse_tree_tt3 {
     my $capture;          # flag to start capture
     my $func;
     my $node;
-    local pos($$str_ref) = 0 if ! $one_tag_only;
+    pos($$str_ref) = 0 if ! $one_tag_only;
 
     while (1) {
         ### continue looking for information in a semi-colon delimited tag
