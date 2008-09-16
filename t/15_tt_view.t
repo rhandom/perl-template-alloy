@@ -49,9 +49,12 @@ SKIP: {
     } elsif (! UNIVERSAL::isa('Template::View', 'Template::Base')) {
         $skipped = 1;
         skip("Template::View doesn't appear to be from the Template Toolkit installation - skipping Template::View integration tests", $N - 1);
-    } elsif ($Template::View::VERSION < 2.09) {
+    } elsif ($Template::View::VERSION < 2.14) {
         $skipped = 1;
         skip("Template::View is not recent version - skipping Template::View integration tests", $N - 1);
+    } elsif ($Template::View::VERSION >= 3) {
+        $skipped = 1;
+        skip("Template::View seems to be an experimental version - skipping Template::View integration tests", $N - 1);
     }
 };
 exit if $skipped;
