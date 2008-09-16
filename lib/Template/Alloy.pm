@@ -422,9 +422,9 @@ sub load_perl {
         open(my $fh, ">", $doc->{'_compile_filename'}) || $self->throw('compile', "Could not open file \"$doc->{'_compile_filename'}\" for writing: $!");
         ### todo - think about locking
         if ($self->{'ENCODING'} && eval { require Encode }) {
-            print $fh Encode::encode($self->{'ENCODING'}, $$perl);
+            print {$fh} Encode::encode($self->{'ENCODING'}, $$perl);
         } else {
-            print $fh $$perl;
+            print {$fh} $$perl;
         }
         close $fh;
         utime $doc->{'modtime'}, $doc->{'modtime'}, $doc->{'_compile_filename'};
