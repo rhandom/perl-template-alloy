@@ -78,10 +78,10 @@ sub process_ok { # process the value and say if it was ok
 ###----------------------------------------------------------------###
 
 ### set up some dummy packages for various tests
-local $INC{'MyTestPlugin/Foo.pm'} = $0;
-local $INC{'Foo2.pm'} = $0;
+local $INC{'MyTestPlugin/FooTest.pm'} = $0;
+local $INC{'FooTest2.pm'} = $0;
 {
-    package MyTestPlugin::Foo;
+    package MyTestPlugin::FooTest;
     sub load { $_[0] }
     sub new {
         my $class   = shift;
@@ -95,8 +95,8 @@ local $INC{'Foo2.pm'} = $0;
     sub echo { my $self = shift; $_[0] }
 }
 {
-    package Foo2;
-    use base qw(MyTestPlugin::Foo);
+    package FooTest2;
+    use base qw(MyTestPlugin::FooTest);
     use vars qw($AUTOLOAD);
     sub new {
         my $class   = shift;
@@ -118,7 +118,7 @@ local $INC{'Foo2.pm'} = $0;
     sub dataref { return shift->{'data'} ||= {} }
 }
 
-my $obj  = Foo2->new;
+my $obj  = FooTest2->new;
 my $cctx = CallContext->new;
 my $vars;
 my $stash = {foo => 'Stash', bingo => 'bango'};
@@ -1140,19 +1140,19 @@ print "### USE ############################################# $engine_option\n";
 
 my @config_p = (PLUGIN_BASE => 'MyTestPlugin', LOAD_PERL => 1);
 process_ok("[% USE son_of_gun_that_does_not_exist %]one" => '', {tt_config => \@config_p});
-process_ok("[% USE Foo %]one" => 'one', {tt_config => \@config_p});
-process_ok("[% USE Foo2 %]one" => 'one', {tt_config => \@config_p});
-process_ok("[% USE Foo(bar = 'baz') %]one[% Foo.bar %]" => 'onebarbaz', {tt_config => \@config_p});
-process_ok("[% USE Foo2(bar = 'baz') %]one[% Foo2.bar %]" => 'onebarbaz', {tt_config => \@config_p});
-process_ok("[% USE Foo(bar = 'baz') %]one[% Foo.bar %]" => 'onebarbaz', {tt_config => \@config_p});
-process_ok("[% USE d = Foo(bar = 'baz') %]one[% d.bar %]" => 'onebarbaz', {tt_config => \@config_p});
-process_ok("[% USE d.d = Foo(bar = 'baz') %]one[% d.d.bar %]" => '', {tt_config => \@config_p});
+process_ok("[% USE FooTest %]one" => 'one', {tt_config => \@config_p});
+process_ok("[% USE FooTest2 %]one" => 'one', {tt_config => \@config_p});
+process_ok("[% USE FooTest(bar = 'baz') %]one[% FooTest.bar %]" => 'onebarbaz', {tt_config => \@config_p});
+process_ok("[% USE FooTest2(bar = 'baz') %]one[% FooTest2.bar %]" => 'onebarbaz', {tt_config => \@config_p});
+process_ok("[% USE FooTest(bar = 'baz') %]one[% FooTest.bar %]" => 'onebarbaz', {tt_config => \@config_p});
+process_ok("[% USE d = FooTest(bar = 'baz') %]one[% d.bar %]" => 'onebarbaz', {tt_config => \@config_p});
+process_ok("[% USE d.d = FooTest(bar = 'baz') %]one[% d.d.bar %]" => '', {tt_config => \@config_p});
 
-process_ok("[% USE a(bar = 'baz') %]one[% a.seven %]" => '',     {tt_config => [@config_p, PLUGINS => {a=>'Foo'}, ]});
-process_ok("[% USE a(bar = 'baz') %]one[% a.seven %]" => 'one7', {tt_config => [@config_p, PLUGINS => {a=>'Foo2'},]});
+process_ok("[% USE a(bar = 'baz') %]one[% a.seven %]" => '',     {tt_config => [@config_p, PLUGINS => {a=>'FooTest'}, ]});
+process_ok("[% USE a(bar = 'baz') %]one[% a.seven %]" => 'one7', {tt_config => [@config_p, PLUGINS => {a=>'FooTest2'},]});
 
 @config_p = (PLUGIN_BASE => ['NonExistant', 'MyTestPlugin'], LOAD_PERL => 1);
-process_ok("[% USE Foo %]one" => 'one', {tt_config => \@config_p});
+process_ok("[% USE FooTest %]three" => 'three', {tt_config => \@config_p});
 
 ###----------------------------------------------------------------###
 print "### MACRO ########################################### $engine_option\n";
