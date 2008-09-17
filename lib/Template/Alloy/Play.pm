@@ -809,9 +809,10 @@ sub play_USE {
     ### try and load the module - fall back to bare module if allowed
     my $obj;
     if (my $fact = $self->{'PLUGIN_FACTORY'}->{$module} || $self->{'PLUGIN_FACTORY'}->{lc $module}) {
-        if (UNIVERSAL::isa($pkg, 'CODE')) {
-            $obj = $pkg->($self->context, map { $self->play_expr($_) } @args);
+        if (UNIVERSAL::isa($fact, 'CODE')) {
+            $obj = $fact->($self->context, map { $self->play_expr($_) } @args);
         }
+
     } elsif (my $pkg = $self->{'PLUGINS'}->{$module} || $self->{'PLUGINS'}->{lc $module}) {
         (my $req = "$pkg.pm") =~ s|::|/|g;
         if (UNIVERSAL::isa($pkg, 'UNIVERSAL') || eval { require $req }) {
