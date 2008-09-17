@@ -2935,14 +2935,6 @@ Resolves the file passed, and then returns its contents.
 Dynamically loads the filters list from Template::Filters when a filter
 is used that is not natively implemented in Alloy.
 
-=item C<list_plugins>
-
-Returns an arrayref of modules that are under a base Namespace.
-
-    my @modules = @{ $self->list_plugins({base => 'Template::Plugins'}) }:
-
-Provided by the Play role.
-
 =item C<load_template>
 
 Given a filename or a string reference will return a "document" hashref
