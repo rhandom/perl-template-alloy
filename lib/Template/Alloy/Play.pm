@@ -806,47 +806,61 @@ sub play_USE {
     my ($named, @args) = @$args;
     push @args, $named if ! _is_empty_named_args($named); # add named args back on at end - if there are some
 
-    ### look for a plugin_base
-    my $BASE = $self->{'PLUGIN_BASE'} || 'Template::Plugin'; # I'm not maintaining plugins - leave that to TT
+    ### try and load the module - fall back to bare module if allowed
     my $obj;
+    if (my $fact = $self->{'PLUGIN_FACTORY'}->{$module} || $self->{'PLUGIN_FACTORY'}->{lc $module}) {
+        if (UNIVERSAL::isa($pkg, 'CODE')) {
+            $obj = $pkg->($self->context, map { $self->play_expr($_) } @args);
+        }
+    } elsif (my $pkg = $self->{'PLUGINS'}->{$module} || $self->{'PLUGINS'}->{lc $module}) {
+        (my $req = "$pkg.pm") =~ s|::|/|g;
+        if (UNIVERSAL::isa($pkg, 'UNIVERSAL') || eval { require $req }) {
+            my $shape = $pkg->load;
+            $obj = $shape->new($self->context, map { $self->play_expr($_) } @args);
+        }
 
-    foreach my $base (ref($BASE) eq 'ARRAY' ? @$BASE : $BASE) {
-        my $package = $self->{'PLUGINS'}->{$module} ? $self->{'PLUGINS'}->{$module}
-        : $self->{'PLUGIN_FACTORY'}->{$module} ? $self->{'PLUGIN_FACTORY'}->{$module}
-        : "${base}::${module}";
-        my $require = "$package.pm";
-        $require =~ s|::|/|g;
+    } elsif (lc($module) eq 'iterator') { # use our iterator if none found (TT's works fine too)
+        $obj = $self->iterator($args[0]);
 
-        ### try and load the module - fall back to bare module if allowed
-        if ($self->{'PLUGIN_FACTORY'}->{$module} || eval {require $require}) {
-            my $shape   = $package->load;
-            my $context = $self->context;
-            $obj = $shape->new($context, map { $self->play_expr($_) } @args);
-        } elsif (lc($module) eq 'iterator') { # use our iterator if none found (TT's works just fine)
-            $obj = $self->iterator($args[0]);
-        } elsif (my @packages = grep {lc($package) eq lc($_)} @{ $self->list_plugins({base => $base}) }) {
-            foreach my $package (@packages) {
-                my $require = "$package.pm";
-                $require =~ s|::|/|g;
-                eval {require $require} || next;
-                my $shape   = $package->load;
-                my $context = $self->context;
-                $obj = $shape->new($context, map { $self->play_expr($_) } @args);
+    } else {
+        my $found;
+        my $BASE = $self->{'PLUGIN_BASE'};
+        foreach my $base ((ref($BASE) eq 'ARRAY' ? @$BASE : $BASE), (my $e = 'TP-Fallback')) {
+            if ($base && $base eq 'TP-Fallback' && eval { require Template::Plugins }) {
+                $base = $Template::Plugins::PLUGIN_BASE || next;
+                if (defined(%Template::Plugins::STD_PLUGINS)
+                    && (my $pkg = $Template::Plugins::STD_PLUGINS{lc $module})) {
+                    my $shape = $pkg->load;
+                    $obj = $shape->new($self->context, map { $self->play_expr($_) } @args);
+                    $found = 1;
+                    last;
+                }
             }
-        } elsif ($self->{'LOAD_PERL'}) {
-            my $require = "$module.pm";
-            $require =~ s|::|/|g;
-            if (eval {require $require}) {
+            next if ! $base;
+
+            my $pkg = "${base}::${module}";
+            (my $req = "$pkg.pm") =~ s|::|/|g;
+            if (UNIVERSAL::isa($pkg, 'UNIVERSAL') || eval { require $req }) {
+                my $shape = $pkg->load;
+                $obj = $shape->new($self->context, map { $self->play_expr($_) } @args);
+                $found = 1;
+                last;
+            }
+        }
+
+        if (! $found && $self->{'LOAD_PERL'}) {
+            (my $req = "$module.pm") =~ s|::|/|g;
+            if (UNIVERSAL::isa($module, 'UNIVERSAL') || eval { require $req }) {
                 $obj = $module->new(map { $self->play_expr($_) } @args);
             }
         }
     }
+
     if (! defined $obj) {
         my $err = "$module: plugin not found";
         $self->throw('plugin', $err);
     }
 
-    ### all good
     $self->set_variable(\@var, $obj);
 
     return;
@@ -956,32 +970,6 @@ sub play_WRAPPER {
 
     $$out_ref .= $out;
     return;
-}
-
-###----------------------------------------------------------------###
-
-sub list_plugins {
-    my $self = shift;
-    my $args = shift || {};
-    my $base = $args->{'base'} || '';
-
-    return $self->{'_plugins'}->{$base} ||= do {
-        my @plugins;
-
-        $base =~ s|::|/|g;
-        my @dirs = grep {-d $_} map {"$_/$base"} @INC;
-
-        foreach my $dir (@dirs) {
-            require File::Find;
-            File::Find::find(sub {
-                my $mod = $base .'/'. ($File::Find::name =~ m|^ $dir / (.*\w) \.pm $|x ? $1 : return);
-                $mod =~ s|/|::|g;
-                push @plugins, $mod;
-            }, $dir);
-        }
-
-        \@plugins; # return of the do
-    };
 }
 
 ###----------------------------------------------------------------###
