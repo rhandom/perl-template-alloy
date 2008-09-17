@@ -499,27 +499,25 @@ sub process {
                 $file = $out;
             }
         } else {
-            if (! $self->{'OUTPUT_PATH'}) {
-                $self->throw($self->{'error'} = $self->exception('file', "OUTPUT_PATH not set"));
-            } else {
-                $file = $self->{'OUTPUT_PATH'} . '/' . $out;
+            my $path = $self->{'OUTPUT_PATH'};
+            $path = '.' if ! defined $path;
+            if (! -d $path) {
+                require File::Path;
+                File::Path::mkpath($path);
+            }
+            $file = "$path/$out";
+        }
+        open(my $fh, '>', $file)
+            || $self->throw($self->{'error'} = $self->exception('file', "$out couldn't be opened for writing: $!"));
+        if (my $bm = $args->{'binmode'}) {
+            if (+$bm == 1) { binmode $fh }
+            else           { binmode $fh, $bm }
+        } elsif ($self->{'ENCODING'}) {
+            if (eval { require Encode } && defined &Encode::encode) {
+                $output = Encode::encode($self->{'ENCODING'}, $output);
             }
         }
-        if ($file) {
-            if (open my $fh, '>', $file) {
-                if (my $bm = $args->{'binmode'}) {
-                    if (+$bm == 1) { binmode $fh }
-                    else           { binmode $fh, $bm }
-                } elsif ($self->{'ENCODING'}) {
-                    if (eval { require Encode }) {
-                        $output = Encode::encode($self->{'ENCODING'}, $output);
-                    }
-                }
-                print $fh $output;
-            } else {
-                $self->{'error'} = $self->throw('file', "$out couldn't be opened for writing: $!");
-            }
-        }
+        print {$fh} $output;
     } else {
         print $output;
     }
