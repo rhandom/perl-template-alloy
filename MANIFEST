@@ -31,6 +31,7 @@ t/01_coverage.t
 t/02_cache.t
 t/05_tt_base.t
 t/10_tt_includes.t
+t/11_tt_input_output.t
 t/15_tt_view.t
 t/20_html_template.t
 t/25_text_tmp.t
