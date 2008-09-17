@@ -827,13 +827,16 @@ sub play_USE {
         my $found;
         my $BASE = $self->{'PLUGIN_BASE'};
         foreach my $base ((ref($BASE) eq 'ARRAY' ? @$BASE : $BASE), (my $e = 'TP-Fallback')) {
-            if ($base && $base eq 'TP-Fallback' && eval { require Template::Plugins }) {
+            if ($base && $base eq 'TP-Fallback' && eval { require Template::Plugins }) { # want to allow Template::Plugins without requiring we use them
                 $base = $Template::Plugins::PLUGIN_BASE || next;
-                if (defined(%Template::Plugins::STD_PLUGINS)
-                    && (my $pkg = $Template::Plugins::STD_PLUGINS{lc $module})) {
-                    my $shape = $pkg->load;
-                    $obj = $shape->new($self->context, map { $self->play_expr($_) } @args);
+                if ($Template::Plugins::STD_PLUGINS
+                    && (my $pkg = $Template::Plugins::STD_PLUGINS->{lc $module})) {
+                    (my $req = "$pkg.pm") =~ s|::|/|g;
                     $found = 1;
+                    if (eval { require $req }) {
+                        my $shape = $pkg->load;
+                        $obj = $shape->new($self->context, map { $self->play_expr($_) } @args);
+                    }
                     last;
                 }
             }

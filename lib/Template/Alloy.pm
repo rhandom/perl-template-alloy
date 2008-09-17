@@ -421,7 +421,7 @@ sub load_perl {
         }
         open(my $fh, ">", $doc->{'_compile_filename'}) || $self->throw('compile', "Could not open file \"$doc->{'_compile_filename'}\" for writing: $!");
         ### todo - think about locking
-        if ($self->{'ENCODING'} && eval { require Encode }) {
+        if ($self->{'ENCODING'} && eval { require Encode } && defined &Encode::encode) {
             print {$fh} Encode::encode($self->{'ENCODING'}, $$perl);
         } else {
             print {$fh} $$perl;
@@ -854,7 +854,7 @@ sub slurp {
 
     if ($self->{'ENCODING'}) { # thanks to Carl Franks for this addition
         eval { require Encode };
-        if ($@) {
+        if ($@ || ! defined &Encode::decode) {
             warn "Encode module not found, 'ENCODING' config only available on perl >= 5.7.3\n$@";
         } else {
             $txt = Encode::decode($self->{'ENCODING'}, $txt);
