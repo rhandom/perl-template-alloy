@@ -338,8 +338,8 @@ sub process {
         if (ref($in) eq 'SCALAR') { # reference to a string
             $content = $in;
         } elsif (UNIVERSAL::isa($in, 'CODE')) {
-            $content = $in->();
-            $content = \$content;
+            $in = $in->();
+            $content = \$in;
         } elsif (ref($in) eq 'HASH') { # pre-prepared document
             $content = $in;
         } else { # should be a file handle
