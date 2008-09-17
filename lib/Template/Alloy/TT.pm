@@ -344,8 +344,8 @@ sub process {
             $content = $in;
         } else { # should be a file handle
             local $/ = undef;
-            $content = <$in>;
-            $content = \$content;
+            $in = <$in>;
+            $content = \$in;
         }
     } else {
         ### should be a filename
