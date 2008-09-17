@@ -482,25 +482,25 @@ sub process {
         } elsif (UNIVERSAL::isa($out, 'ARRAY')) {
             push @$out, $output;
         } else { # should be a file handle
-            print $out $output;
+            print {$out} $output;
         }
     } elsif ($out) { # should be a filename
         my $file;
         if ($out =~ m|^/|) {
             if (! $self->{'ABSOLUTE'}) {
-                $self->{'error'} = $self->throw('file', "ABSOLUTE paths disabled");
+                $self->throw($self->{'error'} = $self->exception('file', "ABSOLUTE paths disabled"));
             } else {
                 $file = $out;
             }
         } elsif ($out =~ m|^\.\.?/|) {
             if (! $self->{'RELATIVE'}) {
-                $self->{'error'} = $self->throw('file', "RELATIVE paths disabled");
+                $self->throw($self->{'error'} = $self->exception('file', "RELATIVE paths disabled"));
             } else {
                 $file = $out;
             }
         } else {
             if (! $self->{'OUTPUT_PATH'}) {
-                $self->{'error'} = $self->throw('file', "OUTPUT_PATH not set");
+                $self->throw($self->{'error'} = $self->exception('file', "OUTPUT_PATH not set"));
             } else {
                 $file = $self->{'OUTPUT_PATH'} . '/' . $out;
             }
