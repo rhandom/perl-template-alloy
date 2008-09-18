@@ -12,11 +12,11 @@ use warnings;
 sub new {
     my ($class, $items) = @_;
     $items = [] if ! defined $items;
-    if (UNIVERSAL::isa($items, 'HASH')) {
+    if (ref($items) eq 'HASH') {
 	$items = [ map { {key => $_, value => $items->{ $_ }} } sort keys %$items ];
     } elsif (UNIVERSAL::can($items, 'as_list')) {
 	$items = $items->as_list;
-    } elsif (! UNIVERSAL::isa($items, 'ARRAY')) {
+    } elsif (ref($items) ne 'ARRAY') {
         $items = [$items];
     }
     return bless [$items, 0], $class;
