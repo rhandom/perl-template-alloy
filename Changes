@@ -1,4 +1,13 @@
+1.013
+      2008-09-18
+        * Make PLUGIN_BASE work like TT (always falls back to Template::Plugins)
+        * Make case searching for PLUGINS work like TT (only those listed in PLUGINS or STD_PLUGINS apply.
+        * Test all input and output methods (fix accompanying errors)
+        * Fix local pos warning.
+        * Fix Template::Alloy::Iterator to follow exact TT iterator behavior during new
+
 1.012
+      2008-04-10
         * Allow scalar refs passed as variables to be processed
         * Allow ADD_LOCAL_PATH to function in more areas (including INSERT)
         * Don't let ADD_LOCAL_PATH modify INCLUDE_PATHS
