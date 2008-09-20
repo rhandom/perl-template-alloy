@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 2993 : 654) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 2993 : 654) - (! $five_six ? 0 : 2 * ($is_tt ? 1 : 3));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
