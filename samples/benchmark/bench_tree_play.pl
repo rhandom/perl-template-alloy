@@ -116,14 +116,32 @@ use CGI::Ex::Dump qw(debug);
 ##index 1180322/s   20%   14%    --   -1%
 ##array 1191563/s   21%   15%    1%    --
 
+#use List::Util qw(first);
+#my @scope = ({foo=>2},{},{bar=>3},{},{},{},{},{},{},{baz=>1});
+#cmpthese timethese -1, {
+#    first_foo => sub { my $ref = (first {exists $_->{foo}} @scope)->{foo} },
+#    iter_foo  => sub { my $ref; for (@scope) { next if ! exists $_->{foo}; $ref = $_->{foo}; last } },
+#    bare_foo  => sub { my $ref = $scope[0]->{foo} },
+#    first_bar => sub { my $ref = (first {exists $_->{bar}} @scope)->{bar} },
+#    iter_bar  => sub { my $ref; for (@scope) { next if ! exists $_->{bar}; $ref = $_->{bar}; last } },
+#    iter_baz  => sub { my $ref; for (@scope) { next if ! exists $_->{baz}; $ref = $_->{baz}; last } },
+#};
+##               Rate  iter_baz first_bar first_foo  iter_bar  iter_foo  bare_foo
+##iter_baz   265481/s        --      -16%      -30%      -57%      -73%      -91%
+##first_bar  315077/s       19%        --      -17%      -49%      -68%      -90%
+##first_foo  378300/s       42%       20%        --      -39%      -61%      -88%
+##iter_bar   619376/s      133%       97%       64%        --      -36%      -80%
+##iter_foo   973307/s      267%      209%      157%       57%        --      -68%
+##bare_foo  3084047/s     1062%      879%      715%      398%      217%        --
+
 ###----------------------------------------------------------------###
 
 sub tree_new {
     [
     "Hey bird.\n",
-    [0, 2, 3, "foo", 0],
+    [0, 2, "foo", 0],
     "Hey bird.\n",
-    [3, 10, 23, '+', [0, 2, 3, "bar", 0], 2],
+    [3, 10, '+', [0, 2, "bar", 0], 2],
     "Hey bird.\n",
     ]
 }
@@ -210,17 +228,24 @@ sub play_tree2 {
         if (! $node->[0]) {
             $$out_ref .= $self->play_expr2($node);
         } elsif ($node->[0] == 3) {
-            $$out_ref .= $OP{$node->[3]}->($self, $node);
+            $$out_ref .= $OP{$node->[2]}->($self, $node);
         } else {
             die;
         }
     }
+
 }
 
 sub play_expr2 {
     my ($self, $var, $ARGS) = @_;
     return $var if ! ref $var;
-    my $ref =  $self->{'_vars'}->{$var->[3]};
+    my $ref;
+    for (@{ $self->{'_scope'} }) {
+        next if ! exists $_->{$var->[2]};
+        $ref = $_->{$var->[2]};
+        last;
+    }
+
     if (! defined $ref) {
         if ($self->{'if_context'}) {
             $ref = $self->undefined_any($var);
@@ -234,12 +259,13 @@ sub play_expr2 {
 sub operator_add {
     my ($self, $node) = @_;
     no warnings;
-    return $self->play_expr2($node->[4]) + $self->play_expr2($node->[5]);
+    return $self->play_expr2($node->[3]) + $self->play_expr2($node->[4]);
 }
 
 ###----------------------------------------------------------------###
 
-my $obj = bless {_vars => {foo => 2, bar => 3}}, __PACKAGE__;
+my $vars = {foo => 2, bar => 3};
+my $obj = bless {_vars => $vars, _scope => [$vars]}, __PACKAGE__;
 
 my $case1 = tree_new();
 my $case2 = tree_old();
@@ -272,8 +298,8 @@ cmpthese timethese -2, {
     new_play => \&new_method,
 };
 #            Rate old_play new_play
-#old_play 47027/s       --     -28%
-#new_play 65159/s      39%       --
+#old_play 50004/s       --     -20%
+#new_play 62127/s      24%       --
 
 use Storable qw(freeze thaw);
 cmpthese timethese -2, {
