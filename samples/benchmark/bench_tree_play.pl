@@ -147,6 +147,36 @@ use CGI::Ex::Dump qw(debug);
 ##iter_foo   973307/s      267%      209%      157%       57%        --      -68%
 ##bare_foo  3084047/s     1062%      879%      715%      398%      217%        --
 
+#sub returnval { my ($args) = @_; return "234234234" }
+#sub appendval { my ($out_ref, $args) = @_; $out_ref .= "234234234"; return }
+#cmpthese timethese -1, {
+#    returnval => sub { return returnval(); },
+#    appendval => sub { my $out = ''; appendval(\$out); return $out },
+#};
+##               Rate appendval returnval
+##appendval  220553/s        --      -85%
+##returnval 1470359/s      567%        --
+
+#sub returnval { my ($args) = @_; my @a = ("234234234"); return \@a }
+#sub appendval { my ($tree, $args) = @_; my @a = ("234234234"); push @$tree, \@a; return 1 }
+#sub returnval_false { my ($args) = @_; return undef }
+#sub appendval_false { my ($tree, $args) = @_; return }
+#cmpthese timethese -1, {
+#    returnval        => sub { my @tree; push @tree, returnval();       return 1 if defined $tree[-1]; pop @tree; return },
+#    returnval_false  => sub { my @tree; push @tree, returnval_false(); return 1 if defined $tree[-1]; pop @tree; return },
+#    returnval2       => sub { my @tree; my $var = returnval();       if (defined($var)) { push @tree, $var; return 1 } return },
+#    returnval_false2 => sub { my @tree; my $var = returnval_false(); if (defined($var)) { push @tree, $var; return 1 } return },
+#    appendval        => sub { my @tree; return 1 if appendval(\@tree);       return },
+#    appendval_false  => sub { my @tree; return 1 if appendval_false(\@tree); return },
+#};
+##                      Rate appendval returnval2 returnval returnval_false returnval_false2 appendval_false
+##appendval         371920/s        --       -11%      -18%            -52%             -61%            -64%
+##returnval2        419926/s       13%         --       -7%            -46%             -56%            -60%
+##returnval         450935/s       21%         7%        --            -42%             -53%            -57%
+##returnval_false   771011/s      107%        84%       71%              --             -19%            -26%
+##returnval_false2  953746/s      156%       127%      112%             24%               --             -8%
+##appendval_false  1041225/s      180%       148%      131%             35%               9%              --
+
 ###----------------------------------------------------------------###
 
 sub tree_new {
