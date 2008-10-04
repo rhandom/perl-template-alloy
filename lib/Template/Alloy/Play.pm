@@ -143,6 +143,8 @@ sub Template::Alloy::play_expr2 {
         $name = $var->[$i++];
         $args = $var->[$i++];
 
+        $name = $self->play_statement($name) if ref $name;
+
         if (! ref $ref) {
             if ($Template::Alloy::ITEM_METHODS->{$name}) {                      # normal scalar op
                 $ref = $Template::Alloy::ITEM_METHODS->{$name}->($self, $ref, $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ());

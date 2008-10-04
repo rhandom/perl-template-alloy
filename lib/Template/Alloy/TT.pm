@@ -158,21 +158,23 @@ sub Template::Alloy::parse_function_args {
 sub Template::Alloy::parse_var_postfix {
     my ($self, $str_ref, $var) = @_;
     if ($$str_ref =~ m{ \G \s* \. }gcx) {
-        $$str_ref =~ m{ \G \s* (\w+) }gcx || $self->throw('parse.missing', "Missing identifier", undef, pos($$str_ref));
-        push @$var, $1;
-        $self->parse_function_args($str_ref, $var);
-        return 1;
-    } elsif ($$str_ref =~ m{ \G \s* \$ }gcx) {
-        if ($$str_ref =~ m{ \G ([^\W\d]\w*) }gcx) {
-            push @$var, [0, pos($$str_ref) - length($1), $1, 0];
-        } elsif ($$str_ref =~ m{ \G \{ }gcx) {
-            $self->parse_expr_new($str_ref, $var) || $self->throw('parse', 'Missing expression after \${', undef, pos $$str_ref);
-            $$str_ref =~ m{ \G \s* \} }gcx || $self->throw('parse', 'Missing close }', undef, pos $$str_ref);
-        } else {
-            $self->throw('parse', 'not sure what to do after $');
+        if ($$str_ref =~ m{ \G \s* (\w+) }gcx) {
+            push @$var, $1;
+            $self->parse_function_args($str_ref, $var);
+            return 1;
+        } elsif ($$str_ref =~ m{ \G \s* \$ }gcx) {
+            if ($$str_ref =~ m{ \G ([^\W\d]\w*) }gcx) {
+                push @$var, [0, pos($$str_ref) - length($1), $1, 0];
+            } elsif ($$str_ref =~ m{ \G \{ }gcx) {
+                $self->parse_expr_new($str_ref, $var) || $self->throw('parse', 'Missing expression after \${', undef, pos $$str_ref);
+                $$str_ref =~ m{ \G \s* \} }gcx || $self->throw('parse', 'Missing close }', undef, pos $$str_ref);
+            } else {
+                $self->throw('parse', 'not sure what to do after $');
+            }
+            $self->parse_function_args($str_ref, $var);
+            return 1;
         }
-        $self->parse_function_args($str_ref, $var);
-        return 1;
+        $self->throw('parse.missing', "Missing identifier", undef, pos($$str_ref));
     }
     return;
 }
