@@ -199,6 +199,35 @@ sub tree_old {
     ]
 }
 
+#cmpthese timethese -2, {
+#    old_build => \&tree_old,
+#    new_build => \&tree_new,
+#};
+##              Rate old_build new_build
+##old_build 138369/s        --      -20%
+##new_build 172461/s       25%        --
+
+my $tree_new = tree_new();
+my $tree_old = tree_old();
+
+#use Storable qw(freeze thaw);
+#cmpthese timethese -2, {
+#    old_freeze => sub { my $n = freeze $tree_old },
+#    new_freeze => sub { my $n = freeze $tree_new },
+#};
+##              Rate old_freeze new_freeze
+##old_freeze 25280/s         --        -7%
+##new_freeze 27120/s         7%         --
+
+#my $froze2 = freeze $tree_old;
+#my $froze1 = freeze $tree_new;
+#cmpthese timethese -2, {
+#    old_thaw => sub { my $n = thaw $froze2 },
+#    new_thaw => sub { my $n = thaw $froze1 },
+#};
+##            Rate old_thaw new_thaw
+##old_thaw 77193/s       --     -11%
+##new_thaw 86809/s      12%       --
 
 ###----------------------------------------------------------------###
 
@@ -260,23 +289,23 @@ my %OP = (
 );
 
 sub play_tree2 {
-    my ($self, $tree, $out_ref) = @_;
-
+    my ($self, $tree) = @_;
+    my $out = '';
     for my $node (@$tree) {
         if (! ref $node) {
-            $$out_ref .= $node;
+            $out .= $node;
             next;
         }
-        $$out_ref .= $self->debug_node($node) if $self->{'_debug_dirs'} && ! $self->{'_debug_off'};
+        $out .= $self->debug_node($node) if $self->{'_debug_dirs'} && ! $self->{'_debug_off'};
         if (! $node->[0]) {
-            $$out_ref .= $self->play_expr2($node);
+            $out .= $self->play_expr2($node);
         } elsif ($node->[0] == 3) {
-            $$out_ref .= $OP{$node->[2]}->($self, $node);
+            $out .= $OP{$node->[2]}->($self, $node);
         } else {
             die;
         }
     }
-
+    return $out;
 }
 
 sub play_expr2 {
@@ -310,31 +339,19 @@ sub operator_add {
 my $vars = {foo => 2, bar => 3};
 my $obj = bless {_vars => $vars, _scope => [$vars]}, __PACKAGE__;
 
-my $case1 = tree_new();
-my $case2 = tree_old();
-
 sub old_method {
     my $out = '';
-    $obj->play_tree($case2, \$out);
+    $obj->play_tree($tree_old, \$out);
     $out;
 }
 
 sub new_method {
-    my $out = '';
-    $obj->play_tree2($case1, \$out);
-    $out;
+    my $out = $obj->play_tree2($tree_new);
 }
 
 print old_method();
 print new_method();
 
-cmpthese timethese -2, {
-    old_build => \&tree_old,
-    new_build => \&tree_new,
-};
-#              Rate old_build new_build
-#old_build 138369/s        --      -20%
-#new_build 172461/s       25%        --
 
 cmpthese timethese -2, {
     old_play => \&old_method,
@@ -343,24 +360,3 @@ cmpthese timethese -2, {
 #            Rate old_play new_play
 #old_play 50004/s       --     -20%
 #new_play 62127/s      24%       --
-
-use Storable qw(freeze thaw);
-cmpthese timethese -2, {
-    old_freeze => sub { my $n = freeze $case2 },
-    new_freeze => sub { my $n = freeze $case1 },
-};
-#              Rate old_freeze new_freeze
-#old_freeze 25280/s         --        -7%
-#new_freeze 27120/s         7%         --
-
-my $froze2 = freeze $case2;
-my $froze1 = freeze $case1;
-
-cmpthese timethese -2, {
-    old_thaw => sub { my $n = thaw $froze2 },
-    new_thaw => sub { my $n = thaw $froze1 },
-};
-#            Rate old_thaw new_thaw
-#old_thaw 77193/s       --     -11%
-#new_thaw 86809/s      12%       --
-
