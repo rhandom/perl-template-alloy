@@ -141,6 +141,7 @@ sub _process {
     my $self = shift;
     my $file = shift;
     local $self->{'_vars'} = shift || {};
+    local $self->{'_scope'} = [$self->{'_vars'}];
     my $out_ref = shift || $self->throw('undef', "Missing output ref");
     local $self->{'_top_level'} = delete $self->{'_start_top_level'};
     my $i = length $$out_ref;
