@@ -92,6 +92,19 @@ use CGI::Ex::Dump qw(debug);
 ##method1   1367892/s    119%     61%     22%       20%        0%      --       -2%
 ##dispatch3 1388950/s    122%     64%     24%       22%        2%      2%        --
 
+#sub Dispatch::play_Foo { my $self = shift }
+#my %DISPATCH = (
+#    Foo => \&Dispatch::play_Foo,
+#);
+#my $obj = bless {}, 'Dispatch';
+#cmpthese timethese -1, {
+#    meth => sub { $obj->play_Foo },
+#    disp => sub { $DISPATCH{'Foo'}->($obj) },
+#};
+##          Rate disp meth
+##disp 1406495/s   -- -17%
+##meth 1686587/s  20%   --
+
 #sub _shift {
 #    my $self = shift;
 #    my $arg1 = shift;
