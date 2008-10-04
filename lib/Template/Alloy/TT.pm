@@ -107,35 +107,152 @@ sub Template::Alloy::parse_expr_new {
 
     my $is_literal;
 
-    my @var = (0, pos $$str_ref);
-    if ($$str_ref =~ m{ \G \s* ([^\W\d]\w*) }gcxo) {
-        push @var, $1;
+    if ($$str_ref =~ m{ \G \s* ([^\W\d]\w*\b) (?<!qw\b) }gcxo) {
+        my @var = (0, pos($$str_ref) - length($1), $1);
         push @$tree, \@var;
 
         $self->parse_function_args($str_ref, \@var);
         1 while $self->parse_var_postfix($str_ref, \@var);
         return 1;
     } elsif ($$str_ref =~ m{ \G \s* \$ }gcx) {
+        my @var = (100, pos($$str_ref));
         if ($$str_ref =~ m{ \G ([^\W\d]\w*) }gcx) {
             push @var, [0, pos($$str_ref) - length($1), $1, 0];
         } elsif ($$str_ref =~ m{ \G \{ }gcx) {
             $self->parse_expr_new($str_ref, \@var) || $self->throw('parse', 'Missing expression after \${', undef, pos $$str_ref);
             $$str_ref =~ m{ \G \s* \} }gcx || $self->throw('parse', 'Missing close }', undef, pos $$str_ref);
         } else {
-            $self->throw('parse', 'not sure what to do after $');
+            $self->throw('parse', 'Invalid character following $', undef, pos($$str_ref));
         }
-
         push @$tree, \@var;
         $self->parse_function_args($str_ref, \@var);
         1 while $self->parse_var_postfix($str_ref, \@var);
         return 1;
-    } elsif ($$str_ref =~ m{ \G \s* ( $Template::Alloy::Parse::QR_NUM ) }gcx) {
-        push @$tree, 0 + $1;
+    }
+
+    my @var = (0, pos($$str_ref));
+    $self->parse_number($str_ref, \@var)
+    || $self->parse_quoted_single($str_ref, \@var)
+    || $self->parse_quoted_double($str_ref, \@var)
+    || $self->parse_constr_list($str_ref, \@var)
+    || $self->parse_constr_hash($str_ref, \@var)
+    || return;
+
+    if ($self->parse_var_postfix($str_ref, \@var)) {
+        1 while $self->parse_var_postfix($str_ref, \@var);
+        push @$tree, \@var;
+    } else {
+        push @$tree, $var[-1];
+    }
+
+    return 1;
+}
+
+sub Template::Alloy::parse_constr_list {
+    my ($self, $str_ref, $var) = @_;
+    if ($$str_ref =~ m{ \G \s* \[ }gcx) {
+        my @args = (2, pos($$str_ref) - 1);
+        $$str_ref =~ m{ \G \s* , }gcx while $self->parse_expr_new($str_ref, \@args);
+        $$str_ref =~ m{ \G \s* \] }gcx || $self->throw('parse.missing', "Missing close ']'", undef, pos($$str_ref));
+        push @$var, \@args, 0;
         return 1;
-    } elsif ($$str_ref =~ m{ \G \s* \' (.*?) (?<! \\) \' }gcxs) {
+    } elsif ($$str_ref =~ m{ \G \s* qw ([^\w\s]) \s* }gcx) {
+        my $quote = $1;
+        $quote =~ y|([{<|)]}>|;
+        $$str_ref =~ m{ \G (.*?) (?<!\\) \Q$quote\E }gcxs
+            || $self->throw('parse.missing.array_close', "Missing close \"$quote\"", undef, pos($$str_ref));
         my $str = $1;
-        $str =~ s{ \\\' }{\'}xg;
-        push @$tree, $str;
+        $str =~ s{ ^ \s+ }{}x;
+        $str =~ s{ \s+ $ }{}x;
+        $str =~ s{ \\ \Q$quote\E }{$quote}gx;
+        push @$var, [2, undef, split /\s+/, $str], 0;
+        return 1;
+    }
+    return;
+}
+
+sub Template::Alloy::parse_constr_hash {
+    my ($self, $str_ref, $var) = @_;
+    $$str_ref =~ m{ \G \s* \{ }gcx || return;
+    my @args = (3, pos($$str_ref) - 1);
+    while (1) {
+        push @args, $1 if $$str_ref =~ m{ \G \s* ([^\W\d]\w*) \s* => }gcx;
+        $self->parse_expr_new($str_ref, \@args) || last;
+        $$str_ref =~ m{ \G \s* (?: => | ,) }gcx
+    }
+    $$str_ref =~ m{ \G \s* \} }gcx || $self->throw('parse.missing', "Missing close '}'", undef, pos($$str_ref));
+    push @$var, \@args, 0;
+    return 1;
+}
+
+sub Template::Alloy::parse_number {
+    my ($self, $str_ref, $var) = @_;
+    $$str_ref =~ m{ \G \s* ( -? $Template::Alloy::Parse::QR_NUM ) }gcxo || return;
+    push @$var, 0 + $1;
+    return 1;
+}
+
+sub Template::Alloy::parse_quoted_single {
+    my ($self, $str_ref, $var) = @_;
+    $$str_ref =~ m{ \G \s* \' (.*?) (?<! \\) \' }gcxs || return;
+    my $str = $1;
+    $str =~ s{ \\\' }{\'}xg;
+    push @$var, $str;
+    return 1;
+}
+
+sub Template::Alloy::parse_quoted_double {
+    my ($self, $str_ref, $var) = @_;
+    $$str_ref =~ m{ \G \s* \" }gcx || return;
+    my @pieces;
+    while ($$str_ref =~ m{ \G (.*?) ([\"\$\\]) }gcxs) {
+        my ($str, $item) = ($1, $2);
+        if (length $str) {
+            if (defined($pieces[-1]) && ! ref($pieces[-1])) { $pieces[-1] .= $str; } else { push @pieces, $str }
+        }
+        if ($item eq '\\') {
+            die;
+            #my $chr = ($$str_ref =~ m{ \G ($QR_ESCAPES) }gcxo) ? $_escapes->{$1} : '\\';
+            #if (defined($pieces[-1]) && ! ref($pieces[-1])) { $pieces[-1] .= $chr; } else { push @pieces, $chr }
+            #next;
+        } elsif ($item eq '"') {
+            last;
+        } elsif ($self->{'AUTO_EVAL'}) {
+            die;
+            if (defined($pieces[-1]) && ! ref($pieces[-1])) { $pieces[-1] .= '$'; } else { push @pieces, '$' }
+            next;
+        }
+        # dollar
+        my $not  = $$str_ref =~ m{ \G ! }gcx; # primarily for velocity
+        my $mark = pos($$str_ref);
+        if ($$str_ref =~ m{ \G ([^\W\d]\w*) }gcx) {
+            push @pieces, [0, pos($$str_ref) - length($1), $1, 0];
+        } elsif ($$str_ref =~ m{ \G \{ }gcx) {
+            $self->parse_expr_new($str_ref, \@pieces);
+            $$str_ref =~ m{ \G \s* \} }gcx || $self->throw('parse', 'Missing close }', undef, pos($$str_ref));
+        } else {
+            $self->throw('parse', 'Invalid character following $', undef, pos($$str_ref));
+        }
+        if (! $not && $self->{'SHOW_UNDEFINED_INTERP'}) {
+            die;
+        #    $ref = [[undef, '//', $ref, '$'.substr($$str_ref, $mark, pos($$str_ref)-$mark)], 0];
+        }
+    }
+    if (! @pieces) { # [% "" %]
+        push @$var, '';
+        return 1;
+    } elsif (@pieces == 1 && ref $pieces[0]) { # [% "$foo" %] or [% "${ 1 + 2 }" %]
+        push @$var, $pieces[0];
+        return 1;
+    } elsif ($self->{'AUTO_EVAL'}) {
+        die;
+        #push @var, [undef, '~', @pieces], 0, '|', 'eval', 0;
+        #return \@var if $is_aq;
+    } elsif (@pieces == 1) { # [% "foo" %]
+        push @$var, $pieces[0];
+        return 1;
+    } else { # [% "foo $bar baz" %]
+        push @$var, [1, undef, \@pieces];
         return 1;
     }
     return;
@@ -145,10 +262,9 @@ sub Template::Alloy::parse_function_args {
     my ($self, $str_ref, $var) = @_;
     if ($$str_ref =~ m{ \G \( }gcx) {
         my @args;
-        while ($self->parse_expr_new($str_ref, \@args)) {
-        }
-        push @$var, \@args;
+        $$str_ref =~ m{ \G \s* , }gcx while $self->parse_expr_new($str_ref, \@args);
         $$str_ref =~ m{ \G \s* \) }gcx || $self->throw('parse.missing', "Missing close ')'", undef, pos($$str_ref));
+        push @$var, \@args;
     } else {
         push @$var, 0;
     }
@@ -157,26 +273,25 @@ sub Template::Alloy::parse_function_args {
 
 sub Template::Alloy::parse_var_postfix {
     my ($self, $str_ref, $var) = @_;
-    if ($$str_ref =~ m{ \G \s* \. }gcx) {
-        if ($$str_ref =~ m{ \G \s* (\w+) }gcx) {
-            push @$var, $1;
-            $self->parse_function_args($str_ref, $var);
-            return 1;
-        } elsif ($$str_ref =~ m{ \G \s* \$ }gcx) {
-            if ($$str_ref =~ m{ \G ([^\W\d]\w*) }gcx) {
-                push @$var, [0, pos($$str_ref) - length($1), $1, 0];
-            } elsif ($$str_ref =~ m{ \G \{ }gcx) {
-                $self->parse_expr_new($str_ref, $var) || $self->throw('parse', 'Missing expression after \${', undef, pos $$str_ref);
-                $$str_ref =~ m{ \G \s* \} }gcx || $self->throw('parse', 'Missing close }', undef, pos $$str_ref);
-            } else {
-                $self->throw('parse', 'not sure what to do after $');
-            }
-            $self->parse_function_args($str_ref, $var);
-            return 1;
+    $$str_ref =~ m{ \G \s* \. }gcx || return;
+    if ($$str_ref =~ m{ \G \s* ( [^\W\d]\w* ) }gcx) {
+        push @$var, $1;
+    } elsif ($$str_ref =~ m{ \G \s* ( -? \d+ ) }gcx) {
+        push @$var, $1;
+    } elsif ($$str_ref =~ m{ \G \s* \$ }gcx) {
+        if ($$str_ref =~ m{ \G ([^\W\d]\w*) }gcx) {
+            push @$var, [0, pos($$str_ref) - length($1), $1, 0];
+        } elsif ($$str_ref =~ m{ \G \{ }gcx) {
+            $self->parse_expr_new($str_ref, $var) || $self->throw('parse', 'Missing expression after \${', undef, pos $$str_ref);
+            $$str_ref =~ m{ \G \s* \} }gcx || $self->throw('parse', 'Missing close }', undef, pos $$str_ref);
+        } else {
+            $self->throw('parse', 'Invalid character following $', undef, pos($$str_ref));
         }
+    } else {
         $self->throw('parse.missing', "Missing identifier", undef, pos($$str_ref));
     }
-    return;
+    $self->parse_function_args($str_ref, $var);
+    return 1;
 }
 
 sub parse_tree_tt33 {

@@ -67,44 +67,52 @@ sub new { die "This class is a role for use by packages such as Template::Alloy"
 ###----------------------------------------------------------------###
 
 sub play_tree {
-    my ($self, $tree, $out_ref) = @_;
-
+    my ($self, $tree) = @_;
+    my $out = '';
     for my $node (@$tree) {
         if (! ref $node) {
-            $$out_ref .= $node;
+            $out .= $node;
             next;
         }
-        $$out_ref .= $self->debug_node($node) if $self->{'_debug_dirs'} && ! $self->{'_debug_off'};
-        $self->play_statement($node, $out_ref);
+        $out .= $self->debug_node($node) if $self->{'_debug_dirs'} && ! $self->{'_debug_off'};
+        $out .= $self->play_statement($node);
     }
-
+    return $out;
 }
 
 sub Template::Alloy::play_statement {
-    my ($self, $node, $out_ref) = @_;
-    if (! $node->[0]) {
-        $$out_ref .= $self->play_expr2($node);
-    } elsif ($node->[0] == 3) {
-        #$$out_ref .= ${$node->[2]}->($self, $node);
-    } else {
-        die;
-    }
+    my ($self, $node) = @_;
+    return $self->play_expr2($node) if ! $node->[0];
+    return $self->play_tree($node->[2]) if $node->[0] == 1;
+    return [map {ref($_) ? $self->play_statement($node) : $_} @{$node}[2..$#$node]] if $node->[0] == 2;
+    return {map {ref($_) ? $self->play_statement($_) : $_} @{$node}[2..$#$node]} if $node->[0] == 3;
+    return $self->play_expr2($node) if $node->[0] == 100;
+    #} elsif ($node->[0] == 3) {
+    #    return $self->play_operator($node);
+    #} elsif ($node->[0] == 3) {
+    #    #$$out_ref .= ${$node->[2]}->($self, $node);
+    die;
 }
 
 sub Template::Alloy::play_expr2 {
     my ($self, $var, $ARGS) = @_;
 
     my $name = $var->[2];
-    $name = $self->play_statement($name) if ref $name;
-
+    my $args;
     my $ref;
-    for (@{ $self->{'_scope'} }) {
-        next if ! exists $_->{$name};
-        $ref = $_->{$name};
-        last;
+
+    if (ref($name) && ($var->[0] != 100 || do { $name = $self->play_statement($name); 0 })) {
+        $ref = $self->play_statement($name);
+    } else {
+        return if $Template::Alloy::QR_PRIVATE && $name =~ $Template::Alloy::QR_PRIVATE; # don't allow vars that begin with _
+        for (@{ $self->{'_scope'} }) {
+            next if ! exists $_->{$name};
+            $ref = $_->{$name};
+            last;
+        }
+        $args = $var->[3];
     }
 
-    my $args = $var->[3];
     my $i = 4;
 
     while (1) {
@@ -143,7 +151,8 @@ sub Template::Alloy::play_expr2 {
         $name = $var->[$i++];
         $args = $var->[$i++];
 
-        $name = $self->play_statement($name) if ref $name;
+        $name = $self->play_statement($name) if ref $name; # needs update for 100
+        return if $Template::Alloy::QR_PRIVATE && $name =~ $Template::Alloy::QR_PRIVATE; # don't allow vars that begin with _
 
         if (! ref $ref) {
             if ($Template::Alloy::ITEM_METHODS->{$name}) {                      # normal scalar op
