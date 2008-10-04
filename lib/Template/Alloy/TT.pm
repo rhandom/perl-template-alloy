@@ -20,6 +20,165 @@ sub new { die "This class is a role for use by packages such as Template::Alloy"
 
 sub parse_tree_tt3 {
     my $self    = shift;
+    my $str_ref = shift || $self->throw('parse.no_string', "No string or undefined during parse", undef, 1);
+
+    my $STYLE = $self->{'TAG_STYLE'} || 'default';
+    local $self->{'_end_tag'}   = $self->{'END_TAG'}   || $Template::Alloy::Parse::TAGS->{$STYLE}->[1];
+    local $self->{'START_TAG'}  = $self->{'START_TAG'} || $Template::Alloy::Parse::TAGS->{$STYLE}->[0];
+    local $self->{'_start_tag'} = (! $self->{'INTERPOLATE'}) ? $self->{'START_TAG'} : qr{(?: $self->{'START_TAG'} | (\$))}sx;
+
+    my @tree;
+    $self->parse_text($str_ref, \@tree) || return [$$str_ref];
+    $self->parse_statements($str_ref, \@tree)
+        || $self->throw('parse.unfinished', "Didn't make it to the end", undef, pos($$str_ref));
+    #use CGI::Ex::Dump qw(debug);
+    #debug \@tree;
+    return \@tree;
+}
+
+sub Template::Alloy::parse_text {
+    my ($self, $str_ref, $tree) = @_;
+
+    $$str_ref =~ m{ \G (.*?) $self->{'_start_tag'} }gcxs || return;
+    my ($text, $dollar) = ($1, $2); # dollar is set only on an interpolated var
+    if ($dollar) {
+        die "Not done";
+    }
+
+    ### take care of whitespace and comments flags
+    my $pre_chomp = $$str_ref =~ m{ \G ([+=~-]) }gcx ? $1 : $self->{'PRE_CHOMP'};
+    $pre_chomp  =~ y/-=~+/1230/ if $pre_chomp;
+    if ($pre_chomp) {
+        if    ($pre_chomp == 1) { $text =~ s{ (?:\n|^) [^\S\n]* \z }{}x  }
+        elsif ($pre_chomp == 2) { $text =~ s{             (\s+) \z }{ }x }
+        elsif ($pre_chomp == 3) { $text =~ s{             (\s+) \z }{}x  }
+    }
+
+    push @$tree, $text; # should always add it if we are successful
+    return 1;
+}
+
+sub Template::Alloy::parse_statements {
+    my ($self, $str_ref, $tree) = @_;
+
+    $self->parse_statement($str_ref, $tree) || return;
+
+    while (1) {
+        my $had_semi = $$str_ref =~ m{ \G \s* ; }gcx ? 1 : 0;
+
+        if ($self->parse_statement($str_ref, $tree)) {
+            if (! $had_semi && $self->{'SEMICOLONS'}) {
+                $self->throw('parse', "Missing semi-colon with SEMICOLONS => 1", undef, pos($$str_ref));
+            }
+            next;
+        }
+
+        if ($$str_ref =~ m{ \G \s* ([+=~-]?) $self->{'_end_tag'} }gcxs) {
+            my $post_chomp = $1 || $self->{'POST_CHOMP'};
+            $post_chomp =~ y/-=~+/1230/ if $post_chomp;
+            my $eot;
+            if (! $self->parse_text($str_ref, $tree)) {
+                $$str_ref =~ m{ \G (.*) }xgcs;
+                push @$tree, $1;
+                $eot = 1;
+            }
+            if ($post_chomp && length $tree->[-1]) {
+                if    ($post_chomp == 1) { $tree->[-1] =~ s{ ^ [^\S\n]* \n }{}x  }
+                elsif ($post_chomp == 2) { $tree->[-1] =~ s{ ^ \s+         }{ }x }
+                elsif ($post_chomp == 3) { $tree->[-1] =~ s{ ^ \s+         }{}x  }
+            }
+            return 1 if $eot;
+            $self->parse_statement($str_ref, $tree) || return;
+            next;
+        }
+        $self->throw('parse', 'Not sure what to do next', undef, pos($$str_ref));
+    }
+    return;
+}
+
+sub Template::Alloy::parse_statement {
+    my ($self, $str_ref, $tree) = @_;
+    return $self->parse_expr_new($str_ref, $tree);
+}
+
+sub Template::Alloy::parse_expr_new {
+    my ($self, $str_ref, $tree) = @_;
+    $$str_ref =~ m{ \G \s* }gcxo;
+
+    my $is_literal;
+
+    my @var = (0, pos $$str_ref);
+    if ($$str_ref =~ m{ \G \s* ([^\W\d]\w*) }gcxo) {
+        push @var, $1;
+        push @$tree, \@var;
+
+        $self->parse_function_args($str_ref, \@var);
+        1 while $self->parse_var_postfix($str_ref, \@var);
+        return 1;
+    } elsif ($$str_ref =~ m{ \G \s* \$ }gcx) {
+        if ($$str_ref =~ m{ \G ([^\W\d]\w*) }gcx) {
+            push @var, [0, pos($$str_ref) - length($1), $1, 0];
+        } elsif ($$str_ref =~ m{ \G \{ }gcx) {
+            $self->parse_expr_new($str_ref, \@var) || $self->throw('parse', 'Missing expression after \${', undef, pos $$str_ref);
+            $$str_ref =~ m{ \G \s* \} }gcx || $self->throw('parse', 'Missing close }', undef, pos $$str_ref);
+        } else {
+            $self->throw('parse', 'not sure what to do after $');
+        }
+
+        push @$tree, \@var;
+        $self->parse_function_args($str_ref, \@var);
+        1 while $self->parse_var_postfix($str_ref, \@var);
+        return 1;
+    } elsif ($$str_ref =~ m{ \G \s* ( $Template::Alloy::Parse::QR_NUM ) }gcx) {
+        push @$tree, 0 + $1;
+        return 1;
+    } elsif ($$str_ref =~ m{ \G \s* \' (.*?) (?<! \\) \' }gcxs) {
+        my $str = $1;
+        $str =~ s{ \\\' }{\'}xg;
+        push @$tree, $str;
+        return 1;
+    }
+    return;
+}
+
+sub Template::Alloy::parse_function_args {
+    my ($self, $str_ref, $var) = @_;
+    if ($$str_ref =~ m{ \G \( }gcx) {
+        my @args;
+        while ($self->parse_expr_new($str_ref, \@args)) {
+        }
+        push @$var, \@args;
+        $$str_ref =~ m{ \G \s* \) }gcx || $self->throw('parse.missing', "Missing close ')'", undef, pos($$str_ref));
+    } else {
+        push @$var, 0;
+    }
+    return 1;
+}
+
+sub Template::Alloy::parse_var_postfix {
+    my ($self, $str_ref, $var) = @_;
+    if ($$str_ref =~ m{ \G \s* \. }gcx) {
+        $$str_ref =~ m{ \G \s* (\w+) }gcx || $self->throw('parse.missing', "Missing identifier", undef, pos($$str_ref));
+        push @$var, $1;
+        $self->parse_function_args($str_ref, $var);
+        return 1;
+    } elsif ($$str_ref =~ m{ \G \s* \$ }gcx) {
+        if ($$str_ref =~ m{ \G ([^\W\d]\w*) }gcx) {
+            push @$var, [0, pos($$str_ref) - length($1), $1, 0];
+        } elsif ($$str_ref =~ m{ \G \{ }gcx) {
+            $self->parse_expr_new($str_ref, $var) || $self->throw('parse', 'Missing expression after \${', undef, pos $$str_ref);
+            $$str_ref =~ m{ \G \s* \} }gcx || $self->throw('parse', 'Missing close }', undef, pos $$str_ref);
+        } else {
+            $self->throw('parse', 'not sure what to do after $');
+        }
+        $self->parse_function_args($str_ref, $var);
+        return 1;
+    }
+    return;
+}
+
+sub parse_tree_tt33 {
+    my $self    = shift;
     my $str_ref = shift;
     my $one_tag_only = shift() ? 1 : 0;
     if (! $str_ref || ! defined $$str_ref) {

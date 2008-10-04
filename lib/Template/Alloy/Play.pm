@@ -69,6 +69,161 @@ sub new { die "This class is a role for use by packages such as Template::Alloy"
 sub play_tree {
     my ($self, $tree, $out_ref) = @_;
 
+    for my $node (@$tree) {
+        if (! ref $node) {
+            $$out_ref .= $node;
+            next;
+        }
+        $$out_ref .= $self->debug_node($node) if $self->{'_debug_dirs'} && ! $self->{'_debug_off'};
+        $self->play_statement($node, $out_ref);
+    }
+
+}
+
+sub Template::Alloy::play_statement {
+    my ($self, $node, $out_ref) = @_;
+    if (! $node->[0]) {
+        $$out_ref .= $self->play_expr2($node);
+    } elsif ($node->[0] == 3) {
+        #$$out_ref .= ${$node->[2]}->($self, $node);
+    } else {
+        die;
+    }
+}
+
+sub Template::Alloy::play_expr2 {
+    my ($self, $var, $ARGS) = @_;
+
+    my $name = $var->[2];
+    $name = $self->play_statement($name) if ref $name;
+
+    my $ref;
+    for (@{ $self->{'_scope'} }) {
+        next if ! exists $_->{$name};
+        $ref = $_->{$name};
+        last;
+    }
+
+    my $args = $var->[3];
+    my $i = 4;
+
+    while (1) {
+        if (! defined $ref) {
+            if ($self->{'if_context'}) {
+                $ref = $self->undefined_any($var);
+            } else {
+                $ref = $self->undefined_get($var);
+            }
+            last;
+        }
+
+        ### check at each point if the returned thing was a code
+        if (ref($ref) eq 'CODE') {
+            #return $ref if $i >= $#$var && $ARGS->{'return_ref'};
+            my @args = $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ();
+            my $type = lc($self->{'CALL_CONTEXT'} || '');
+            if ($type eq 'item') {
+                $ref = $ref->(@args);
+            } else {
+                my @results = $ref->(@args);
+                if ($type eq 'list') {
+                    $ref = \@results;
+                } elsif (defined $results[0]) {
+                    $ref = ($#results > 0) ? \@results : $results[0];
+                } elsif (defined $results[1]) {
+                    die $results[1]; # TT behavior - why not just throw ?
+                } else {
+                    $ref = undef;
+                    last;
+                }
+            }
+        }
+
+        last if $i >= $#$var;
+        $name = $var->[$i++];
+        $args = $var->[$i++];
+
+        if (! ref $ref) {
+            if ($Template::Alloy::ITEM_METHODS->{$name}) {                      # normal scalar op
+                $ref = $Template::Alloy::ITEM_METHODS->{$name}->($self, $ref, $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ());
+
+            } elsif ($Template::Alloy::ITEM_OPS->{$name}) {                     # normal scalar op
+                $ref = $Template::Alloy::ITEM_OPS->{$name}->($ref, $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ());
+            } else {
+                $ref = undef;
+            }
+            next;
+        }
+
+        if (UNIVERSAL::can($ref, 'can')) {
+            #return $ref if $i >= $#$var && $ARGS->{'return_ref'};
+            my $type = lc($self->{'CALL_CONTEXT'} || '');
+            my @args = $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ();
+            if ($type eq 'item') {
+                $ref = $ref->$name(@args);
+                    next;
+            }
+            my @results = eval { $ref->$name(@args) };
+            if ($@) {
+                my $class = ref $ref;
+                die $@ if ref $@ || $@ !~ /Can\'t locate object method "\Q$name\E" via package "\Q$class\E"/ || $type eq 'list';
+            } elsif ($type eq 'list') {
+                $ref = \@results;
+                next;
+            } elsif (defined $results[0]) {
+                $ref = ($#results > 0) ? \@results : $results[0];
+                next;
+            } elsif (defined $results[1]) {
+                die $results[1]; # TT behavior - why not just throw ?
+            } else {
+                $ref = undef;
+                last;
+            }
+                # didn't find a method by that name - so fail down to hash and array access
+        }
+
+        if (ref $ref eq 'HASH') {
+            if (exists $ref->{$name}) {
+                #return \ $ref->{$name} if $i >= $#$var && $ARGS->{'return_ref'} && ! ref $ref->{$name};
+                $ref = $ref->{$name};
+            #} elsif ($Template::Alloy::HASH_OPS->{$name}) {
+             #   $ref = $Template::Alloy::HASH_OPS->{$name}->($ref, $args ? map { $self->play_expr($_) } @$args : ());
+            #} elsif ($ARGS->{'is_namespace_during_compile'}) {
+             #   return $var; # abort - can't fold namespace variable
+            } else {
+                #return \ $ref->{$name} if $i >= $#$var && $ARGS->{'return_ref'};
+                $ref = undef;
+            }
+        } elsif (ref($ref) eq 'ARRAY') {
+            if ($name =~ m{ ^ -? $Template::Alloy::QR_INDEX $ }ox) {
+                #return \ $ref->[$name] if $i >= $#$var && $ARGS->{'return_ref'} && ! ref $ref->[$name];
+                $ref = $ref->[$name];
+            #} elsif ($LIST_OPS->{$name}) {
+             #   $ref = $LIST_OPS->{$name}->($ref, $args ? map { $self->play_expr($_) } @$args : ());
+            } else {
+                $ref = undef;
+            }
+
+        } else {
+            $ref = undef;
+        }
+    }
+
+    return $ref;
+}
+
+sub operator_add {
+    my ($self, $node) = @_;
+    no warnings;
+    return $self->play_expr2($node->[3]) + $self->play_expr2($node->[4]);
+}
+
+###----------------------------------------------------------------###
+
+
+sub play_tree3 {
+    my ($self, $tree, $out_ref) = @_;
+
     return $self->stream_tree($tree) if $self->{'STREAM'};
 
     # node contains (0: DIRECTIVE,
