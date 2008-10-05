@@ -64,11 +64,14 @@ sub Template::Alloy::parse_statements {
     $self->parse_statement($str_ref, $tree) || return;
 
     while (1) {
-        my $had_semi = $$str_ref =~ m{ \G \s* ; }gcx ? 1 : 0;
+        my $mark = pos($$str_ref);
+        my $stmt_sep = $$str_ref =~ m{ \G \s* ; }gcx ? ':' : $$str_ref =~ m{ \G \s* \n }gcx ? "\n" : '';
 
         if ($self->parse_statement($str_ref, $tree)) {
-            if (! $had_semi && $self->{'SEMICOLONS'}) {
+            if ($self->{'SEMICOLONS'} && $stmt_sep ne ';') {
                 $self->throw('parse', "Missing semi-colon with SEMICOLONS => 1", undef, pos($$str_ref));
+            } elsif ($stmt_sep ne "\n") {
+                $self->throw('parse', "Individual expressions must be separated by a semicolon or a newline", undef, pos($$str_ref));
             }
             next;
         }
@@ -98,23 +101,29 @@ sub Template::Alloy::parse_statements {
 
 sub Template::Alloy::parse_statement {
     my ($self, $str_ref, $tree) = @_;
+    return $self->parse_expr_new($str_ref, $tree) if $$str_ref =~ m{ \G \s* GET }gcx;
     return $self->parse_expr_new($str_ref, $tree);
 }
 
 sub Template::Alloy::parse_expr_new {
     my ($self, $str_ref, $tree) = @_;
+    return $self->parse_variable($str_ref, $tree);
+}
+
+sub Template::Alloy::parse_variable {
+    my ($self, $str_ref, $tree) = @_;
     $$str_ref =~ m{ \G \s* }gcxo;
 
     my $is_literal;
 
-    if ($$str_ref =~ m{ \G \s* ([^\W\d]\w*\b) (?<!qw\b) }gcxo) {
+    if ($$str_ref =~ m{ \G \s* ([^\W\d]\w*\b) (?<!qw\b) }gcxo) { # [% foo %]
         my @var = (0, pos($$str_ref) - length($1), $1);
         push @$tree, \@var;
 
         $self->parse_function_args($str_ref, \@var);
         1 while $self->parse_var_postfix($str_ref, \@var);
         return 1;
-    } elsif ($$str_ref =~ m{ \G \s* \$ }gcx) {
+    } elsif ($$str_ref =~ m{ \G \s* \$ }gcx) {                   # [% $foo %]
         my @var = (100, pos($$str_ref));
         if ($$str_ref =~ m{ \G ([^\W\d]\w*) }gcx) {
             push @var, [0, pos($$str_ref) - length($1), $1, 0];
@@ -128,7 +137,19 @@ sub Template::Alloy::parse_expr_new {
         $self->parse_function_args($str_ref, \@var);
         1 while $self->parse_var_postfix($str_ref, \@var);
         return 1;
+    } elsif ($$str_ref =~ m{ \G \s* \( }gcx) {                   # [% (foo) %]
+        my $pos = pos($$str_ref) - 1;
+        my @args;
+        1 while $self->parse_statement($str_ref, \@args) && $$str_ref =~ m{ \G \s* ; }gcx;
+        $$str_ref =~ m{ \G \s* \) }gcx || $self->throw('parse', "Missing close ']'", undef, pos($$str_ref));
+        $$str_ref =~ m{ \G \( }gcx && $self->throw('parse', "Close ) cannot be followed by function args", undef, pos($$str_ref));
+        my $var = (@args != 1 || ! ref $args[0]) ? [1, $pos, \@args] : $args[0];
+        push @$tree, $var;
+        $self->parse_function_args($str_ref, $var);
+        1 while $self->parse_var_postfix($str_ref, $var);
+        return 1;
     }
+
 
     my @var = (0, pos($$str_ref));
     $self->parse_number($str_ref, \@var)
