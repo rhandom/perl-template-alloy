@@ -70,7 +70,12 @@ sub process_ok { # process the value and say if it was ok
         ok(0, "Line $line   \"$str\"");
         warn "# Was:\n$out\n# Should've been:\n$test\n";
         print $obj->error if $obj->can('error');
-        print $obj->dump_parse_tree(\$str) if $obj->can('dump_parse_tree');
+        #print $obj->dump_parse_tree(\$str) if $obj->can('dump_parse_tree');
+        eval {
+            my $tree = (values %{ $obj->{'_documents'} })[0]->{'_tree'};
+            require CGI::Ex::Dump;
+            CGI::Ex::Dump::debug($tree);
+        };
         exit;
     }
 }
@@ -243,16 +248,23 @@ process_ok("[% \"hi \${foo.echo(7)}\" %]" => 'hi 7', {foo => $obj});
 process_ok("[% _foo %]2" => '2', {_foo => 1});
 process_ok("[% \$bar %]2" => '2', {_foo => 1, bar => '_foo'});
 process_ok("[% __foo %]2" => '2', {__foo => 1});
+process_ok("[% foo._bar %]2" => '2', {foo => {_bar =>1}});
 
-process_ok("[% qw/Foo Bar Baz/.0 %]" => 'Foo') if ! $is_tt;
-process_ok('[% [0..10].-1 %]' => '10') if ! $is_tt;
-process_ok('[% [0..10].${ 2.3 } %]' => '2') if ! $is_tt;
+process_ok("[% foo.0 %]" => 'Foo', {foo => qw/Foo Bar Baz/}) if ! $is_tt;
+process_ok('[% foo.-1 %]' => '10', {foo => [0..10]}) if ! $is_tt;
+process_ok('[% foo.${ 2.3 } %]' => '2', {foo => [0..10]}) if ! $is_tt;
 
-process_ok("[% (1 + 2)() %]" => ''); # parse error
-process_ok("[% (1 + 2) %]" => '3');
+process_ok("[% ['Foo', 'Bar', 'Baz'].2 %]" => 'Baz') if ! $is_tt;
+process_ok("[% {foo => 'Foo', 'bar' => 'Bar', baz => \"Baz\"}.baz %]" => 'Baz') if ! $is_tt;
+process_ok("[% qw{Foo Bar Baz}.2 %]" => 'Baz') if ! $is_tt;
+
 process_ok("[% (a) %]" => '2', {a => 2});
 process_ok("[% ('foo') %]" => 'foo');
+process_ok("[% ('foo'; 'bar') %]" => 'foobar');
 process_ok("[% (a(2)) %]" => '2', {a => sub { $_[0] }});
+process_ok("[% (2)() %]" => ''); # parse error
+process_ok("[% 1 + 2 %]" => '3');
+process_ok("[% (1 + 2) %]" => '3');
 
 ###----------------------------------------------------------------###
 print "### SET ############################################# $engine_option\n";
@@ -319,11 +331,7 @@ process_ok("[% foo.bar = 2 %][% foo.bar %]" => '2');
 
 process_ok('[% a = "a" %]|[% (b = a) %]|[% a %]|[% b %]' => '|a|a|a');
 process_ok('[% a = "a" %][% (c = (b = a)) %][% a %][% b %][% c %]' => 'aaaa');
-
-process_ok("[% a = qw{Foo Bar Baz} ; a.2 %]" => 'Baz') if ! $is_tt;
-
 process_ok("[% _foo = 1 %][% _foo %]2" => '2');
-process_ok("[% foo._bar %]2" => '2', {foo => {_bar =>1}});
 
 ###----------------------------------------------------------------###
 print "### multiple statements in same tag ################# $engine_option\n";
