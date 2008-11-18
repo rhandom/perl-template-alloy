@@ -54,7 +54,7 @@ sub Template::Alloy::parse_text {
         elsif ($pre_chomp == 3) { $text =~ s{             (\s+) \z }{}x  }
     }
 
-    push @$tree, $text; # should always add it if we are successful
+    push @$tree, $text if length $text;
     return 1;
 }
 
@@ -82,7 +82,7 @@ sub Template::Alloy::parse_statements {
             my $eot;
             if (! $self->parse_text($str_ref, $tree)) {
                 $$str_ref =~ m{ \G (.*) }xgcs;
-                push @$tree, $1;
+                push @$tree, $1 if length($1);
                 $eot = 1;
             }
             if ($post_chomp && length $tree->[-1]) {
@@ -101,13 +101,106 @@ sub Template::Alloy::parse_statements {
 
 sub Template::Alloy::parse_statement {
     my ($self, $str_ref, $tree) = @_;
-    return $self->parse_expr_new($str_ref, $tree) if $$str_ref =~ m{ \G \s* GET }gcx;
+    return $self->parse_expr_new($str_ref, $tree) if $$str_ref =~ m{ \G \s* GET \b }gcx;
+    if ($$str_ref =~ m{ \G \s* SET \b }gcx) {
+        while (1) {
+            my @vars = (2, pos($$str_ref) - 3);
+            $self->parse_expr_new($str_ref, \@vars) || last;
+            $vars[-1] = [5, $vars[-1]->[1], my $v = $vars[-1], [99]] if $vars[-1]->[0] != 5 || $vars[-1]->[2] ne '=';
+            push @$tree, \@vars;
+        }
+        return 1;
+    }
     return $self->parse_expr_new($str_ref, $tree);
 }
 
 sub Template::Alloy::parse_expr_new {
     my ($self, $str_ref, $tree) = @_;
-    return $self->parse_variable($str_ref, $tree);
+    $self->parse_variable($str_ref, $tree) || return;
+
+    if ($self->{'allow =>'} && $$str_ref =~ m{ \G \s* => \s* }gcx) { # fake precedence here
+        $tree->[-1] = $tree->[-1]->[2] if ref($tree->[-1]) && ! $tree->[-1]->[0] && ! $tree->[-1]->[3] && @{$tree->[-1]} == 4; # autoquote
+        $self->parse_variable($str_ref, $tree) || push @$tree, [99, pos($$str_ref)];
+        return 1;
+    }
+
+    my @other;
+    my $found;
+    while (1) {
+        $$str_ref =~ m{ \G \s* }gcx;
+
+        if ($self->{'_end_tag'} && $$str_ref =~ m{ \G ( [+=~-]? $self->{'_end_tag'} ) }gcx) {
+            pos($$str_ref) = pos($$str_ref) - length($1);
+            last;
+        }
+        last if $$str_ref !~ m{ \G ($Template::Alloy::Operator::QR_OP) }gcxo;
+
+        #if ($Template::Alloy::Operator::OP_ASSIGN->{$1} && ! $ARGS->{'allow_parened_ops'}) { # only allow assignment in parens
+        #    pos($$str_ref) = $mark;
+        #    last;
+        #}
+        my $op = $1;
+        $op = 'eq' if $op eq '==' && (! defined($self->{'V2EQUALS'}) || $self->{'V2EQUALS'});
+        $op = 'ne' if $op eq '!=' && (! defined($self->{'V2EQUALS'}) || $self->{'V2EQUALS'});
+        push @other, pos($$str_ref) - length($op), $op;
+        #print "((($op)))\n";
+
+        ### allow for postfix - doesn't check precedence - someday we might change - but not today (only affects post ++ and --)
+        if ($Template::Alloy::Operator::OP_POSTFIX->{$op}) {
+            die "Not done yet";
+            #$var = [[undef, $op, $var, 1], 0]; # cheat - give a "second value" to postfix ops
+            next;
+
+        #### allow for prefix operator precedence
+        #} elsif ($has_prefix && $OP->{$op}->[1] < $OP_PREFIX->{$has_prefix->[-1]}->[1]) {
+        #    if ($tree) {
+        #        if ($#$tree == 1) { # only one operator - keep simple things fast
+        #            $var = [[undef, $tree->[0], $var, $tree->[1]], 0];
+        #        } else {
+        #            unshift @$tree, $var;
+        #            $var = $self->apply_precedence($tree, $found, $str_ref);
+        #        }
+        #        undef $tree;
+        #        undef $found;
+        #    }
+        #    $var = [[undef, $has_prefix->[-1], $var ], 0];
+        #    pop @$has_prefix;
+        #    $has_prefix = undef if ! @$has_prefix;
+        }
+
+        ### add the operator to the tree
+        $self->parse_expr_new($str_ref, \@other)
+            || $self->throw('parse', 'Missing variable after "'.$op.'"', undef, pos($$str_ref));
+        $found->{$Template::Alloy::Operator::OP->{$op}->[1]}->{$op} = 1; # found->{precedence}->{op}
+    }
+
+    ### if we found operators - tree the nodes by operator precedence
+    if (@other) {
+        if (@other == 3) { # only one operator - keep simple things fast
+            if (
+                #$Template::Alloy::Operator::OP->{$other[0]}->[0] eq 'assign' && 
+                $other[0] =~ /(.+)=/) {
+                die "Unimplemented";
+                #$var = [[undef, '=', $var, [[undef, $1, $var, $tree->[1]], 0]], 0]; # "a += b" => "a = a + b"
+            } else {
+                my $prev_expr = $tree->[-1];
+                $tree->[-1] = [5, $other[0], $other[1], $prev_expr, $other[2]];
+            }
+        } else {
+            use CGI::Ex::Dump qw(debug);
+            debug \@other;
+            die "Unimplemented complex";
+            #unshift @$tree, $var;
+            #$var = $self->apply_precedence($tree, $found, $str_ref);
+        }
+    }
+
+    #### allow for prefix on non-chained variables
+    #if ($has_prefix) {
+    #    $var = [[undef, $_, $var], 0] for reverse @$has_prefix;
+    #}
+
+    return 1;
 }
 
 sub Template::Alloy::parse_variable {
@@ -141,9 +234,9 @@ sub Template::Alloy::parse_variable {
         my $pos = pos($$str_ref) - 1;
         my @args;
         1 while $self->parse_statement($str_ref, \@args) && $$str_ref =~ m{ \G \s* ; }gcx;
-        $$str_ref =~ m{ \G \s* \) }gcx || $self->throw('parse', "Missing close ']'", undef, pos($$str_ref));
+        $$str_ref =~ m{ \G \s* \) }gcx || $self->throw('parse', "Missing close ')'", undef, pos($$str_ref));
         $$str_ref =~ m{ \G \( }gcx && $self->throw('parse', "Close ) cannot be followed by function args", undef, pos($$str_ref));
-        my $var = (@args != 1 || ! ref $args[0]) ? [1, $pos, \@args] : $args[0];
+        my $var = (@args == 1 && ref $args[0]) ? $args[0] : [1, $pos, \@args];
         push @$tree, $var;
         $self->parse_function_args($str_ref, $var);
         1 while $self->parse_var_postfix($str_ref, $var);
@@ -155,7 +248,7 @@ sub Template::Alloy::parse_variable {
     $self->parse_number($str_ref, \@var)
     || $self->parse_quoted_single($str_ref, \@var)
     || $self->parse_quoted_double($str_ref, \@var)
-    || $self->parse_constr_list($str_ref, \@var)
+    || $self->parse_constr_array($str_ref, \@var)
     || $self->parse_constr_hash($str_ref, \@var)
     || return;
 
@@ -169,10 +262,10 @@ sub Template::Alloy::parse_variable {
     return 1;
 }
 
-sub Template::Alloy::parse_constr_list {
+sub Template::Alloy::parse_constr_array {
     my ($self, $str_ref, $var) = @_;
     if ($$str_ref =~ m{ \G \s* \[ }gcx) {
-        my @args = (2, pos($$str_ref) - 1);
+        my @args = (3, pos($$str_ref) - 1);
         $$str_ref =~ m{ \G \s* , }gcx while $self->parse_expr_new($str_ref, \@args);
         $$str_ref =~ m{ \G \s* \] }gcx || $self->throw('parse.missing', "Missing close ']'", undef, pos($$str_ref));
         push @$var, \@args, 0;
@@ -186,7 +279,7 @@ sub Template::Alloy::parse_constr_list {
         $str =~ s{ ^ \s+ }{}x;
         $str =~ s{ \s+ $ }{}x;
         $str =~ s{ \\ \Q$quote\E }{$quote}gx;
-        push @$var, [2, undef, split /\s+/, $str], 0;
+        push @$var, [3, undef, split /\s+/, $str], 0;
         return 1;
     }
     return;
@@ -195,9 +288,9 @@ sub Template::Alloy::parse_constr_list {
 sub Template::Alloy::parse_constr_hash {
     my ($self, $str_ref, $var) = @_;
     $$str_ref =~ m{ \G \s* \{ }gcx || return;
-    my @args = (3, pos($$str_ref) - 1);
+    my @args = (4, pos($$str_ref) - 1);
+    local $self->{'allow =>'} = 1;
     while (1) {
-        push @args, $1 if $$str_ref =~ m{ \G \s* ([^\W\d]\w*) \s* => }gcx;
         $self->parse_expr_new($str_ref, \@args) || last;
         $$str_ref =~ m{ \G \s* (?: => | ,) }gcx
     }
@@ -308,6 +401,9 @@ sub Template::Alloy::parse_var_postfix {
         } else {
             $self->throw('parse', 'Invalid character following $', undef, pos($$str_ref));
         }
+    } elsif ($$str_ref =~ m{ \G \[ }gcx) {
+        $self->parse_expr_new($str_ref, $var) || $self->throw('parse', 'Missing expression after [', undef, pos $$str_ref);
+        $$str_ref =~ m{ \G \s* \] }gcx || $self->throw('parse', 'Missing close ]', undef, pos $$str_ref);
     } else {
         $self->throw('parse.missing', "Missing identifier", undef, pos($$str_ref));
     }
