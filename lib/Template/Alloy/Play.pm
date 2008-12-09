@@ -69,6 +69,7 @@ sub new { die "This class is a role for use by packages such as Template::Alloy"
 sub play_tree {
     my ($self, $tree) = @_;
     my $out = '';
+    no warnings;
     for my $node (@$tree) {
         if (! ref $node) {
             $out .= $node;
@@ -80,13 +81,30 @@ sub play_tree {
     return $out;
 }
 
+my %OP = ( # wish we had macros
+    '+'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) + (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '*'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) * (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '..' => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) .. (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+          );
+
 sub Template::Alloy::play_statement {
     my ($self, $node) = @_;
-    return $self->play_expr2($node) if ! $node->[0];
-    return $self->play_tree($node->[2]) if $node->[0] == 1;
-    return [map {ref($_) ? $self->play_statement($node) : $_} @{$node}[2..$#$node]] if $node->[0] == 2;
-    return {map {ref($_) ? $self->play_statement($_) : $_} @{$node}[2..$#$node]} if $node->[0] == 3;
-    return $self->play_expr2($node) if $node->[0] == 100;
+    return $self->play_expr2($node)                                                 if ! $node->[0];       # GET foo
+    return $self->play_tree($node->[2])                                             if $node->[0] == Template::Alloy::ID::tree; # BLOCK; stmnt; END
+    if ($node->[0] == Template::Alloy::ID::assign) {    # SET foo = bar
+        $self->set_variable2($node);
+        return '';
+    }
+    return [map {ref($_) ? $self->play_statement($_) : $_} @{$node}[2..$#$node]] if $node->[0] == Template::Alloy::ID::list;    # []
+    if ($node->[0] == Template::Alloy::ID::hash) {    # {}
+        my $h = {map {ref($_) ? $self->play_statement($_) : $_} @{$node}[2..$#$node], (@$node%2?undef:())};
+        use CGI::Ex::Dump qw(debug);
+        #debug $h, $node;
+        return $h;
+    }
+    return ($OP{$node->[2]} || die "Op $node->[2]")->($self, $node)                 if $node->[0] == Template::Alloy::ID::op;    # 1 + 2
+    return undef                                                                    if $node->[0] == Template::Alloy::ID::undef;   # undef
+    return $self->play_expr2($node)                                                 if $node->[0] == Template::Alloy::ID::named_expr;  # GET $foo
     #} elsif ($node->[0] == 3) {
     #    return $self->play_operator($node);
     #} elsif ($node->[0] == 3) {
@@ -197,8 +215,8 @@ sub Template::Alloy::play_expr2 {
             if (exists $ref->{$name}) {
                 #return \ $ref->{$name} if $i >= $#$var && $ARGS->{'return_ref'} && ! ref $ref->{$name};
                 $ref = $ref->{$name};
-            #} elsif ($Template::Alloy::HASH_OPS->{$name}) {
-             #   $ref = $Template::Alloy::HASH_OPS->{$name}->($ref, $args ? map { $self->play_expr($_) } @$args : ());
+            } elsif ($Template::Alloy::HASH_OPS->{$name}) {
+                $ref = $Template::Alloy::HASH_OPS->{$name}->($ref, $args ? map { ! ref($_) ? $_ : $self->play_statement($_) } @$args : ());
             #} elsif ($ARGS->{'is_namespace_during_compile'}) {
              #   return $var; # abort - can't fold namespace variable
             } else {
@@ -209,8 +227,8 @@ sub Template::Alloy::play_expr2 {
             if ($name =~ m{ ^ -? $Template::Alloy::QR_INDEX $ }ox) {
                 #return \ $ref->[$name] if $i >= $#$var && $ARGS->{'return_ref'} && ! ref $ref->[$name];
                 $ref = $ref->[$name];
-            #} elsif ($LIST_OPS->{$name}) {
-             #   $ref = $LIST_OPS->{$name}->($ref, $args ? map { $self->play_expr($_) } @$args : ());
+            } elsif ($Template::Alloy::LIST_OPS->{$name}) {
+                $ref = $Template::Alloy::LIST_OPS->{$name}->($ref, $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ());
             } else {
                 $ref = undef;
             }
@@ -223,10 +241,141 @@ sub Template::Alloy::play_expr2 {
     return $ref;
 }
 
-sub operator_add {
-    my ($self, $node) = @_;
-    no warnings;
-    return $self->play_expr2($node->[3]) + $self->play_expr2($node->[4]);
+sub Template::Alloy::set_variable2 {
+    my ($self, $node, $ARGS) = @_;
+    $ARGS ||= {};
+    my $var = $node->[2];
+    my $val = ref($node->[3]) ? $self->play_statement($node->[3]) : $node->[3];
+    my $name = $var->[2];
+    my $args;
+    my $ref;
+    #use CGI::Ex::Dump qw(debug);
+    #debug $node, $var, $val, $ref, $name;
+
+    if (ref($name) && ($var->[0] != 100 || do { $name = $self->play_statement($name); 0 })) {
+        die;#$ref = $self->play_statement($name);
+    } else {
+        return if $Template::Alloy::QR_PRIVATE && $name =~ $Template::Alloy::QR_PRIVATE; # don't allow vars that begin with _
+        for (@{ $self->{'_scope'} }) {
+            next if ! exists $_->{$name};
+            $ref = $_;
+            last;
+        }
+        $ref ||= $self->{'_scope'}->[-1]; # variables default to set in most recent scope
+        if (@$var <= 4) {
+            return $ref->{$name} = $val;
+        } else {
+            $ref = $ref->{$name} ||= {};
+        }
+        $args = $var->[3];
+    }
+
+    my $i = 4;
+
+    while (defined $ref) {
+
+        #### check at each point if the returned thing was a code
+        #if (UNIVERSAL::isa($ref, 'CODE')) {
+        #    my $type = lc($self->{'CALL_CONTEXT'} || '');
+        #    my @args = $args ? map { $self->play_statement($_) } @$args : ();
+        #    if ($type eq 'item') {
+        #        $ref = $ref->(@args);
+        #    } else {
+        #        my @results = $ref->(@args);
+        #        if ($type eq 'list') {
+        #            $ref = \@results;
+        #        } elsif (defined $results[0]) {
+        #            $ref = ($#results > 0) ? \@results : $results[0];
+        #        } elsif (defined $results[1]) {
+        #            die $results[1]; # TT behavior - why not just throw ?
+        #        } else {
+        #            return;
+        #        }
+        #    }
+        #}
+
+        ### descend one chained level
+        last if $i >= $#$var;
+        my $name = $var->[$i++];
+        my $args = $var->[$i++];
+
+        ### allow for named portions of a variable name (foo.$name.bar)
+        if (ref $name) {
+            if (ref($name) eq 'ARRAY') {
+                $name = $self->play_statement($name);
+                if (! defined($name) || $name =~ /^[_.]/) {
+                    return;
+                }
+            } else {
+                die "Shouldn't get a ".ref($name)." during a vivify on chain";
+            }
+        }
+        if ($Template::Alloy::QR_PRIVATE && $name =~ $Template::Alloy::QR_PRIVATE) { # don't allow vars that begin with _
+            return;
+        }
+
+        ### scalar access
+        if (! ref $ref) {
+            return;
+
+        ### method calls on objects
+        } elsif (UNIVERSAL::can($ref, 'can')) {
+            my $lvalueish;
+            my $type = lc($self->{'CALL_CONTEXT'} || '');
+            my @args = $args ? map { $self->play_expr($_) } @$args : ();
+            if ($i >= $#$var) {
+                $lvalueish = 1;
+                push @args, $val;
+            }
+            if ($type eq 'item') {
+                $ref = $ref->$name(@args);
+                return if $lvalueish;
+                next;
+            }
+            my @results = eval { $ref->$name(@args) };
+            if (! $@) {
+                if ($type eq 'list') {
+                    $ref = \@results;
+                } elsif (defined $results[0]) {
+                    $ref = ($#results > 0) ? \@results : $results[0];
+                } elsif (defined $results[1]) {
+                    die $results[1]; # TT behavior - why not just throw ?
+                } else {
+                    return;
+                }
+                return if $lvalueish;
+                next;
+            }
+            my $class = ref $ref;
+            die $@ if ref $@ || $@ !~ /Can\'t locate object method "\Q$name\E" via package "\Q$class\E"/;
+            # fall on down to "normal" accessors
+        }
+
+        if (UNIVERSAL::isa($ref, 'HASH')) {
+            if ($#$var <= $i) {
+                return $ref->{$name} = $val;
+            } else {
+                $ref = $ref->{$name} ||= {};
+                next;
+            }
+
+        } elsif (UNIVERSAL::isa($ref, 'ARRAY')) {
+            if ($name =~ m{ ^ -? $Template::Alloy::QR_INDEX $ }ox) {
+                if ($#$var <= $i) {
+                    return $ref->[$name] = $val;
+                } else {
+                    $ref = $ref->[$name] ||= {};
+                    next;
+                }
+            } else {
+                return;
+            }
+
+        }
+
+    }
+
+    return;
 }
 
 ###----------------------------------------------------------------###
