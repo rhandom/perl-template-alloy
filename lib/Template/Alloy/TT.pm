@@ -102,8 +102,9 @@ sub Template::Alloy::parse_statements {
 
 sub Template::Alloy::parse_statement {
     my ($self, $str_ref, $tree) = @_;
-    return $self->parse_expr_new($str_ref, $tree) if $$str_ref =~ m{ \G \s* GET \b }gcx;
-    if ($$str_ref =~ m{ \G \s* SET \b }gcx) {
+    if ($$str_ref =~ m{ \G \s* GET \b }gcx) {
+        $self->parse_expr_new($str_ref, $tree); # || die "Missing expr";
+    } elsif ($$str_ref =~ m{ \G \s* SET \b }gcx) {
         while (1) {
             my $pos = pos($$str_ref) - 3;
             $self->parse_expr_new($str_ref, $tree) || last;
@@ -112,9 +113,10 @@ sub Template::Alloy::parse_statement {
                 $tree->[-1] = [2, $pos, $var, [99]];
             }
         }
-        return 1;
+    } else {
+        $self->parse_expr_new($str_ref, $tree) || return;
     }
-    return $self->parse_expr_new($str_ref, $tree);
+    return 1;
 }
 
 sub Template::Alloy::parse_expr_new {
@@ -239,10 +241,10 @@ sub Template::Alloy::parse_variable {
         1 while $self->parse_statement($str_ref, \@args) && $$str_ref =~ m{ \G \s* ; }gcx;
         $$str_ref =~ m{ \G \s* \) }gcx || $self->throw('parse', "Missing close ')'", undef, pos($$str_ref));
         $$str_ref =~ m{ \G \( }gcx && $self->throw('parse', "Close ) cannot be followed by function args", undef, pos($$str_ref));
-        my $var = (@args == 1 && ref $args[0]) ? $args[0] : [1, $pos, \@args];
-        push @$tree, $var;
-        $self->parse_function_args($str_ref, $var);
-        1 while $self->parse_var_postfix($str_ref, $var);
+        my @var = (0, $pos, [1, $pos, \@args]);
+        $self->parse_function_args($str_ref, \@var);
+        1 while $self->parse_var_postfix($str_ref, \@var);
+        push @$tree, \@var;
         return 1;
     }
 
@@ -256,7 +258,7 @@ sub Template::Alloy::parse_variable {
         if (@var == 4) { # simple literal
             push @$tree, $var[2];
         } else { # autoboxed
-            $var[2] = [1, $var[1], $var[2]];
+            $var[2] = [Template::Alloy::ID::tree, $var[1], $var[2]];
             push @$tree, \@var;
         }
         return 1;
@@ -410,14 +412,19 @@ sub Template::Alloy::parse_function_args {
 
 sub Template::Alloy::parse_var_postfix {
     my ($self, $str_ref, $var) = @_;
-    $$str_ref =~ m{ \G \s* \. (?! \.) }gcx || return;
+    if ($$str_ref =~ m{ \G \s* \| (?! \|) }gcx) {
+        my @copy = @$var;
+        @$var = (Template::Alloy::ID::filter, pos($$str_ref) - 1, \@copy);
+    } else {
+        $$str_ref =~ m{ \G \s* \. (?! \.) }gcx || return;
+    }
     if ($$str_ref =~ m{ \G \s* ( [^\W\d]\w* ) }gcx) {
         push @$var, $1;
     } elsif ($$str_ref =~ m{ \G \s* ( -? \d+ ) }gcx) {
         push @$var, $1;
     } elsif ($$str_ref =~ m{ \G \s* \$ }gcx) {
         if ($$str_ref =~ m{ \G ([^\W\d]\w*) }gcx) {
-            push @$var, [0, pos($$str_ref) - length($1), $1, 0];
+            push @$var, [Template::Alloy::ID::expr, pos($$str_ref) - length($1), $1, 0];
         } elsif ($$str_ref =~ m{ \G \{ }gcx) {
             $self->parse_expr_new($str_ref, $var) || $self->throw('parse', 'Missing expression after \${', undef, pos $$str_ref);
             $$str_ref =~ m{ \G \s* \} }gcx || $self->throw('parse', 'Missing close }', undef, pos $$str_ref);

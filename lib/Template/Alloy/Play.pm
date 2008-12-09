@@ -103,13 +103,17 @@ sub Template::Alloy::play_statement {
         return $h;
     }
     return ($OP{$node->[2]} || die "Op $node->[2]")->($self, $node)                 if $node->[0] == Template::Alloy::ID::op;    # 1 + 2
+    return $self->play_filter($node)                                                if $node->[0] == Template::Alloy::ID::filter;  # foo|bar
     return undef                                                                    if $node->[0] == Template::Alloy::ID::undef;   # undef
     return $self->play_expr2($node)                                                 if $node->[0] == Template::Alloy::ID::named_expr;  # GET $foo
     #} elsif ($node->[0] == 3) {
     #    return $self->play_operator($node);
     #} elsif ($node->[0] == 3) {
     #    #$$out_ref .= ${$node->[2]}->($self, $node);
-    die;
+    while (my($k, $v) = each %Template::Alloy::ID::id) {
+        die "Node type $k ($v) not implemented" if $v == $node->[0];
+    }
+    die "Not implmented";
 }
 
 sub Template::Alloy::play_expr2 {
@@ -376,6 +380,73 @@ sub Template::Alloy::set_variable2 {
     }
 
     return;
+}
+
+sub Template::Alloy::play_filter {
+    my ($self, $node) = @_;
+    my $var  = $node->[2];
+    my $name = $node->[3];
+    my $args = $node->[4];
+    my $ref  = $self->play_statement($var);
+
+    if ($Template::Alloy::ITEM_METHODS->{$name}) {                      # normal scalar op
+        $ref = $Template::Alloy::ITEM_METHODS->{$name}->($self, $ref, $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ());
+
+    } elsif ($Template::Alloy::ITEM_OPS->{$name}) {                     # normal scalar op
+        $ref = $Template::Alloy::ITEM_OPS->{$name}->($ref, $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ());
+
+    } elsif ($Template::Alloy::LIST_OPS->{$name}) {                     # auto-promote to list and use list op
+        $ref = $Template::Alloy::LIST_OPS->{$name}->([$ref], $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ());
+
+    } elsif (my $filter = $self->{'FILTERS'}->{$name}    # filter configured in Template args
+             || $Template::Alloy::FILTER_OPS->{$name}    # predefined filters in Alloy
+             || (UNIVERSAL::isa($name, 'CODE') && $name) # looks like a filter sub passed in the stash
+             || $self->list_filters->{$name}) {          # filter defined in Template::Filters
+
+        if (UNIVERSAL::isa($filter, 'CODE')) {
+            $ref = eval { $filter->($ref) }; # non-dynamic filter - no args
+            if (my $err = $@) {
+                $self->throw('filter', $err) if ! UNIVERSAL::can($err, 'type');
+                die $err;
+            }
+        } elsif (! UNIVERSAL::isa($filter, 'ARRAY')) {
+            $self->throw('filter', "invalid FILTER entry for '$name' (not a CODE ref)");
+
+        } elsif (@$filter == 2 && UNIVERSAL::isa($filter->[0], 'CODE')) { # these are the TT style filters
+            eval {
+                my $sub = $filter->[0];
+                if ($filter->[1]) { # it is a "dynamic filter" that will return a sub
+                    ($sub, my $err) = $sub->($self->context, $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ());
+                    if (! $sub && $err) {
+                        $self->throw('filter', $err) if ! UNIVERSAL::can($err, 'type');
+                        die $err;
+                    } elsif (! UNIVERSAL::isa($sub, 'CODE')) {
+                        $self->throw('filter', "invalid FILTER for '$name' (not a CODE ref)")
+                            if ! UNIVERSAL::can($sub, 'type');
+                        die $sub;
+                    }
+                }
+                $ref = $sub->($ref);
+            };
+            if (my $err = $@) {
+                $self->throw('filter', $err) if ! UNIVERSAL::can($err, 'type');
+                die $err;
+            }
+        } else { # this looks like our vmethods turned into "filters" (a filter stored under a name)
+            die;
+            #$self->throw('filter', 'Recursive filter alias \"$name\"') if $seen_filters{$name}++;
+            #$var = [$name, 0, '|', @$filter, @{$var}[$i..$#$var]]; # splice the filter into our current tree
+            #$i = 2;
+        }
+        #if (scalar keys %seen_filters
+        #    && $seen_filters{$var->[$i - 5] || ''}) {
+        #    $self->throw('filter', "invalid FILTER entry for '".$var->[$i - 5]."' (not a CODE ref)");
+        #}
+    } else {
+        $ref = undef;
+    }
+
+    return $ref;
 }
 
 ###----------------------------------------------------------------###
