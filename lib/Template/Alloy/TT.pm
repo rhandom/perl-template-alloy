@@ -241,7 +241,7 @@ sub Template::Alloy::parse_variable {
         1 while $self->parse_statement($str_ref, \@args) && $$str_ref =~ m{ \G \s* ; }gcx;
         $$str_ref =~ m{ \G \s* \) }gcx || $self->throw('parse', "Missing close ')'", undef, pos($$str_ref));
         $$str_ref =~ m{ \G \( }gcx && $self->throw('parse', "Close ) cannot be followed by function args", undef, pos($$str_ref));
-        my @var = (0, $pos, [1, $pos, \@args]);
+        my @var = (Template::Alloy::ID::expr, $pos, [Template::Alloy::ID::tree, $pos, \@args]);
         $self->parse_function_args($str_ref, \@var);
         1 while $self->parse_var_postfix($str_ref, \@var);
         push @$tree, \@var;
@@ -254,27 +254,27 @@ sub Template::Alloy::parse_variable {
         || $self->parse_quoted_double($str_ref, \@var)
         ) {
         push @var, 0;
-        1 while $self->parse_var_postfix($str_ref, \@var);
-        if (@var == 4) { # simple literal
-            push @$tree, $var[2];
-        } else { # autoboxed
-            $var[2] = [Template::Alloy::ID::tree, $var[1], $var[2]];
+        if ($self->parse_var_postfix($str_ref, \@var, 1)) { # autoboxed
+            1 while $self->parse_var_postfix($str_ref, \@var);
             push @$tree, \@var;
+        } else {
+            push @$tree, $var[2];
         }
         return 1;
     }
 
-    $self->parse_constr_list($str_ref, \@var)
-    || $self->parse_constr_hash($str_ref, \@var)
-    || return;
-    if ($self->parse_var_postfix($str_ref, \@var)) { # autoboxed
-        1 while $self->parse_var_postfix($str_ref, \@var);
-        push @$tree, \@var;
-    } else {
-        push @$tree, $var[2];
+    if ($self->parse_constr_list($str_ref, \@var)
+        || $self->parse_constr_hash($str_ref, \@var)) {
+        if ($self->parse_var_postfix($str_ref, \@var)) { # autoboxed
+            1 while $self->parse_var_postfix($str_ref, \@var);
+            push @$tree, \@var;
+        } else {
+            push @$tree, $var[2];
+        }
+        return 1;
     }
 
-    return 1;
+    return;
 }
 
 sub Template::Alloy::parse_constr_list {
@@ -376,6 +376,9 @@ sub Template::Alloy::parse_quoted_double {
     if (! @pieces) { # [% "" %]
         push @$var, '';
         return 1;
+    } elsif (@pieces == 1 && ! ref $pieces[0]) {
+        push @$var, $pieces[0];
+        return 1;
     } else {
         push @$var, [Template::Alloy::ID::tree, undef, \@pieces];
         return 1;
@@ -411,11 +414,13 @@ sub Template::Alloy::parse_function_args {
 }
 
 sub Template::Alloy::parse_var_postfix {
-    my ($self, $str_ref, $var) = @_;
+    my ($self, $str_ref, $var, $is_literal) = @_;
     if ($$str_ref =~ m{ \G \s* \| (?! \|) }gcx) {
+        $var->[2] = [Template::Alloy::ID::tree, $var->[1], [$var->[2]]] if $is_literal;
         my @copy = @$var;
         @$var = (Template::Alloy::ID::filter, pos($$str_ref) - 1, \@copy);
     } else {
+        $var->[2] = [Template::Alloy::ID::tree, $var->[1], [$var->[2]]] if $is_literal;
         $$str_ref =~ m{ \G \s* \. (?! \.) }gcx || return;
     }
     if ($$str_ref =~ m{ \G \s* ( [^\W\d]\w* ) }gcx) {
