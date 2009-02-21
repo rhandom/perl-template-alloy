@@ -57,40 +57,64 @@ use CGI::Ex::Dump qw(debug);
 ##set_nested   477203/s         38%       35%          21%         20%      15%         --         -17%
 ##reverse_flat 573917/s         66%       62%          45%         44%      38%        20%           --
 
-#{
-#    package Dispatch;
-#    sub play_Foo { my $self = shift }
-#    sub Foo { my $self = shift }
-#}
-#my $DISPATCH1 = {
-#    Foo => \&Dispatch::play_Foo,
-#};
-#my $DISPATCH2 = {
-#    Foo => [\&Dispatch::play_Foo],
-#};
-#my %DISPATCH3 = (
-#    Foo => \&Dispatch::play_Foo,
-#);
-#my $obj = bless {}, 'Dispatch';
-#my $type = 'Foo';
-#my $nn = 2;
-#cmpthese timethese -2, {
-#    dispatch1 => sub { $DISPATCH1->{$type}->($obj) },
-#    dispatch2 => sub { $DISPATCH2->{$type}->[0]->($obj) },
-#    dispatch3 => sub { $DISPATCH3{$type}->($obj) },
-#    method1    => sub { $obj->$type() },
-#    method2    => sub { my $meth = "play_$type"; $obj->$meth() },
-#    method3    => sub { if ($type eq 'Foo') { $obj->play_Foo() } },
-#    method4    => sub { my $meth = $obj->can("play_$type"); $meth->($obj) },
-#};
-##               Rate method4 method2 method3 dispatch2 dispatch1 method1 dispatch3
-##method4    625041/s      --    -26%    -44%      -45%      -54%    -54%      -55%
-##method2    847328/s     36%      --    -25%      -26%      -38%    -38%      -39%
-##method3   1123939/s     80%     33%      --       -1%      -18%    -18%      -19%
-##dispatch2 1137400/s     82%     34%      1%        --      -17%    -17%      -18%
-##dispatch1 1366860/s    119%     61%     22%       20%        --     -0%       -2%
-##method1   1367892/s    119%     61%     22%       20%        0%      --       -2%
-##dispatch3 1388950/s    122%     64%     24%       22%        2%      2%        --
+{
+    package Dispatch;
+    sub play_Foo { my $self = shift }
+    sub Foo { my $self = shift }
+    no strict 'refs';
+    *{__PACKAGE__.'::0'} = \&play_Foo;
+}
+my %DISPATCH1 = (
+    Foo => sub { $_[0]->play_Foo },
+);
+my %DISPATCH2 = (
+    Foo => [sub { $_[0]->play_Foo }],
+);
+my @ADISPATCH1 = ( sub { $_[0]->play_Foo } );
+my @ADISPATCH2 = ( [sub { $_[0]->play_Foo }] );
+my $obj = bless {}, 'Dispatch';
+my $type  = 'Foo';
+my $index = 0;
+my $node = [$index];
+my $nn = 2;
+cmpthese timethese -2, {
+    #dispatch1  => sub { $DISPATCH1{$type}->($obj) },
+    dispatch2  => sub { $DISPATCH2{$type}->[0]->($obj) },
+    #adispatch1 => sub { $ADISPATCH1[$index]->($obj) },
+    adispatch2 => sub { $ADISPATCH2[$index]->[0]->($obj) },
+    #table1     => sub { if ($index == 0) { $obj->play_Foo() } },
+    #table2     => sub { if ($index == 1) {1} elsif ($index == 4) {1} elsif ($index == 5) {1} elsif ($index == 0) { $obj->play_Foo() } },
+    method0    => sub { $obj->play_Foo() },
+    method1    => sub { $obj->$type() },
+    method2    => sub { my $meth = "play_$type"; $obj->$meth() },
+    method3    => sub { $obj->can("play_$type")->($obj) },
+    method4    => sub { $obj->$index() },
+    method5    => sub { my $i = $node->[0]; $obj->$i() },
+    method6    => sub { $obj->can($node->[0])->($obj) },
+    method7    => sub { UNIVERSAL::can($obj, $node->[0])->($obj) },
+};
+exit;
+#               Rate method4 method2 dispatch2 method1 table3 method3 dispatch1 table1 dispatch3 dispatch4 table2
+#method4    906023/s      --    -15%      -50%    -52%   -52%    -57%      -58%   -61%      -64%      -67%   -69%
+#method2   1071850/s     18%      --      -40%    -43%   -43%    -49%      -50%   -54%      -57%      -61%   -63%
+#dispatch2 1798690/s     99%     68%        --     -4%    -5%    -15%      -16%   -23%      -28%      -34%   -38%
+#method1   1882057/s    108%     76%        5%      --    -0%    -11%      -12%   -20%      -25%      -31%   -35%
+#table3    1886049/s    108%     76%        5%      0%     --    -11%      -12%   -19%      -24%      -31%   -35%
+#method3   2114065/s    133%     97%       18%     12%    12%      --       -1%   -10%      -15%      -23%   -27%
+#dispatch1 2143696/s    137%    100%       19%     14%    14%      1%        --    -8%      -14%      -22%   -26%
+#table1    2338579/s    158%    118%       30%     24%    24%     11%        9%     --       -6%      -15%   -20%
+#dispatch3 2496610/s    176%    133%       39%     33%    32%     18%       16%     7%        --       -9%   -14%
+#dispatch4 2739050/s    202%    156%       52%     46%    45%     30%       28%    17%       10%        --    -6%
+#table2    2912711/s    221%    172%       62%     55%    54%     38%       36%    25%       17%        6%     --
+
+#               Rate method4 method2 method3 dispatch2 dispatch1 method1 dispatch3
+#method4    625041/s      --    -26%    -44%      -45%      -54%    -54%      -55%
+#method2    847328/s     36%      --    -25%      -26%      -38%    -38%      -39%
+#method3   1123939/s     80%     33%      --       -1%      -18%    -18%      -19%
+#dispatch2 1137400/s     82%     34%      1%        --      -17%    -17%      -18%
+#dispatch1 1366860/s    119%     61%     22%       20%        --     -0%       -2%
+#method1   1367892/s    119%     61%     22%       20%        0%      --       -2%
+#dispatch3 1388950/s    122%     64%     24%       22%        2%      2%        --
 
 #sub Dispatch::play_Foo { my $self = shift }
 #my %DISPATCH = (

@@ -32,7 +32,7 @@ my $swap = {
     filt  => sub {sub {$_[0]x2}},
 };
 
-use Template::Stash;;
+use Template::Stash;
 my $s = Template::Stash->new($swap);
 #use Template::Stash::XS;
 #$s = Template::Stash::XS->new($swap);
@@ -45,7 +45,7 @@ my @config1 = (STASH => $s, ABSOLUTE => 1, CONSTANTS => {simple => 'var'}, EVAL_
 my @config2 = (@config1, COMPILE_EXT => '.ttc');
 
 my $tt1 = Template->new(@config1);
-my $tap = Template::Alloy->new(@config1, COMPILE_PERL => 1);
+my $tap = Template::Alloy->new(@config1);#, COMPILE_PERL => 1);
 
 #use Template::Alloy::XS;
 #my $tt1 = Template::Alloy::XS->new(@config1);
@@ -124,8 +124,8 @@ my $tests = {                                                             #     
     '01_empty'     => "",                                                 #  157%  #  357%  #  318%  #  386%  # 17173.6/s #
     '02_var_sma'   => "[% one %]",                                        #  131%  #  361%  #  359%  #  709%  # 14022.8/s #
     '03_var_lar'   => "[% one %]"x100,                                    #   33%  #  238%  #   61%  #  1694%  # 1046.3/s #
-    '04_set_sma'   => "[% SET one = 2 %]",                                #  142%  #  311%  #  331%  #  889%  # 14614.1/s #
-    '05_set_lar'   => "[% SET one = 2 %]"x100,                            #   66%  #  172%  #   22%  #  3621%  # 1436.4/s #
+    '04_set_sma'   => "[% SET one = 2 %]3",                                #  142%  #  311%  #  331%  #  889%  # 14614.1/s #
+    '05_set_lar'   => "[% SET one = 2 %]3"x100,                            #   66%  #  172%  #   22%  #  3621%  # 1436.4/s #
     '06_set_range' => "[% SET one = [0..30] %]",                          #   72%  #  223%  #  246%  #  648%  # 9774.1/s #
     '07_chain_sm'  => "[% hash.a %]",                                     #  138%  #  376%  #  336%  #  786%  # 13001.4/s #
     '08_mixed_sma' => "".((" "x100)."[% one %]\n")x10,                    #   81%  #  333%  #  216%  #  1617%  # 6483.7/s #
@@ -133,6 +133,8 @@ my $tests = {                                                             #     
     '10_str_sma'   => "".("[% \"".(" "x100)."\$one\" %]\n")x10,           #  -19%  #  1345%  #   95%  #  4956%  # 2873.3/s #
     '11_str_lar'   => "".("[% \"".(" "x10)."\$one\" %]\n")x100,           #  -50%  #  325%  #    2%  #  1218%  # 370.4/s #
     '12_num_lterl' => "[% 2 %]",                                          #  150%  #  346%  #  362%  #  755%  # 16365.4/s #
+    '12_1_hash'    => "[% SET h = {a => 2, b => 3, c => 4} %]",           #   97%  #  267%  #  297%  #  1189%  # 11501.3/s #
+    '12_2_array'   => "[% SET a = [1, 2, 3, 4, 5, 6, 7, 8] %]",           #   97%  #  251%  #  296%  #  1345%  # 11555.2/s #
     '13_plus'      => "[% 1 + 2 %]",                                      #  100%  #  304%  #  318%  #  691%  # 13031.8/s #
     '14_chained'   => "[% c.d.0.hee.0 %]",                                #  117%  #  399%  #  314%  #  891%  # 12271.8/s #
     '15_chain_set' => "[% SET c.d.0.hee.0 = 2 %]",                        #  120%  #  327%  #  292%  #  924%  # 10048.1/s #
@@ -294,6 +296,7 @@ foreach my $test_name (@run) {
     ### check output - and also allow for caching
     for (1..2) {
         if (file_Alloy() ne str_TT()) {
+            debug $tap->error;
             debug $tap->parse_tree($str_ref);
             debug file_Alloy(), str_TT();
             die "file_Alloy didn't match";
@@ -389,7 +392,6 @@ if ($#run > 0) {
 
 }
 print $output;
-
 
 
 #print `ls -lR $tt_cache_dir`;

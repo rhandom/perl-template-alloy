@@ -39,7 +39,7 @@ our $SCALAR_OPS = our $ITEM_OPS = {
     indent   => \&vmethod_indent,
     int      => sub { no warnings; int $_[0] },
     item     => sub { $_[0] },
-    js       => sub { local $_ = $_[0]; return if ! $_; s/\n/\\n/g; s/\r/\\r/g; s/(?<!\\)([\"\'])/\\$1/g; $_ },
+    js       => sub { local $_ = $_[0]; return if ! $_; s/([\"\'\\])/\\$1/g; s/\n/\\n/g; s/\r/\\r/g; $_ },
     lc       => sub { lc $_[0] },
     lcfirst  => sub { lcfirst $_[0] },
     length   => sub { defined($_[0]) ? length($_[0]) : 0 },
@@ -339,7 +339,7 @@ sub vmethod_uri {
     my $str = shift;
     return '' if ! defined $str;
     utf8::upgrade($str) if defined &utf8::upgrade;
-    $str =~ s/([^A-Za-z0-9\-_.!~*\'()])/sprintf('%%%02X', ord($1))/eg;
+    $str =~ s/([^A-Za-z0-9\-_.~()])/sprintf('%%%02X', ord($1))/eg;
     return $str;
 }
 
@@ -347,7 +347,7 @@ sub vmethod_url {
     my $str = shift;
     return '' if ! defined $str;
     utf8::upgrade($str) if defined &utf8::upgrade;
-    $str =~ s/([^;\/?:@&=+\$,A-Za-z0-9\-_.!~*\'()])/sprintf('%%%02X', ord($1))/eg;
+    $str =~ s/([^;\/?:@&=+\$,A-Za-z0-9\-_.~()])/sprintf('%%%02X', ord($1))/eg;
     return $str;
 }
 

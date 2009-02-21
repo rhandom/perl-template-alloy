@@ -66,8 +66,44 @@ sub new { die "This class is a role for use by packages such as Template::Alloy"
 
 ###----------------------------------------------------------------###
 
+my %OP = ( # wish we had macros
+    '+'   => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) +   (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '-'   => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) -   (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '*'   => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) *   (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '/'   => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) /   (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    'div' => sub { int((ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) /   (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4])) },
+    '**'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) **  (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '%'   => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) %   (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '..'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) ..  (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '_'   => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) .   (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '~'   => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) .   (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    'gt'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) gt  (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    'ge'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) ge  (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    'lt'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) lt  (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    'le'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) le  (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    'cmp' => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) cmp (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '>'   => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) >   (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '>='  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) >=  (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '<'   => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) <   (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '<='  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) <=  (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '<=>' => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) <=> (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
+    '&&'  => sub { my $val = (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) && (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]); return defined($val) ? $val : '' },
+    'and' => sub { my $val = (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) && (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]); return defined($val) ? $val : '' },
+    '||'  => sub { my $val = (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) || (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]); return defined($val) ? $val : '' },
+    'or'  => sub { my $val = (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) || (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]); return defined($val) ? $val : '' },
+    '//'  => sub { my $val = (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]); return $val if defined $val; return ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4] },
+     '?'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) ? (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) : (ref($_[1]->[5]) ? $_[0]->play_statement($_[1]->[5]) : $_[1]->[5]) },
+     '='  => sub { $_[0]->set_variable2([Template::Alloy::ID::assign, $_[1]->[1], $_[1]->[3], $_[1]->[4]]); '' },
+          );
+
 sub play_tree {
     my ($self, $tree) = @_;
+
+#    if (@$tree == 1) {
+#        return $tree->[0] if ! ref $tree->[0];
+#        return $self->play_statement($tree->[0]);
+#    }
+
     my $out = '';
     no warnings;
     for my $node (@$tree) {
@@ -80,12 +116,6 @@ sub play_tree {
     }
     return $out;
 }
-
-my %OP = ( # wish we had macros
-    '+'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) + (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
-    '*'  => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) * (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
-    '..' => sub { (ref($_[1]->[3]) ? $_[0]->play_statement($_[1]->[3]) : $_[1]->[3]) .. (ref($_[1]->[4]) ? $_[0]->play_statement($_[1]->[4]) : $_[1]->[4]) },
-          );
 
 sub Template::Alloy::play_statement {
     my ($self, $node) = @_;
@@ -102,18 +132,108 @@ sub Template::Alloy::play_statement {
         #debug $h, $node;
         return $h;
     }
-    return ($OP{$node->[2]} || die "Op $node->[2]")->($self, $node)                 if $node->[0] == Template::Alloy::ID::op;    # 1 + 2
+    return ($OP{$node->[2]} || die "Op $node->[2]")->($self, $node)                 if $node->[0] == Template::Alloy::ID::op;      # 1 + 2
     return $self->play_filter($node)                                                if $node->[0] == Template::Alloy::ID::filter;  # foo|bar
+    return $self->play_process($node)                                               if $node->[0] == Template::Alloy::ID::process; # PROCESS "foo"
+    return $node->[3] ? qr{(?$node->[3]:$node->[2])} : qr{$node->[2]}               if $node->[0] == Template::Alloy::ID::regex;   # /foo/i
+    return do {$self->play_expr2($node->[2]); ''}                                   if $node->[0] == Template::Alloy::ID::call;    # CALL foo
+    return do { local $self->{'CALL_CONTEXT'} = 'item'; $self->play_tree($node->[2]) } if $node->[0] == Template::Alloy::ID::tree_item; # $( stmnt )
+    return do { local $self->{'CALL_CONTEXT'} = 'list'; $self->play_tree($node->[2]) } if $node->[0] == Template::Alloy::ID::tree_list; # @( stmnt )
     return undef                                                                    if $node->[0] == Template::Alloy::ID::undef;   # undef
     return $self->play_expr2($node)                                                 if $node->[0] == Template::Alloy::ID::named_expr;  # GET $foo
-    #} elsif ($node->[0] == 3) {
-    #    return $self->play_operator($node);
-    #} elsif ($node->[0] == 3) {
-    #    #$$out_ref .= ${$node->[2]}->($self, $node);
+
+    if ($node->[0] == Template::Alloy::ID::block_def) {
+        foreach my $block (@{ $node->[2] }) {
+            $self->{'BLOCKS'}->{$block->[0]} = {
+                _tree => $block->[1],
+                name  => $self->{'_component'}->{'name'} .'/'. $block->[0],
+            };
+        }
+        return '';
+    };
+
     while (my($k, $v) = each %Template::Alloy::ID::id) {
         die "Node type $k ($v) not implemented" if $v == $node->[0];
     }
     die "Not implmented";
+}
+
+sub Template::Alloy::play_process {
+    my ($self, $node) = @_;
+    $self->throw('file', "NO_INCLUDES was set during a $node->[0] directive") if $self->{'NO_INCLUDES'};
+
+    #my ($args, @files) = @$info;
+    my $args;
+    my @files = @{ $node->[2] };
+
+    ### process files first
+    foreach my $ref (@files) {
+        $ref = $self->play_statement($ref) if ref $ref;
+    }
+
+#    ### set passed args
+#    # [[undef, '{}', 'key1', 'val1', 'key2', 'val2'], 0]
+#    $args = $args->[0];
+#    foreach (my $i = 2; $i < @$args; $i+=2) {
+#        my $key = $args->[$i];
+#        my $val = $self->play_expr($args->[$i+1]);
+#        if (ref($key) && @$key == 2 && $key->[0] eq 'import' && UNIVERSAL::isa($val, 'HASH')) { # import ?! - whatever
+#            foreach my $key (keys %$val) {
+#                $self->set_variable([$key,0], $val->{$key});
+#            }
+#            next;
+#        }
+#        $self->set_variable($key, $val);
+#    }
+
+    # iterate on any passed block or filename
+    my $out = '';
+    foreach my $filename (@files) {
+        next if ! defined $filename;
+
+        # normal blocks or filenames
+        if (! ref($filename) || ref($filename) eq 'SCALAR') {
+            eval { $self->_process($filename, $self->{'_vars'}, \$out) }; # restart the swap - passing it our current stash
+
+        # allow for $template which is used in some odd instances
+        } else {
+            die;
+        #    my $doc = $filename;
+        #
+        #    $self->throw('process', "Recursion detected in $node->[0] \$template") if $self->{'_process_dollar_template'};
+        #    local $self->{'_process_dollar_template'} = 1;
+        #    local $self->{'_component'} = $doc;
+        #
+        #    ### run the document however we can
+        #    if (ref($doc) ne 'HASH' || (! $doc->{'_perl'} && ! $doc->{'_tree'})) {
+        #        $self->throw('process', "Passed item doesn't appear to be a valid document");
+        #    } elsif ($doc->{'_perl'}) {
+        #        eval { $doc->{'_perl'}->{'code'}->($self, \$out) };
+        #    } else {
+        #        eval { $self->play_tree($doc->{'_tree'}, \$out) };
+        #    }
+        #
+        #    if ($self->{'TRIM'}) {
+        #        $out =~ s{ \s+ $ }{}x;
+        #        $out =~ s{ ^ \s+ }{}x;
+        #    }
+        #
+        #    ### handle exceptions
+        #    if (my $err = $@) {
+        #        $err = $self->exception('undef', $err) if ! UNIVERSAL::can($err, 'type');
+        #        $err->doc($doc) if $doc && $err->can('doc') && ! $err->doc;
+        #    }
+
+        }
+
+        ### append any output
+        if (my $err = $@) {
+            die $err if ! UNIVERSAL::can($err, 'type') || $err->type !~ /return/;
+        }
+
+    }
+
+    return $out;
 }
 
 sub Template::Alloy::play_expr2 {
@@ -131,6 +251,11 @@ sub Template::Alloy::play_expr2 {
             next if ! exists $_->{$name};
             $ref = $_->{$name};
             last;
+        }
+        if (! defined $ref) {
+            $ref = ($name eq 'template' || $name eq 'component') ? $self->{"_$name"} : $Template::Alloy::VOBJS->{$name};
+            $ref = $Template::Alloy::ITEM_OPS->{$name} if ! $ref && (! defined($self->{'VMETHOD_FUNCTIONS'}) || $self->{'VMETHOD_FUNCTIONS'});
+            $ref = $self->{'_vars'}->{lc $name} if ! defined $ref && $self->{'LOWER_CASE_VAR_FALLBACK'};
         }
         $args = $var->[3];
     }
@@ -215,7 +340,7 @@ sub Template::Alloy::play_expr2 {
                 # didn't find a method by that name - so fail down to hash and array access
         }
 
-        if (ref $ref eq 'HASH') {
+        if (UNIVERSAL::isa($ref, 'HASH')) {
             if (exists $ref->{$name}) {
                 #return \ $ref->{$name} if $i >= $#$var && $ARGS->{'return_ref'} && ! ref $ref->{$name};
                 $ref = $ref->{$name};
@@ -388,6 +513,7 @@ sub Template::Alloy::play_filter {
     my $name = $node->[3];
     my $args = $node->[4];
     my $ref  = $self->play_statement($var);
+    $name = $self->play_statement($name) if ref $name;
 
     if ($Template::Alloy::ITEM_METHODS->{$name}) {                      # normal scalar op
         $ref = $Template::Alloy::ITEM_METHODS->{$name}->($self, $ref, $args ? map { !ref($_) ? $_ : $self->play_statement($_) } @$args : ());

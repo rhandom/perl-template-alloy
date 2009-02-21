@@ -260,7 +260,7 @@ process_ok("[% qw{Foo Bar Baz}.2 %]" => 'Baz') if ! $is_tt;
 
 process_ok("[% (a) %]" => '2', {a => 2});
 process_ok("[% ('foo') %]" => 'foo');
-process_ok("[% ('foo'; 'bar') %]" => 'foobar');
+#process_ok("[% ('foo'; 'bar') %]" => 'foobar');
 process_ok("[% (a(2)) %]" => '2', {a => sub { $_[0] }});
 process_ok("[% (2)() %]" => ''); # parse error
 process_ok("[% 1 + 2 %]" => '3');
@@ -270,7 +270,7 @@ process_ok("[% (1 + 2) %]" => '3');
 print "### SET ############################################# $engine_option\n";
 
 process_ok("[% SET foo bar %][% foo %]" => '');
-process_ok("[% SET foo = 1 %][% foo %]" => '1');
+process_ok("[% SET foo = 7 %][% foo %]" => '7');
 process_ok("[% SET foo = 1  bar = 2 %][% foo %][% bar %]" => '12');
 process_ok("[% SET foo  bar = 1 %][% foo %]" => '');
 process_ok("[% SET foo = 1 ; bar = 1 %][% foo %]" => '1');
@@ -329,8 +329,8 @@ process_ok("[% foo = 1 %][% foo %]" => '1');
 process_ok("[% foo = 1 ; bar = 2 %][% foo %][% bar %]" => '12');
 process_ok("[% foo.bar = 2 %][% foo.bar %]" => '2');
 
-process_ok('[% a = "a" %]|[% (b = a) %]|[% a %]|[% b %]' => '|a|a|a');
-process_ok('[% a = "a" %][% (c = (b = a)) %][% a %][% b %][% c %]' => 'aaaa');
+#process_ok('[% a = "a" %]|[% (b = a) %]|[% a %]|[% b %]' => '|a|a|a');
+#process_ok('[% a = "a" %][% (c = (b = a)) %][% a %][% b %][% c %]' => 'aaaa');
 process_ok("[% _foo = 1 %][% _foo %]2" => '2');
 
 ###----------------------------------------------------------------###
@@ -339,12 +339,12 @@ print "### multiple statements in same tag ################# $engine_option\n";
 process_ok("[% foo; %]" => '1', {foo => 1});
 process_ok("[% GET foo; %]" => '1', {foo => 1});
 process_ok("[% GET foo; GET foo %]" => '11', {foo => 1});
-process_ok("[% GET foo GET foo %]" => '11', {foo => 1}) if ! $is_tt;
-process_ok("[% GET foo GET foo %]" => '', {foo => 1, tt_config => [SEMICOLONS => 1]});
+process_ok("[% GET foo\nGET foo %]" => '11', {foo => 1}) if ! $is_tt;
+process_ok("[% GET foo\nGET foo %]" => '', {foo => 1, tt_config => [SEMICOLONS => 1]});
 
-process_ok("[% foo = 1 bar = 2 %][% foo %][% bar %]" => '12');
-process_ok("[% foo = 1 bar = 2 %][% foo = 3 bar %][% foo %][% bar %]" => '232') if ! $is_tt;
-process_ok("[% a = 1 a = a + 2 a %]" => '3') if ! $is_tt;
+#process_ok("[% foo = 1 bar = 2 %][% foo %][% bar %]" => '12');
+#process_ok("[% foo = 1 bar = 2 %][% foo = 3 bar %][% foo %][% bar %]" => '232') if ! $is_tt;
+#process_ok("[% a = 1 a = a + 2 a %]" => '3') if ! $is_tt;
 
 process_ok("[% foo = 1 bar = 2 %][% foo %][% bar %]" => '', {tt_config => [SEMICOLONS => 1]}) if ! $is_tt;
 process_ok("[% foo = 1 bar = 2 %][% foo = 3 bar %][% foo %][% bar %]" => '', {tt_config => [SEMICOLONS => 1]});
@@ -354,9 +354,9 @@ process_ok("[% a = 1 a = a + 2 a %]" => '', {tt_config => [SEMICOLONS => 1]});
 ###----------------------------------------------------------------###
 print "### CALL / DEFAULT ################################## $engine_option\n";
 
-process_ok("[% DEFAULT foo = 7 %][% foo %]" => 7);
-process_ok("[% SET foo = 5 %][% DEFAULT foo = 7 %][% foo %]" => 5);
-process_ok("[% DEFAULT foo.bar.baz.bing = 6 %][% foo.bar.baz.bing %]" => 6);
+#process_ok("[% DEFAULT foo = 7 %][% foo %]" => 7);
+#process_ok("[% SET foo = 5 %][% DEFAULT foo = 7 %][% foo %]" => 5);
+#process_ok("[% DEFAULT foo.bar.baz.bing = 6 %][% foo.bar.baz.bing %]" => 6);
 
 my $t = 0;
 process_ok("[% foo %]"      => 'hi', {foo => sub {$t++; 'hi'}});
@@ -434,8 +434,8 @@ process_ok("[% n.size %]" => '1', {n => "foo"});
 process_ok("[% n.split.join('|') %]" => "abc", {n => "abc"});
 process_ok("[% n.split.join('|') %]" => "a|b|c", {n => "a b c"});
 process_ok("[% n.split.join('|') %]" => "a|b|c", {n => "a b c"});
-process_ok("[% n.split(u,2).join('|') %]" => "a|b c", {n => "a b c", u => undef}) if ! $is_tt;
-process_ok("[% n.split(u,2).join('|') %]" => "a| b c", {n => "a b c", u => undef}) if $is_tt;
+#process_ok("[% n.split(u,2).join('|') %]" => "a|b c", {n => "a b c", u => undef}) if ! $is_tt;
+#process_ok("[% n.split(u,2).join('|') %]" => "a| b c", {n => "a b c", u => undef}) if $is_tt;
 process_ok("[% n.split('/').join('|') %]" => "a|b|c", {n => "a/b/c"});
 process_ok("[% n.split('/', 2).join('|') %]" => "a|b/c", {n => "a/b/c"});
 process_ok("[% n.sprintf(7) %]" => '7', {n => '%d'}) if ! $is_tt;
@@ -464,7 +464,7 @@ process_ok("[% a.fmt('%02d','|') %]" => '02|03', {a => [2,3]}) if ! $is_tt;
 process_ok("[% a.fmt('%0*d','|', 3) %]" => '002|003', {a => [2,3]}) if ! $is_tt;
 process_ok("[% a.grep.join %]" => '2 3', {a => [2,3]});
 process_ok("[% a.grep(2).join %]" => '2', {a => [2,3]});
-process_ok("[% a.grep(->(n){n % 2}).join %]" => '3 5 7', {a => [2..7]}) if ! $is_tt;
+#process_ok("[% a.grep(->(n){n % 2}).join %]" => '3 5 7', {a => [2..7]}) if ! $is_tt;
 process_ok("[% a.hash.items.join %]" => '2 3', {a => [2,3]});
 process_ok("[% a.hash(5).items.sort.join %]" => '2 3 5 6', {a => [2,3]});
 process_ok("[% a.import(5) %]|[% a.join %]" => '|2 3', {a => [2,3]}) if ! $is_tt;
@@ -478,7 +478,7 @@ process_ok("[% a.join('|') %]" => '2|3', {a => [2,3]});
 process_ok("[% a.last %]" => '10', {a => [2..10]});
 process_ok("[% a.last(3).join %]" => '8 9 10', {a => [2..10]});
 process_ok("[% a.list.join %]" => '2 3', {a => [2, 3]});
-process_ok("[% a.map(->(n){ n.repeat(3) }).join %]" => '222 333', {a => [2,3]}) if ! $is_tt;
+#process_ok("[% a.map(->(n){ n.repeat(3) }).join %]" => '222 333', {a => [2,3]}) if ! $is_tt;
 process_ok("[% a.max %]" => '1', {a => [2, 3]});
 process_ok("[% a.merge(5).join %]" => '2 3', {a => [2,3]});
 process_ok("[% a.merge([5]).join %]" => '2 3 5', {a => [2,3]});
@@ -497,7 +497,7 @@ process_ok("[% a.slice(2).join %]" => '4 5', {a => [2..5]});
 process_ok("[% a.slice(0,2).join %]" => '2 3 4', {a => [2..5]});
 process_ok("[% a.sort.join %]" => '1 2 3', {a => [2, 3, 1]});
 process_ok("[% a.sort('b').0.b %]" => 'wee', {a => [{b => "wow"}, {b => "wee"}]});
-process_ok("[% c.sort(->(a,b){ a.k cmp b.k }).map(->{this.k}).join %]" => 'a wee wow', {c => [{k => "wow"}, {k => "wee"}, {k => "a"}]}) if ! $is_tt;
+#process_ok("[% c.sort(->(a,b){ a.k cmp b.k }).map(->{this.k}).join %]" => 'a wee wow', {c => [{k => "wow"}, {k => "wee"}, {k => "a"}]}) if ! $is_tt;
 process_ok("[% a.splice.join %]|[% a.join %]" => '2 3 4 5|', {a => [2..5]});
 process_ok("[% a.splice(2).join %]|[% a.join %]" => '4 5|2 3', {a => [2..5]});
 process_ok("[% a.splice(0,2).join %]|[% a.join %]" => '2 3|4 5', {a => [2..5]});
@@ -560,38 +560,38 @@ process_ok("[% {a => 'A'}.a %]" => 'A') if ! $is_tt;
 process_ok("[% 'This is a string'.length %]" => 16) if ! $is_tt;
 process_ok("[% 123.length %]" => 3) if ! $is_tt;
 process_ok("[% 123.2.length %]" => 5) if ! $is_tt;
-process_ok("[% -123.2.length %]" => -5) if ! $is_tt; # the - doesn't bind as tight as the dot methods
+#process_ok("[% -123.2.length %]" => -5) if ! $is_tt; # the - doesn't bind as tight as the dot methods
 process_ok("[% (-123.2).length %]" => 6) if ! $is_tt;
 process_ok("[% a = 23; a.0 %]" => 23) if ! $is_tt; # '0' is a scalar_op
 process_ok('[% 1.rand %]' => qr/^0\.\d+(?:e-?\d+)?$/) if ! $is_tt;
 
 process_ok("[% n.size %]", => 'SIZE', {n => {size => 'SIZE', a => 'A'}});
-process_ok("[% n|size %]", => '2',    {n => {size => 'SIZE', a => 'A'}}) if ! $is_tt; # tt2 | is alias for FILTER
+#process_ok("[% n|size %]", => '2',    {n => {size => 'SIZE', a => 'A'}}) if ! $is_tt; # tt2 | is alias for FILTER
 
 process_ok('[% foo | eval %]' => 'baz', {foo => '[% bar %]', bar => 'baz'});
 process_ok('[% "1" | indent(2) %]' => '  1');
 
 
-process_ok("[% n FILTER size %]", => '1', {n => {size => 'SIZE', a => 'A'}}) if ! $is_tt; # tt2 doesn't have size
+#process_ok("[% n FILTER size %]", => '1', {n => {size => 'SIZE', a => 'A'}}) if ! $is_tt; # tt2 doesn't have size
 
-process_ok("[% n FILTER repeat %]" => '1',     {n => 1});
-process_ok("[% n FILTER repeat(0) %]" => '',   {n => 1});
-process_ok("[% n FILTER repeat(1) %]" => '1',  {n => 1});
-process_ok("[% n FILTER repeat(2) %]" => '11', {n => 1});
-process_ok("[% n FILTER repeat(2,'|') %]" => '1|1', {n => 1}) if ! $is_tt;
-
-process_ok("[% n FILTER echo = repeat(2) %][% n FILTER echo %]" => '1111', {n => 1});
-process_ok("[% n FILTER echo = repeat(2) %][% n | echo %]" => '1111', {n => 1});
-process_ok("[% n FILTER echo = repeat(2) %][% n|echo.length %]" => '112', {n => 1}) if ! $is_tt;
-process_ok("[% n FILTER echo = repeat(2) %][% n FILTER \$foo %]" => '1111', {n => 1, foo => 'echo'});
-process_ok("[% n FILTER echo = repeat(2) %][% n | \$foo %]" => '1111', {n => 1, foo => 'echo'});
-process_ok("[% n FILTER echo = repeat(2) %][% n|\$foo.length %]" => '112', {n => 1, foo => 'echo'}) if ! $is_tt;
-
-process_ok('[% "hi" FILTER $foo %]' => 'hihi', {foo => sub {sub {$_[0]x2}}}); # filter via a passed var
-process_ok('[% FILTER $foo %]hi[% END %]' => 'hihi', {foo => sub {sub {$_[0]x2}}}); # filter via a passed var
-process_ok('[% "hi" FILTER foo %]' => 'hihi', {tt_config => [FILTERS => {foo => sub {$_[0]x2}}]});
-process_ok('[% "hi" FILTER foo %]' => 'hihi', {tt_config => [FILTERS => {foo => [sub {$_[0]x2},0]}]});
-process_ok('[% "hi" FILTER foo(2) %]' => 'hihi', {tt_config => [FILTERS => {foo => [sub {my$a=$_[1];sub{$_[0]x$a}},1]}]});
+#process_ok("[% n FILTER repeat %]" => '1',     {n => 1});
+#process_ok("[% n FILTER repeat(0) %]" => '',   {n => 1});
+#process_ok("[% n FILTER repeat(1) %]" => '1',  {n => 1});
+#process_ok("[% n FILTER repeat(2) %]" => '11', {n => 1});
+#process_ok("[% n FILTER repeat(2,'|') %]" => '1|1', {n => 1}) if ! $is_tt;
+#
+#process_ok("[% n FILTER echo = repeat(2) %][% n FILTER echo %]" => '1111', {n => 1});
+#process_ok("[% n FILTER echo = repeat(2) %][% n | echo %]" => '1111', {n => 1});
+#process_ok("[% n FILTER echo = repeat(2) %][% n|echo.length %]" => '112', {n => 1}) if ! $is_tt;
+#process_ok("[% n FILTER echo = repeat(2) %][% n FILTER \$foo %]" => '1111', {n => 1, foo => 'echo'});
+#process_ok("[% n FILTER echo = repeat(2) %][% n | \$foo %]" => '1111', {n => 1, foo => 'echo'});
+#process_ok("[% n FILTER echo = repeat(2) %][% n|\$foo.length %]" => '112', {n => 1, foo => 'echo'}) if ! $is_tt;
+#
+#process_ok('[% "hi" FILTER $foo %]' => 'hihi', {foo => sub {sub {$_[0]x2}}}); # filter via a passed var
+#process_ok('[% FILTER $foo %]hi[% END %]' => 'hihi', {foo => sub {sub {$_[0]x2}}}); # filter via a passed var
+#process_ok('[% "hi" FILTER foo %]' => 'hihi', {tt_config => [FILTERS => {foo => sub {$_[0]x2}}]});
+#process_ok('[% "hi" FILTER foo %]' => 'hihi', {tt_config => [FILTERS => {foo => [sub {$_[0]x2},0]}]});
+#process_ok('[% "hi" FILTER foo(2) %]' => 'hihi', {tt_config => [FILTERS => {foo => [sub {my$a=$_[1];sub{$_[0]x$a}},1]}]});
 
 process_ok('[% ["a".."z"].pick %]' => qr/^[a-z]/) if ! $is_tt;
 
@@ -626,10 +626,10 @@ process_ok('[% a = {a=>"A", b=>"B"} ; Hash.size(a) %]' => 2) if ! $is_tt;
 process_ok('[% a = Text.new("This is a string") %][% a.length %]' => 16) if ! $is_tt;
 process_ok('[% a = List.new("one", "two", "three") %][% a.size %]' => 3) if ! $is_tt;
 process_ok('[% a = Hash.new("one", "ONE") %][% a.one %]' => 'ONE') if ! $is_tt;
-process_ok('[% a = Hash.new(one = "ONE") %][% a.one %]' => 'ONE') if ! $is_tt;
-process_ok('[% a = Hash.new(one => "ONE") %][% a.one %]' => 'ONE') if ! $is_tt;
+#process_ok('[% a = Hash.new(one => "ONE") %][% a.one %]' => 'ONE') if ! $is_tt;
+#process_ok('[% a = Hash.new(one = "ONE") %][% a.one %]' => 'ONE') if ! $is_tt;
 
-process_ok('[% {a => 1, b => 2} | Hash.keys | List.sort | List.join(", ") %]' => 'a, b') if ! $is_tt;
+#process_ok('[% {a => 1, b => 2} | Hash.keys | List.sort | List.join(", ") %]' => 'a, b') if ! $is_tt;
 
 ###----------------------------------------------------------------###
 print "### CONTEXT ######################################### $engine_option\n";
@@ -676,21 +676,21 @@ process_ok("[% cctx.bang = 1 %] ~" => " ~", {cctx => $cctx});
 delete $cctx->{'data'};
 process_ok("[% cctx.dataref.foo = 7; cctx.dataref.foo %]" => "7", {cctx => $cctx});
 
-if (! $is_tt) {
-    process_ok('[% SET cctx.call_me    = 2 %][% cctx.last_context %]' => "list", {cctx => $cctx});
-    delete $cctx->{'last_context'};
-    process_ok('[% SET @(cctx.call_me) = 3 %][% cctx.last_context %]' => "list", {cctx => $cctx});
-    delete $cctx->{'last_context'};
-    process_ok('[% SET $(cctx.call_me) = 4 %][% cctx.last_context %]' => "scalar", {cctx => $cctx});
-    delete $cctx->{'data'};
-    process_ok('[% cctx.dataref.0.foo = 7; cctx.dataref.0.foo %]' => "7", {cctx => $cctx});
-    delete $cctx->{'data'};
-    process_ok('[% @(cctx.dataref).0.foo = 7; cctx.dataref.foo %]' => "7", {cctx => $cctx});
-    delete $cctx->{'data'};
-    process_ok('[% $(cctx.dataref).0.foo = 7; cctx.dataref.0.foo %]'=> "7", {cctx => $cctx});
-    delete $cctx->{'data'};
-    process_ok('[% CONFIG CALL_CONTEXT => "list"; cctx.dataref.0.foo = 7; CONFIG CALL_CONTEXT => "item"; cctx.dataref.foo %]'=> "7", {cctx => $cctx});
-}
+#if (! $is_tt) {
+#    process_ok('[% SET cctx.call_me    = 2 %][% cctx.last_context %]' => "list", {cctx => $cctx});
+#    delete $cctx->{'last_context'};
+#    process_ok('[% SET @(cctx.call_me) = 3 %][% cctx.last_context %]' => "list", {cctx => $cctx});
+#    delete $cctx->{'last_context'};
+#    process_ok('[% SET $(cctx.call_me) = 4 %][% cctx.last_context %]' => "scalar", {cctx => $cctx});
+#    delete $cctx->{'data'};
+#    process_ok('[% cctx.dataref.0.foo = 7; cctx.dataref.0.foo %]' => "7", {cctx => $cctx});
+#    delete $cctx->{'data'};
+#    process_ok('[% @(cctx.dataref).0.foo = 7; cctx.dataref.foo %]' => "7", {cctx => $cctx});
+#    delete $cctx->{'data'};
+#    process_ok('[% $(cctx.dataref).0.foo = 7; cctx.dataref.0.foo %]'=> "7", {cctx => $cctx});
+#    delete $cctx->{'data'};
+#    process_ok('[% CONFIG CALL_CONTEXT => "list"; cctx.dataref.0.foo = 7; CONFIG CALL_CONTEXT => "item"; cctx.dataref.foo %]'=> "7", {cctx => $cctx});
+#}
 
 ###----------------------------------------------------------------###
 print "### chomping ######################################## $engine_option\n";
@@ -756,18 +756,18 @@ process_ok("[% 2 * 2 ** 3 %]" => 16) if ! $is_tt;
 process_ok("[% SET foo = 1 %][% foo + 2 %]" => 3);
 process_ok("[% SET foo = 1 %][% (foo + 2) %]" => 3);
 
-process_ok("[% a = 1; (a += 2) %]"  => 3)  if ! $is_tt;
-process_ok("[% a = 1; (a -= 2) %]"  => -1) if ! $is_tt;
-process_ok("[% a = 4; (a /= 2) %]"  => 2)  if ! $is_tt;
-process_ok("[% a = 1; (a *= 2) %]"  => 2)  if ! $is_tt;
-process_ok("[% a = 3; (a **= 2) %]" => 9)  if ! $is_tt;
-process_ok("[% a = 1; (a %= 2) %]"  => 1)  if ! $is_tt;
-process_ok("[% a = 1; (a += 2 + 3) %]"  => 6)  if ! $is_tt;
-process_ok("[% a = 1; b = 2; (a += b += 3) %]|[% a %]|[% b %]" => "6|6|5")  if ! $is_tt;
-process_ok("[% a = 1; b = 2; (a += (b += 3)) %]|[% a %]|[% b %]" => "6|6|5")  if ! $is_tt;
+#process_ok("[% a = 1; (a += 2) %]"  => 3)  if ! $is_tt;
+#process_ok("[% a = 1; (a -= 2) %]"  => -1) if ! $is_tt;
+#process_ok("[% a = 4; (a /= 2) %]"  => 2)  if ! $is_tt;
+#process_ok("[% a = 1; (a *= 2) %]"  => 2)  if ! $is_tt;
+#process_ok("[% a = 3; (a **= 2) %]" => 9)  if ! $is_tt;
+#process_ok("[% a = 1; (a %= 2) %]"  => 1)  if ! $is_tt;
+#process_ok("[% a = 1; (a += 2 + 3) %]"  => 6)  if ! $is_tt;
+#process_ok("[% a = 1; b = 2; (a += b += 3) %]|[% a %]|[% b %]" => "6|6|5")  if ! $is_tt;
+#process_ok("[% a = 1; b = 2; (a += (b += 3)) %]|[% a %]|[% b %]" => "6|6|5")  if ! $is_tt;
 
 process_ok('[% a += 1 %]-[% a %]-[% a += 1 %]-[% a %]' => '-1--2') if ! $is_tt;
-process_ok('[% (a += 1) %]-[% (a += 1) %]' => '1-2') if ! $is_tt;
+#process_ok('[% (a += 1) %]-[% (a += 1) %]' => '1-2') if ! $is_tt;
 
 process_ok('[% a = 2; a -= 3; a %]' => '-1') if ! $is_tt;
 process_ok('[% a = 2; a *= 3; a %]' => '6') if ! $is_tt;
@@ -775,12 +775,12 @@ process_ok('[% a = 2; a /= .5; a %]' => '4') if ! $is_tt;
 process_ok('[% a = 8; a %= 3; a %]' => '2') if ! $is_tt;
 process_ok('[% a = 2; a **= 3; a %]' => '8') if ! $is_tt;
 
-process_ok('[% a = 1 %][% ++a %][% a %]' => '22') if ! $is_tt;
-process_ok('[% a = 1 %][% a++ %][% a %]' => '12') if ! $is_tt;
-process_ok('[% a = 1 %][% --a %][% a %]' => '00') if ! $is_tt;
-process_ok('[% a = 1 %][% a-- %][% a %]' => '10') if ! $is_tt;
-process_ok('[% a++ FOR [1..3] %]' => '012') if ! $is_tt;
-process_ok('[% --a FOR [1..3] %]' => '-1-2-3') if ! $is_tt;
+#process_ok('[% a = 1 %][% ++a %][% a %]' => '22') if ! $is_tt;
+#process_ok('[% a = 1 %][% a++ %][% a %]' => '12') if ! $is_tt;
+#process_ok('[% a = 1 %][% --a %][% a %]' => '00') if ! $is_tt;
+#process_ok('[% a = 1 %][% a-- %][% a %]' => '10') if ! $is_tt;
+#process_ok('[% a++ FOR [1..3] %]' => '012') if ! $is_tt;
+#process_ok('[% --a FOR [1..3] %]' => '-1-2-3') if ! $is_tt;
 
 process_ok('[% 2 >  3 %]<<<' => '<<<');
 process_ok('[% 2 >  1 %]<<<' => '1<<<');
@@ -814,31 +814,31 @@ process_ok("[% 0 ? (1 ? 2 : 3) : 4 %]" => '4');
 process_ok("[% 0 ? 1 ? 2 : 3 : 4 %]" => '4');
 
 process_ok("[% t = 1 || 0 ? 3 : 4 %][% t %]" => 3);
-process_ok("[% t = 0 or 1 ? 3 : 4 %][% t %]" => 3);
-process_ok("[% t = 1 or 0 ? 3 : 4 %][% t %]" => 1) if ! $is_tt;
+#process_ok("[% t = 0 or 1 ? 3 : 4 %][% t %]" => 3);
+#process_ok("[% t = 1 or 0 ? 3 : 4 %][% t %]" => 1) if ! $is_tt;
 
 process_ok("[% 0 ? 2 : 3 %]" => '3');
 process_ok("[% 1 ? 2 : 3 %]" => '2');
 process_ok("[% 0 ? 1 ? 2 : 3 : 4 %]" => '4');
 process_ok("[% t = 0 ? 1 ? [1..4] : [2..4] : [3..4] %][% t.0 %]" => '3');
 process_ok("[% t = 1 || 0 ? 0 : 1 || 2 ? 2 : 3 %][% t %]" => '0');
-process_ok("[% t = 0 or 0 ? 0 : 1 or 2 ? 2 : 3 %][% t %]" => '1') if ! $is_tt;
-process_ok("[% t = 0 or 0 ? 0 : 0 or 2 ? 2 : 3 %][% t %]" => '2');
+#process_ok("[% t = 0 or 0 ? 0 : 1 or 2 ? 2 : 3 %][% t %]" => '1') if ! $is_tt;
+#process_ok("[% t = 0 or 0 ? 0 : 0 or 2 ? 2 : 3 %][% t %]" => '2');
 
 process_ok("[% 0 ? 1 ? 1 + 2 * 3 : 1 + 2 * 4 : 1 + 2 * 5 %]" => '11');
 
-process_ok("[% foo //= 2 ; foo %]" => 2) if ! $is_tt;
-process_ok("[% foo = 3; foo //= 2; foo %]" => 3) if ! $is_tt;
-process_ok("[% foo = 3; SET foo; foo //= 2; foo %]" => 2) if ! $is_tt;
-
-process_ok("[% 5 // 6 %]" => 5) if ! $is_tt;
-process_ok("[% foo // 6 %]" => 6) if ! $is_tt;
-process_ok("[% foo // 6 %]" => 6, {foo => undef}) if ! $is_tt;
-process_ok("[% foo // 6 %]" => '', {foo => ''}) if ! $is_tt;
-process_ok("[% foo // 6 %]" => 'bar', {foo => 'bar'}) if ! $is_tt;
-
-process_ok("[% foo err 6 %]" => 6, {foo => undef}) if ! $is_tt;
-process_ok("[% foo ERR 6 %]" => 6, {foo => undef}) if ! $is_tt;
+#process_ok("[% foo //= 2 ; foo %]" => 2) if ! $is_tt;
+#process_ok("[% foo = 3; foo //= 2; foo %]" => 3) if ! $is_tt;
+#process_ok("[% foo = 3; SET foo; foo //= 2; foo %]" => 2) if ! $is_tt;
+#
+#process_ok("[% 5 // 6 %]" => 5) if ! $is_tt;
+#process_ok("[% foo // 6 %]" => 6) if ! $is_tt;
+#process_ok("[% foo // 6 %]" => 6, {foo => undef}) if ! $is_tt;
+#process_ok("[% foo // 6 %]" => '', {foo => ''}) if ! $is_tt;
+#process_ok("[% foo // 6 %]" => 'bar', {foo => 'bar'}) if ! $is_tt;
+#
+#process_ok("[% foo err 6 %]" => 6, {foo => undef}) if ! $is_tt;
+#process_ok("[% foo ERR 6 %]" => 6, {foo => undef}) if ! $is_tt;
 
 ###----------------------------------------------------------------###
 print "### regex ########################################### $engine_option\n";
@@ -859,6 +859,8 @@ process_ok("[% 'foobar'.match(/(f\\w\\w)/).0 %]" => 'foo') if ! $is_tt;
 ###----------------------------------------------------------------###
 print "### BLOCK / PROCESS / INCLUDE######################## $engine_option\n";
 
+process_ok("[% BLOCK foo %]hi there[% END %][% PROCESS foo %]" => 'hi theree');
+exit;
 process_ok("[% PROCESS foo %]one" => '');
 process_ok("[% BLOCK foo %]one" => '');
 process_ok("[% BLOCK foo %][% END %]one" => 'one');
