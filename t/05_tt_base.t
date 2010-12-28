@@ -10,7 +10,7 @@ use 5.006;
 use vars qw($module $is_tt $compile_perl $use_stream $five_six);
 BEGIN {
     $module = 'Template::Alloy';
-    if (grep {/tt/i} @ARGV) {
+    if ($ENV{'USE_TT'} || grep {/tt/i} @ARGV) {
         $module = 'Template';
     }
     $is_tt = $module eq 'Template';
@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 2993 : 654) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 3002 : 657) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -935,6 +935,9 @@ process_ok("[% FOREACH f = [1..3] %][% IF loop.first %][% NEXT %][% END %][% f %
 process_ok("[% FOREACH f = [1..3] %][% IF loop.first %][% LAST %][% END %][% f %][% END %]" => '');
 process_ok("[% FOREACH f = [1..3] %][% f %][% IF loop.first %][% NEXT %][% END %][% END %]" => '123');
 process_ok("[% FOREACH f = [1..3] %][% f %][% IF loop.first %][% LAST %][% END %][% END %]" => '1');
+process_ok("[% loop.odd    FOREACH [1..5] %]" => '10101');
+process_ok("[% loop.even   FOREACH [1..5] %]" => '01010');
+process_ok("[% loop.parity FOREACH [1..5] %]" => 'oddevenoddevenodd');
 
 process_ok('[% a = ["Red", "Blue"] ; FOR [0..3] ; a.${ loop.index % a.size } ; END %]' => 'RedBlueRedBlue') if ! $is_tt;
 
