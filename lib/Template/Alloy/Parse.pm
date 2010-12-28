@@ -101,8 +101,8 @@ our $ALIASES = {
 
 our $QR_DIRECTIVE = '( [a-zA-Z]+\b | \| )';
 our $QR_COMMENTS  = '(?-s: \# .* \s*)*';
-our $QR_FILENAME  = '([a-zA-Z]:/|/)? [\w\.][\w\-\.]* (?:/[\w\-\.]+)*';
-our $QR_BLOCK     = '(\w+\b (?: :\w+\b)* )';
+our $QR_FILENAME  = '([a-zA-Z]]:/|/)? [\w\.][\w\-\.]* (?:/[\w\-\.]+)*';
+our $QR_BLOCK     = '\w+\b (?: :\w+\b)* )';
 our $QR_NUM       = '(?:\d*\.\d+ | \d+) (?: [eE][+-]?\d+ )?';
 our $QR_AQ_SPACE  = '(?: \\s+ | \$ | (?=;) )';
 

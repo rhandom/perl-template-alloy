@@ -36,3 +36,4 @@ t/15_tt_view.t
 t/20_html_template.t
 t/25_text_tmp.t
 t/30_velocity.t
+META.yml                                 Module meta-data (added by MakeMaker)

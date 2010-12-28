@@ -15,53 +15,8 @@ use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $ITEM_OPS $ITEM_METH
 
 use vars qw($VERSION);
 BEGIN {
-    $VERSION = '1.013';
+    $VERSION            = '1.013';
 };
-
-sub new {
-  my $class = shift;
-  my $args  = ref($_[0]) ? { %{ shift() } } : {@_};
-
-  if (my @keys = grep {/^[a-z][a-z_]+$/} keys %$args) {
-      @{ $args }{ map { uc $_ } @keys } = delete @{ $args }{ @keys };
-  }
-
-  return bless $args, $class;
-}
-
-###----------------------------------------------------------------###
-
-BEGIN {
-    package Template::Alloy::ID;
-    our %id = (
-        expr        => 0, # expr must be zero - all others may vary
-        tree        => 1,
-        assign      => 2,
-        list        => 3,
-        hash        => 4,
-        op          => 5,
-        filter      => 6,
-        process     => 10,
-        include     => 11,
-        insert      => 12,
-        regex       => 30,
-        call        => 70,
-        tree_item   => 80,
-        tree_list   => 81,
-        block_def   => 98,
-        undef       => 99,
-        named_expr  => 100,
-    );
-    no strict 'refs';
-    while (my($k, $v) = each %id) { *{__PACKAGE__."::$k"} = sub () { $v } }
-}
-
-# temp
-use Template::Alloy::Play;
-# temp
-
-###----------------------------------------------------------------###
-
 our $QR_PRIVATE         = qr/^[_.]/;
 our $WHILE_MAX          = 1000;
 our $MAX_EVAL_RECURSE   = 50;
@@ -141,6 +96,18 @@ sub import {
 
 ###----------------------------------------------------------------###
 
+sub new {
+  my $class = shift;
+  my $args  = ref($_[0]) ? { %{ shift() } } : {@_};
+
+  ### allow for lowercase args
+  if (my @keys = grep {/^[a-z][a-z_]+$/} keys %$args) {
+      @{ $args }{ map { uc $_ } @keys } = delete @{ $args }{ @keys };
+  }
+
+  return bless $args, $class;
+}
+
 ###----------------------------------------------------------------###
 
 sub run { shift->process_simple(@_) }
@@ -174,7 +141,6 @@ sub _process {
     my $self = shift;
     my $file = shift;
     local $self->{'_vars'} = shift || {};
-    local $self->{'_scope'} = [$self->{'_vars'}];
     my $out_ref = shift || $self->throw('undef', "Missing output ref");
     local $self->{'_top_level'} = delete $self->{'_start_top_level'};
     my $i = length $$out_ref;
@@ -202,7 +168,7 @@ sub _process {
         } elsif (! $doc->{'_tree'}) {
             $self->throw('process', 'No _perl and no _tree found');
         } else {
-            $$out_ref .= $self->play_tree($doc->{'_tree'});
+            $self->play_tree($doc->{'_tree'}, $out_ref);
         }
 
         ### trim whitespace from the beginning and the end of a block or template
@@ -475,8 +441,7 @@ sub load_perl {
 ### allow for resolving full expression ASTs
 sub play_expr {
     return $_[1] if ! ref $_[1]; # allow for the parse tree to store literals
-    use CGI::Ex::Dump qw(debug dex_trace);
-    debug dex_trace();
+
     my $self = shift;
     my $var  = shift;
     my $ARGS = shift || {};
