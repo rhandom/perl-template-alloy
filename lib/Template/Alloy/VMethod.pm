@@ -71,6 +71,7 @@ our $SCALAR_OPS = our $ITEM_OPS = {
     upper    => sub { uc $_[0] },
     uri      => \&vmethod_uri,
     url      => \&vmethod_url,
+    xml      => sub { local $_ = $_[0]; s/&/&amp;/g; s/</&lt;/g; s/>/&gt;/g; s/\"/&quot;/g; s/\'/&apos;/g; $_ },
 };
 
 our $ITEM_METHODS = {
@@ -788,6 +789,10 @@ Same as the upper command.  Returns uppercased string.
 
     [% item.url %] Perform a URI encoding - but some characters such
                    as : and / are left intact.
+
+=item xml
+
+    [% item.xml %] Performs a very basic xml encoding (swaps out &, <, >, ' and " with the corresponding xml entities)
 
 =back
 
