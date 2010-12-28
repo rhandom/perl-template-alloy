@@ -158,8 +158,8 @@ sub play_DEBUG {
 
 sub play_DEFAULT {
     my ($self, $set) = @_;
-    foreach (@$set) {
-        my ($op, $set, $default) = @$_;
+    foreach my $item (@$set) {
+        my ($op, $set, $default) = @$item;
         next if ! defined $set;
         my $val = $self->play_expr($set);
         if (! $val) {
@@ -659,8 +659,8 @@ sub play_RETURN {
 
 sub play_SET {
     my ($self, $set, $node) = @_;
-    foreach (@$set) {
-        my ($op, $set, $val) = @$_;
+    foreach my $item (@$set) {
+        my ($op, $set, $val) = @$item;
         if (! defined $val) { # not defined
             # do nothing - allow for setting to undef
         } elsif ($node->[4] && $val == $node->[4]) { # a captured directive

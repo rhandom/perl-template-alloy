@@ -1,3 +1,7 @@
+1.014
+      2010-03-31
+        * Fix localization issue in set
+
 1.013
       2008-09-18
         * Make PLUGIN_BASE work like TT (always falls back to Template::Plugins)
