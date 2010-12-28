@@ -50,6 +50,12 @@ sub first { (shift->index == 0) || 0 }
 
 sub last { my $self = shift; return ($self->index == $self->max) || 0 }
 
+sub odd { shift->count % 2 ? 1 : 0 }
+
+sub even { shift->count % 2 ? 0 : 1 }
+
+sub parity { shift->count % 2 ? 'odd' : 'even' }
+
 sub prev {
     my $self = shift;
     return undef if $self->index <= 0;
