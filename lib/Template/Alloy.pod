@@ -1174,6 +1174,9 @@ The loop variable provides the following information during a FOREACH:
     last   - true if on the last item
     next   - return the next item in the list
     prev   - return the previous item in the list
+    odd    - return 1 if the current count is odd, 0 otherwise
+    even   - return 1 if the current count is even, 0 otherwise
+    parity - return "odd" if the current count is odd, "even" otherwise
 
 The following:
 
