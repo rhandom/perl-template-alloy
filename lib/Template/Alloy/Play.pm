@@ -137,6 +137,7 @@ sub play_CONFIG {
     ### do runtime config - not many options get these
     my ($named, @the_rest) = @$config;
     $named = $self->play_expr($named);
+    $self->throw("config.strict", "Cannot disable STRICT once it is enabled", $node) if exists $named->{'STRICT'} && ! $named->{'STRICT'};
     @{ $self }{keys %$named} = @{ $named }{keys %$named};
 
     ### show what current values are

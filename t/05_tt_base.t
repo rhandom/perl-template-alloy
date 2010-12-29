@@ -1450,11 +1450,26 @@ process_ok('[% f = ">[% TRY; f.eval ; CATCH; \'foo\' ; END %]"; f.eval;f.eval %]
 process_ok("[% '#set(\$foo = 12)'|eval(syntax => 'velocity') %]|[% foo %]" => '|12') if ! $is_tt;
 
 ###----------------------------------------------------------------###
+print "### STRICT ########################################## $engine_option\n";
+process_ok("[% TRY; foo; CATCH; error; END %]" => qr'var.undef error - undefined variable: foo.*', {tt_config => [STRICT => 1]});
+process_ok("[% TRY; foo.bar(1); CATCH; error; END %]" => qr'var.undef error - undefined variable: foo\.bar\(1\).*', {tt_config => [STRICT => 1]});
+process_ok("[% TRY; 1 IF foo.bar.baz; CATCH; error; END %]" => qr'var.undef error - undefined variable: foo\.bar\.baz.*', {tt_config => [STRICT => 1]});
+if (! $is_tt) {
+process_ok("[% foo.bar() %]ok" => 'ok', {tt_config => [STRICT => 1, STRICT_THROW => sub { my ($t, $y, $m, $args) = @_; return if $args->{'name'} eq 'foo.bar()'; $t->throw($y,$m)}]});
+process_ok("[% foo.baz() %]ok" => '',   {tt_config => [STRICT => 1, STRICT_THROW => sub { my ($t, $y, $m, $args) = @_; return if $args->{'name'} eq 'foo.bar()'; $t->throw($y,$m)}]});
+}
+
+###----------------------------------------------------------------###
 print "### EVALUATE ######################################## $engine_option\n";
 
 process_ok('[% f = ">[% TRY; f.eval ; CATCH; \'caught\' ; END %]"; EVALUATE f %]' => '>>>>>caught', {tt_config => [MAX_EVAL_RECURSE => 5]}) if ! $is_tt;
 process_ok('[% f = ">[% TRY; f.eval ; CATCH; \'foo\' ; END %]"; EVALUATE f; EVALUATE f %]' => '>>foo>>foo', {tt_config => [MAX_EVAL_RECURSE => 2]}) if ! $is_tt;
 process_ok("[% EVALUATE '#set(\$foo = 12)' syntax => 'velocity' %]|[% foo %]" => '|12') if ! $is_tt;
+if (!$is_tt) {
+process_ok("[% TRY; '[% bar %]'.eval(STRICT => 1); CATCH; error; END %]" => 'var.undef error - undefined variable: bar in input text');
+process_ok("[% TRY; CONFIG STRICT => 1; '[% bar %]'.eval(STRICT => 0); CATCH; error; END %]" => 'eval_strict error - Cannot disable STRICT once it is enabled');
+process_ok("[% TRY; '[% bar %]'.eval(STRICT => 1); CATCH; error.type; END; bing %] - ok" => 'var.undef - ok'); # restricted to sub components
+}
 
 ###----------------------------------------------------------------###
 print "### DUMP ############################################ $engine_option\n";
@@ -1517,16 +1532,6 @@ process_ok("[% \"<TMPL_VAR NAME='foo'>\"|eval(syntax => 'ht') %] = [% 12 %]" => 
 }
 
 ###----------------------------------------------------------------###
-print "### STRICT ########################################## $engine_option\n";
-process_ok("[% TRY; foo; CATCH; error; END %]" => qr'var.undef error - undefined variable: foo.*', {tt_config => [STRICT => 1]});
-process_ok("[% TRY; foo.bar(1); CATCH; error; END %]" => qr'var.undef error - undefined variable: foo\.bar\(1\).*', {tt_config => [STRICT => 1]});
-process_ok("[% TRY; 1 IF foo.bar.baz; CATCH; error; END %]" => qr'var.undef error - undefined variable: foo\.bar\.baz.*', {tt_config => [STRICT => 1]});
-if (! $is_tt) {
-process_ok("[% foo.bar() %]ok" => 'ok', {tt_config => [STRICT => 1, STRICT_THROW => sub { my ($t, $y, $m, $args) = @_; return if $args->{'name'} eq 'foo.bar()'; $t->throw($y,$m)}]});
-process_ok("[% foo.baz() %]ok" => '',   {tt_config => [STRICT => 1, STRICT_THROW => sub { my ($t, $y, $m, $args) = @_; return if $args->{'name'} eq 'foo.bar()'; $t->throw($y,$m)}]});
-}
-
-###----------------------------------------------------------------###
 print "### CONFIG ########################################## $engine_option\n";
 
 if (! $is_tt) {
@@ -1556,6 +1561,9 @@ process_ok("[% \"[% get 1+2+3 %]\" | eval(ANYCASE => 1) %] = [% GET 6 %]" => "6 
 process_ok("[% CONFIG DUMP    %]|[% CONFIG DUMP    => 0 %][% DUMP           %]bar" => 'CONFIG DUMP = undef|bar');
 process_ok("[% CONFIG DUMP => {Useqq=>1, header=>0, html=>0} %][% DUMP 'foo' %]" => "'foo' = \"foo\";\n");
 process_ok("[% CONFIG VMETHOD_FUNCTIONS => 0 %][% sprintf('%d %d', 7, 8) %] d" => ' d');
+process_ok("[% TRY; foo; CONFIG STRICT => 1; bar; CATCH; error; END %]" => 'var.undef error - undefined variable: bar in input text');
+process_ok("[% TRY; foo; CONFIG STRICT => 1; CONFIG STRICT => 0; bar; CATCH; error; END %]" => 'config.strict error - Cannot disable STRICT once it is enabled');
+process_ok("[% BLOCK foo; CONFIG STRICT => 1; baz; END; TRY; bam; PROCESS foo; bar; CATCH; error.type; END; bing %] - ok" => 'var.undef - ok'); # restricted to sub components
 }
 
 ###----------------------------------------------------------------###

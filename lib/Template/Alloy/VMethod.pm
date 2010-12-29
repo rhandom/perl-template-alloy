@@ -364,6 +364,7 @@ sub item_method_eval {
     my %ARGS;
     @ARGS{ map {uc} keys %$args } = values %$args;
     delete @ARGS{ grep {! $Template::Alloy::EVAL_CONFIG->{$_}} keys %ARGS };
+    $t->throw("eval_strict", "Cannot disable STRICT once it is enabled") if exists $ARGS{'STRICT'} && ! $ARGS{'STRICT'};
 
     local @{ $t }{ keys %ARGS } = values %ARGS;
     my $out = '';
