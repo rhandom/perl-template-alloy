@@ -2590,6 +2590,43 @@ parameter passed to process or process_simple will be ignored.
 If you would like the output to go to another handle, you will need to
 select that handle, process the template, and re-select STDOUT.
 
+=item STRICT
+
+Defaults to false.  If set to true, any undefined variable that is
+encountered will cause the processing of the template to abort.  This
+can be caught with a TRY block.  This can be useful for making sure
+that the template only attempts to use variables that were correctly
+initialized similiar in spirit to Perl's "use strict."
+
+When this occurs the strict_throw method is called.
+
+See the STRICT_THROW configuration for additional options.
+
+Similar functionality could be implemeted using UNDEFINED_ANY.
+
+=item STRICT_THROW (not in TT)
+
+Default undef.  Can be set to a subroutine which will be called when
+STRICT is set and an undefined variable is processed.  It will be
+passed the error type, error message, and a hashref of template
+information containing the current component being processed, the
+current outer template being processed, the identity reference for the
+variable, and the stringified name of the identity.  This override can
+be used for filtering allowable elements.
+
+    my $ta = Template::Alloy->new({
+        STRICT => 1,
+        STRICT_THROW => sub {
+            my ($ta, $err_type, $msg, $args) = @_;
+
+            return if $args->{'component'} eq 'header.tt'
+                      && $args->{'template'} eq 'main.html'
+                      && $args->{'name'} eq 'foo.bar(1)'; # stringified identity name
+
+            $ta->throw($err_type, $msg); # all other undefined variables die
+        },
+    });
+
 =item SYNTAX (not in TT)
 
 Defaults to "cet".  Indicates the syntax that will be used for parsing
