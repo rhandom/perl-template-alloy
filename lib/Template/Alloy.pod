@@ -3022,6 +3022,13 @@ See L<Template::Alloy::Parse> for more details.
 Used to set a variable.  Expects a variable identity array and the
 value to set.  It will autovifiy as necessary.
 
+=item C<strict_throw>
+
+Called during processing of template when STRICT configuration is
+set and an uninitialized variable is met.  Arguments are the variable
+identity reference.  Will call STRICT_THROW configuration item if set,
+otherwise will call throw with a useful message.
+
 =item C<throw>
 
 Creates an exception object from the arguments and dies.
@@ -3052,6 +3059,10 @@ The following is a brief list of other methods used by Alloy.  Generally, these
 shouldn't be overwritten by subclasses.
 
 =over 4
+
+=item C<ast_string>
+
+Returns perl code representation of a variable.
 
 =item C<context>
 
@@ -3093,6 +3104,10 @@ Reads contents of passed filename - throws file exception on error.
 =item C<split_paths>
 
 Used to split INCLUDE_PATH or other directives if an arrayref is not passed.
+
+=item C<tt_var_string>
+
+Returns a template toolkit representation of a variable.
 
 =item C<_vars>
 
