@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3002 : 657) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 3017 : 660) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -1513,6 +1513,16 @@ process_ok("[% \"<TMPL_VAR EXPR='1+2+3'>\"|eval(syntax => 'hte') %] = [% 6 %]" =
 process_ok("[% \"<TMPL_VAR EXPR='1+2+3'>\"|eval(syntax => 'ht') %] = [% 6 %]" => "");
 process_ok("[% \"<TMPL_VAR NAME='foo'>\"|eval(syntax => 'ht') %] = [% 12 %]" => "12 = 12", {foo => 12});
 
+}
+
+###----------------------------------------------------------------###
+print "### STRICT ########################################## $engine_option\n";
+process_ok("[% TRY; foo; CATCH; error; END %]" => qr'var.undef error - undefined variable: foo.*', {tt_config => [STRICT => 1]});
+process_ok("[% TRY; foo.bar(1); CATCH; error; END %]" => qr'var.undef error - undefined variable: foo\.bar\(1\).*', {tt_config => [STRICT => 1]});
+process_ok("[% TRY; 1 IF foo.bar.baz; CATCH; error; END %]" => qr'var.undef error - undefined variable: foo\.bar\.baz.*', {tt_config => [STRICT => 1]});
+if (! $is_tt) {
+process_ok("[% foo.bar() %]ok" => 'ok', {tt_config => [STRICT => 1, STRICT_THROW => sub { my ($t, $y, $m, $args) = @_; return if $args->{'name'} eq 'foo.bar()'; $t->throw($y,$m)}]});
+process_ok("[% foo.baz() %]ok" => '',   {tt_config => [STRICT => 1, STRICT_THROW => sub { my ($t, $y, $m, $args) = @_; return if $args->{'name'} eq 'foo.bar()'; $t->throw($y,$m)}]});
 }
 
 ###----------------------------------------------------------------###
