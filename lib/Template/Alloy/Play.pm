@@ -212,7 +212,7 @@ sub play_DUMP {
     }
 
     if ($conf->{'html'} || (! defined($conf->{'html'}) && $ENV{'REQUEST_METHOD'})) {
-        $out = $Template::Alloy::SCALAR_OPS->{'html'}->($out);
+        $out = $Template::Alloy::SCALAR_OPS->{'xml'}->($out);
         $out = "<pre>$out</pre>";
         $out = "<b>DUMP: File \"$info->{file}\" line $info->{line}</b>$out" if $conf->{'header'} || ! defined $conf->{'header'};
     } else {
