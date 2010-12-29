@@ -638,11 +638,19 @@ sub play_expr {
     } # end of while
 
     if (! defined $ref) {
+        if ($self->{'STRICT'}) {
+            my $v = $self->tt_var_string($var);
+            my $temp = $self->{'_template'}->{'name'};
+            my $comp = $self->{'_component'}->{'name'};
+            $self->throw('var.undef', "undefined variable: $v in $comp".($comp ne $temp ? " while processing $temp" : ''));
+        }
+
         if ($self->{'_debug_undef'}) {
             my $chunk = $var->[$i - 2];
             $chunk = $self->play_expr($chunk) if ref($chunk) eq 'ARRAY';
             die "$chunk is undefined\n";
         }
+
         $ref = $self->undefined_any($var);
     }
 
@@ -982,6 +990,22 @@ sub ast_string {
 
     $var =~ s/([\'\\])/\\$1/g;
     return "'$var'";
+}
+
+sub tt_var_string {
+    my ($self, $ident) = @_;
+    if (! ref $ident) {
+        return $ident if $ident eq '0' || $ident =~ /^[1-9]\d{0,12}$/;
+        $ident =~ s/\'/\\\'/g;
+        return "'$ident'";
+    }
+    my $v = '';
+    for (my $i = 0; $i < @$ident; ) {
+        $v .= $ident->[$i++];
+        $v .= '('.join(',',map{$self->tt_var_string($_)} @{$ident->[$i-1]}).')' if $ident->[$i++];
+        $v .= $ident->[$i++] if $i < @$ident;
+    }
+    return $v;
 }
 
 1;
