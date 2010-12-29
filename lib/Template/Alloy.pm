@@ -638,12 +638,7 @@ sub play_expr {
     } # end of while
 
     if (! defined $ref) {
-        if ($self->{'STRICT'}) {
-            my $v = $self->tt_var_string($var);
-            my $temp = $self->{'_template'}->{'name'};
-            my $comp = $self->{'_component'}->{'name'};
-            $self->throw('var.undef', "undefined variable: $v in $comp".($comp ne $temp ? " while processing $temp" : ''));
-        }
+        $self->strict_throw($var) if $self->{'STRICT'};
 
         if ($self->{'_debug_undef'}) {
             my $chunk = $var->[$i - 2];
@@ -920,6 +915,16 @@ sub undefined_any {
     my ($self, $ident) = @_;
     return $self->{'UNDEFINED_ANY'}->($self, $ident) if $self->{'UNDEFINED_ANY'};
     return;
+}
+
+sub strict_throw {
+    my ($self, $ident) = @_;
+    my $v = $self->tt_var_string($ident);
+    my $temp = $self->{'_template'}->{'name'};
+    my $comp = $self->{'_component'}->{'name'};
+    my $msg  = "undefined variable: $v in $comp".($comp ne $temp ? " while processing $temp" : '');
+    return $self->{'STRICT_THROW'}->($self, 'var.undef', $msg, {name => $v, component => $comp, template => $temp, ident => $ident}) if $self->{'STRICT_THROW'};
+    $self->throw('var.undef', $msg);
 }
 
 sub list_filters { shift->{'_filters'} ||= eval { require Template::Filters; $Template::Filters::FILTERS } || {} }
