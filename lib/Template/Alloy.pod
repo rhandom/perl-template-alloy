@@ -2150,7 +2150,7 @@ debugging modes.  Alternately the lowercase names may be used
 (multiple values joined by a ",").
 
     The only supported TT values are:
-    DEBUG_UNDEF (2)    - debug when an undefined value is used.
+    DEBUG_UNDEF (2)    - debug when an undefined value is used (now easier to use STRICT)
     DEBUG_DIRS  (8)    - debug when a directive is used.
     DEBUG_ALL   (2047) - turn on all debugging.
 

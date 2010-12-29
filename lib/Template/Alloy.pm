@@ -638,14 +638,8 @@ sub play_expr {
     } # end of while
 
     if (! defined $ref) {
-        $self->strict_throw($var) if $self->{'STRICT'};
-
-        if ($self->{'_debug_undef'}) {
-            my $chunk = $var->[$i - 2];
-            $chunk = $self->play_expr($chunk) if ref($chunk) eq 'ARRAY';
-            die "$chunk is undefined\n";
-        }
-
+        $self->strict_throw($var) if $self->{'STRICT'}; # will die
+        die $self->tt_var_string($var)." is undefined\n" if $self->{'_debug_undef'};
         $ref = $self->undefined_any($var);
     }
 

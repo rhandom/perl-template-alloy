@@ -1209,7 +1209,8 @@ process_ok("[% one;\n one %]" => "(1)ONE(2)ONE", {one=>'ONE', tt_config => ['DEB
 process_ok("[% DEBUG format '(\$line)' %][% one %]" => qr/\(1\)/, {one=>'ONE', tt_config => ['DEBUG' => 8]});
 
 process_ok("[% TRY %][% abc %][% CATCH %][% error %][% END %]" => "undef error - abc is undefined\n", {tt_config => ['DEBUG' => 2]});
-process_ok("[% TRY %][% abc.def %][% CATCH %][% error %][% END %]" => "undef error - def is undefined\n", {abc => {}, tt_config => ['DEBUG' => 2]});
+process_ok("[% TRY %][% abc.def %][% CATCH %][% error %][% END %]" => "undef error - def is undefined\n", {abc => {}, tt_config => ['DEBUG' => 2]}) if $is_tt;
+process_ok("[% TRY %][% abc.def %][% CATCH %][% error %][% END %]" => "undef error - abc.def is undefined\n", {abc => {}, tt_config => ['DEBUG' => 2]}) if !$is_tt;
 
 ###----------------------------------------------------------------###
 print "### constants ####################################### $engine_option\n";
