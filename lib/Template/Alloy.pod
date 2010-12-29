@@ -1008,6 +1008,7 @@ The following runtime configuration options may be set:
     CALL_CONTEXT
     DUMP
     VMETHOD_FUNCTIONS
+    STRICT (can only be enabled, cannot be disabled)
 
 If non-named parameters as passed, they will show the current configuration:
 
@@ -2052,7 +2053,7 @@ The following table shows the relationship between the various contexts:
     J   ([1],[2])          [[1],[2]]       [[1],[2]]       [2]
     K   [7,8,9]            [7,8,9]         [[7,8,9]]       [7,8,9]
     L   (undef, "foo")     die "foo"       [undef, "foo"]  "foo"
-    M   wantarray?1:0      1               1               0
+    M   wantarray?1:0      1               [1]             0
 
 Cases F, H, I and M are common sticking points of the smart context
 in TT2.  Note that list context always returns an arrayref from a method
@@ -2603,6 +2604,13 @@ When this occurs the strict_throw method is called.
 See the STRICT_THROW configuration for additional options.
 
 Similar functionality could be implemeted using UNDEFINED_ANY.
+
+The STRICT configuration item can be passed to new or it may also be
+set during runtime using the CONFIG directive.  Once set though it
+cannot be disabled for the duration of the current template and sub
+components.  For example you could call [% CONFIG STRICT => 1 %] in
+header.tt and strict mode would be enabled for the header.tt and any
+sub templates processed by header.tt.
 
 =item STRICT_THROW (not in TT)
 
