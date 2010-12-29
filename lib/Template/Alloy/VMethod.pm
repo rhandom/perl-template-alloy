@@ -424,7 +424,7 @@ than oneliners.  These methods are not exposed via the role.
 Methods by these names implement filters that are more complex than
 one liners.  These methods are not exposed via the role.
 
-=cut
+=back
 
 =head1 VIRTUAL METHOD LIST
 
@@ -936,7 +936,7 @@ RETURN directive.
 
     [% mylist.unshift(23) %] Adds an item to the beginning of the arrayref.
 
-=back 4
+=back
 
 =head2 HASH VIRTUAL METHODS
 
