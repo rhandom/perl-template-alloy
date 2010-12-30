@@ -204,7 +204,8 @@ sub parse_tree_tt3 {
                         if (defined($parent_node->[3]) && @in_view) {
                             push @{ $in_view[-1] }, $parent_node;
                         } else {
-                            push @blocks, $parent_node;
+                            push @blocks, $parent_node
+                                if length $parent_node->[3]; # macro blocks may not have a name
                         }
                         if ($pointer->[-1] && ! $pointer->[-1]->[6]) {
                             splice(@$pointer, -1, 1, ());
