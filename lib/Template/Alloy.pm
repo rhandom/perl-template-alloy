@@ -341,7 +341,7 @@ sub load_tree {
         if ($self->{'COMPILE_DIR'} || $self->{'COMPILE_EXT'}) {
             my $file = $doc->{'_filename'};
             if ($self->{'COMPILE_DIR'}) {
-                $file =~ y/:/_/ if $^O eq 'MSWin32';
+                $file =~ y|:|/| if $^O eq 'MSWin32';
                 $file = $self->{'COMPILE_DIR'} .'/'. $file;
             } elsif ($doc->{'_is_str_ref'}) {
                 $file = ($self->include_paths->[0] || '.') .'/'. $file;
@@ -395,7 +395,7 @@ sub load_perl {
         if ($self->{'COMPILE_DIR'} || $self->{'COMPILE_EXT'}) {
             my $file = $doc->{'_filename'};
             if ($self->{'COMPILE_DIR'}) {
-                $file =~ y/:/_/ if $^O eq 'MSWin32';
+                $file =~ y|:|/| if $^O eq 'MSWin32';
                 $file = $self->{'COMPILE_DIR'} .'/'. $file;
             } elsif ($doc->{'_is_str_ref'}) {
                 $file = ($self->include_paths->[0] || '.') .'/'. $file;
