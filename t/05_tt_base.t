@@ -835,18 +835,20 @@ process_ok("[% foo ERR 6 %]" => 6, {foo => undef}) if ! $is_tt;
 ###----------------------------------------------------------------###
 print "### regex ########################################### $engine_option\n";
 
-process_ok("[% /foo/ %]"     => '(?-xism:foo)') if ! $is_tt;
-process_ok("[% /foo %]"      => '') if ! $is_tt;
-process_ok("[% /foo/x %]"    => '(?-xism:(?x:foo))') if ! $is_tt;
-process_ok("[% /foo/xi %]"   => '(?-xism:(?xi:foo))') if ! $is_tt;
-process_ok("[% /foo/xis %]"  => '(?-xism:(?xis:foo))') if ! $is_tt;
-process_ok("[% /foo/xism %]" => '(?-xism:(?xism:foo))') if ! $is_tt;
-process_ok("[% /foo/e %]"    => '') if ! $is_tt;
-process_ok("[% /foo/g %]"    => '') if ! $is_tt;
-process_ok("[% /foo %]"      => '') if ! $is_tt;
-process_ok("[% /foo**/ %]"   => '') if ! $is_tt;
-process_ok("[% /fo\\/o/ %]"     => '(?-xism:fo/o)') if ! $is_tt;
-process_ok("[% 'foobar'.match(/(f\\w\\w)/).0 %]" => 'foo') if ! $is_tt;
+if (! $is_tt) {
+process_ok("[% 'foo'.match(/foo/)        ? 1 : 0 %]" => '1');
+process_ok("[% 'foo'.match(/foo)         ? 1 : 0 %]" => '');
+process_ok("[% 'foo'.match(/fo o/x)      ? 1 : 0 %]" => '1');
+process_ok("[% 'foo'.match(/Fo o/xi)     ? 1 : 0 %]" => '1');
+process_ok("[% 'F\no'.match(/F . o/xis)  ? 1 : 0 %]" => '1');
+process_ok("[% '\nfoo'.match(/^foo/xism) ? 1 : 0 %]" => '1');
+process_ok("[% 'foo'.match(/foo/e)       ? 1 : 0 %]" => '');
+process_ok("[% 'foo'.match(/foo/g)       ? 1 : 0 %]" => '');
+process_ok("[% 'foo'.match(/foo)         ? 1 : 0 %]" => '');
+process_ok("[% 'foo'.match(/foo**/)      ? 1 : 0 %]" => '');
+process_ok("[% 'fo/o'.match(/fo\\/o/)    ? 1 : 0 %]" => '1');
+process_ok("[% 'foobar'.match(/(f\\w\\w)/).0 %]" => 'foo');
+}
 
 ###----------------------------------------------------------------###
 print "### BLOCK / PROCESS / INCLUDE######################## $engine_option\n";
