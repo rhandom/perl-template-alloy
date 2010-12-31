@@ -35,7 +35,7 @@ our $SCALAR_OPS = our $ITEM_OPS = {
     'format' => \&vmethod_format,
     hash     => sub { {value => $_[0]} },
     hex      => sub { no warnings; hex $_[0] },
-    html     => sub { local $_ = $_[0]; s/&/&amp;/g; s/</&lt;/g; s/>/&gt;/g; s/\"/&quot;/g; s/\'/&apos;/g; $_ },
+    html     => sub { local $_ = $_[0]; s/&/&amp;/g; s/</&lt;/g; s/>/&gt;/g; s/\"/&quot;/g; $_ },
     indent   => \&vmethod_indent,
     int      => sub { no warnings; int $_[0] },
     item     => sub { $_[0] },
