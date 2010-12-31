@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3035 : 660) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 3038 : 661) - (! $five_six ? 0 : (2 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -384,7 +384,8 @@ process_ok("[% n|format('%0*d', 3) %]" => '007', {n => 7}) if ! $is_tt;
 process_ok("[% n|format('(%s)') %]" => "(a)\n(b)", {n => "a\nb"}); # TT2 filter
 process_ok("[% n.hash.items.1 %]" => "b", {n => {a => "b"}});
 process_ok("[% n.hex %]" => "255", {n => "FF"}) if ! $is_tt;
-process_ok("[% n|html %]" => "&amp;", {n => '&'}); # TT2 filter
+process_ok("[% n|html %]" => "&amp;&lt;&gt;&quot;'", {n => '&<>"\''}); # TT2 filter
+process_ok("[% n|xml %]"  => "&amp;&lt;&gt;&quot;&apos;", {n => '&<>"\''}); # TT2 filter
 process_ok("[% n|indent %]" => "    a\n    b", {n => "a\nb"}); # TT2 filter
 process_ok("[% n|indent(2) %]" => "  a\n  b", {n => "a\nb"}); # TT2 filter
 process_ok("[% n|indent('wow ') %]" => "wow a\nwow b", {n => "a\nb"}); # TT2 filter
