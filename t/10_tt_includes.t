@@ -9,14 +9,14 @@
 use vars qw($module $is_tt $compile_perl $use_stream);
 BEGIN {
     $module = 'Template::Alloy';
-    if (grep {/tt/i} @ARGV) {
+    if ($ENV{'USE_TT'} || grep {/tt/i} @ARGV) {
         $module = 'Template';
     }
     $is_tt = $module eq 'Template';
 };
 
 use strict;
-use Test::More tests => (! $is_tt) ? 312 : 93;
+use Test::More tests => (! $is_tt) ? 348 : 105;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -78,87 +78,99 @@ sub process_ok { # process the value and say if it was ok
 ### create some files to include
 my $foo_template = "$test_dir/foo.tt";
 END { unlink $foo_template };
-open(my $fh, ">$foo_template") || die "Couldn't open $foo_template: $!";
+open(my $fh, ">", $foo_template) || die "Couldn't open $foo_template: $!";
 print $fh "([% template.foo %][% INCLUDE bar.tt %])";
 close $fh;
 
 my $bar_template = "$test_dir/bar.tt";
 END { unlink $bar_template };
-open($fh, ">$bar_template") || die "Couldn't open $bar_template: $!";
+open($fh, ">", $bar_template) || die "Couldn't open $bar_template: $!";
 print $fh "[% blue %]BAR";
 close $fh;
 
 my $baz_template = "$test_dir/baz.tt";
 END { unlink $baz_template };
-open($fh, ">$baz_template") || die "Couldn't open $baz_template: $!";
+open($fh, ">", $baz_template) || die "Couldn't open $baz_template: $!";
 print $fh "[% SET baz = 42 %][% baz %][% bing %]";
 close $fh;
 
 my $wrap_template = "$test_dir/wrap.tt";
 END { unlink $wrap_template };
-open($fh, ">$wrap_template") || die "Couldn't open $wrap_template: $!";
+open($fh, ">", $wrap_template) || die "Couldn't open $wrap_template: $!";
 print $fh "Hi[% baz; template.foo; baz = 'wrap' %][% content %]there";
 close $fh;
 
 my $meta_template = "$test_dir/meta.tt";
 END { unlink $meta_template };
-open($fh, ">$meta_template") || die "Couldn't open $meta_template: $!";
+open($fh, ">", $meta_template) || die "Couldn't open $meta_template: $!";
 print $fh "[% META bar='meta.tt' %]Metafoo([% component.foo %]) Metabar([% component.bar %])";
 close $fh;
 
 my $catch_template = "$test_dir/catch.tt";
 END { unlink $catch_template };
-open($fh, ">$catch_template") || die "Couldn't open $catch_template: $!";
+open($fh, ">", $catch_template) || die "Couldn't open $catch_template: $!";
 print $fh "Error ([% error.type %]) - ([% error.info %])";
 close $fh;
 
 my $catch2_template = "$test_dir/catch2.tt";
 END { unlink $catch2_template };
-open($fh, ">$catch2_template") || die "Couldn't open $catch2_template: $!";
+open($fh, ">", $catch2_template) || die "Couldn't open $catch2_template: $!";
 print $fh "Error2 ([% error.type %]) - ([% error.info %])";
 close $fh;
 
 my $die_template = "$test_dir/die.tt";
 END { unlink $die_template };
-open($fh, ">$die_template") || die "Couldn't open $die_template: $!";
+open($fh, ">", $die_template) || die "Couldn't open $die_template: $!";
 print $fh "[% THROW bing 'blang' %])";
 close $fh;
 
 my $config_template = "$test_dir/config.tt";
 END { unlink $config_template };
-open($fh, ">$config_template") || die "Couldn't open $config_template: $!";
+open($fh, ">", $config_template) || die "Couldn't open $config_template: $!";
 print $fh "[% CONFIG DUMP => {html => 1} %][% DUMP foo %]";
 close $fh;
 
 my $template_template = "$test_dir/template.tt";
 END { unlink $template_template };
-open($fh, ">$template_template") || die "Couldn't open $template_template: $!";
+open($fh, ">", $template_template) || die "Couldn't open $template_template: $!";
 print $fh "<<[% PROCESS \$template %][% content %]>>";
 close $fh;
 
 my $nested_foo_template = "$test_dir/nested/foo.tt";
 END { unlink $nested_foo_template };
-open($fh, ">$nested_foo_template") || die "Couldn't open $nested_foo_template: $!";
+open($fh, ">", $nested_foo_template) || die "Couldn't open $nested_foo_template: $!";
 print $fh "(Nested foo [% INCLUDE bar.tt %])";
 close $fh;
 
 my $nested_bar_template = "$test_dir/nested/bar.tt";
 END { unlink $nested_bar_template };
-open($fh, ">$nested_bar_template") || die "Couldn't open $nested_bar_template: $!";
+open($fh, ">", $nested_bar_template) || die "Couldn't open $nested_bar_template: $!";
 print $fh "Nested bar";
 close $fh;
 
 my $nested_foo2_template = "$test_dir/nested/foo2.tt";
 END { unlink $nested_foo2_template };
-open($fh, ">$nested_foo2_template") || die "Couldn't open $nested_foo2_template: $!";
+open($fh, ">", $nested_foo2_template) || die "Couldn't open $nested_foo2_template: $!";
 print $fh "(Nested foo [% INCLUDE bar2.tt %])";
 close $fh;
 
 my $nested_bar2_template = "$test_dir/nested/bar2.tt";
 END { unlink $nested_bar2_template };
-open($fh, ">$nested_bar2_template") || die "Couldn't open $nested_bar2_template: $!";
+open($fh, ">", $nested_bar2_template) || die "Couldn't open $nested_bar2_template: $!";
 print $fh "Nested bar2";
 close $fh;
+
+my $block_defs_template = "$test_dir/blocks.tt";
+END { unlink $block_defs_template };
+open($fh, ">", $block_defs_template) || die "Couldn't open $block_defs_template: $!";
+print $fh "
+[%~ BLOCK bar %]bar[% END ~%]
+[%~ BLOCK foo %]I am [% text || 'foo' %] - [% template.blam %][% PROCESS bar %][% END ~%]
+[%~ MACRO foo_m(text) BLOCK %]I am [% text || 'foo_m' %] - [% template.blam %][% END ~%]
+[%~ META blam = 'BLAM' ~%]
+";
+close $fh;
+
 
 
 for my $opt ('normal', 'compile_perl', 'stream') {
@@ -194,6 +206,13 @@ process_ok("([% INCLUDE baz.tt %])" => '(42)');
 process_ok("([% INCLUDE baz.tt %])[% baz %]" => '(42)');
 process_ok("[% SET baz = 21 %]([% INCLUDE baz.tt %])[% baz %]" => '(42)21');
 
+process_ok("([% META blam = 5; INCLUDE blocks.tt %])" => '()');
+process_ok("([% META blam = 5; INCLUDE blocks.tt %])([% PROCESS foo text => 'bar' %])" => ($use_stream ? '()(' : ''));
+process_ok("([% META blam = 5; INCLUDE blocks.tt %])([% foo_m('hey') %])" => '()()');
+process_ok("([% META blam = 5; INCLUDE blocks.tt/foo text => 'bar' %])" => ($use_stream ? '(' : ''));
+process_ok("([% META blam = 5; INCLUDE blocks.tt/bar %])" => '(bar)', {tt_config => [EXPOSE_BLOCKS => 1]});
+process_ok("([% META blam = 5; INCLUDE blocks.tt/foo text => 'bar' %])" => ($use_stream ? '(I am bar - 5' : ''), {tt_config => [EXPOSE_BLOCKS => 1]});
+
 ###----------------------------------------------------------------###
 print "### PROCESS ######################################### $engine_option\n";
 
@@ -221,6 +240,13 @@ process_ok("[% PROCESS nested/foo2.tt %]" => ($use_stream ? '(Nested foo ' : '')
 process_ok("[% PROCESS nested/foo2.tt %]" => '(Nested foo Nested bar2)', {tt_config => [ADD_LOCAL_PATH => 1]}) if ! $is_tt;
 process_ok("[% PROCESS nested/foo2.tt %]" => '(Nested foo Nested bar2)', {tt_config => [ADD_LOCAL_PATH => -1]}) if ! $is_tt;
 process_ok("[% CONFIG ADD_LOCAL_PATH => 1 ; PROCESS nested/foo2.tt %]" => '(Nested foo Nested bar2)') if ! $is_tt;
+
+process_ok("([% META blam = 5; PROCESS blocks.tt %])" => '()');
+process_ok("([% META blam = 5; PROCESS blocks.tt %])([% PROCESS foo text => 'bar' %])" => '()(I am bar - 5bar)');
+process_ok("([% META blam = 5; PROCESS blocks.tt %])([% foo_m('hey') %])" => '()(I am hey - 5)');
+process_ok("([% META blam = 5; PROCESS blocks.tt/foo text => 'bar' %])" => ($use_stream ? '(' : ''));
+process_ok("([% META blam = 5; PROCESS blocks.tt/bar %])" => '(bar)', {tt_config => [EXPOSE_BLOCKS => 1]});
+process_ok("([% META blam = 5; PROCESS blocks.tt/foo text => 'bar' %])" => ($use_stream ? '(I am bar - 5' : ''), {tt_config => [EXPOSE_BLOCKS => 1]});
 
 ###----------------------------------------------------------------###
 print "### WRAPPER ######################################### $engine_option\n";
