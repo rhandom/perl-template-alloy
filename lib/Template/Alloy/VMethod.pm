@@ -587,7 +587,8 @@ Not available in TT - available in HTML::Template::Expr.
 
 =item html
 
-    [% item.html %] Performs a very basic html encoding (swaps out &, <, >, ' and " with the corresponding html entities)
+    [% item.html %] Performs a very basic html encoding (swaps out &, <, > and " with the corresponding html entities)
+    Previously it also encoded the ' but this behavior did not match TT2's behavior.  Use .xml to obtain that behavior.
 
 =item indent
 
