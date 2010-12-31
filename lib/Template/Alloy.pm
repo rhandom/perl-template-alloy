@@ -264,19 +264,24 @@ sub load_template {
             if ($self->{'EXPOSE_BLOCKS'} && ! $self->{'_looking_in_block_file'}) {
                 local $self->{'_looking_in_block_file'} = 1;
                 my $block_name = '';
-              OUTER: while ($file =~ s|/([^/.]+)$||) {
-                  $block_name = length($block_name) ? "$1/$block_name" : $1;
-                  my $ref = eval { $self->load_template($file) } || next;
-                  my $_tree = $ref->{'_tree'};
-                  foreach my $node (@$_tree) {
-                      last if ! ref $node;
-                      next if $node->[0] eq 'META';
-                      last if $node->[0] ne 'BLOCK';
-                      next if $block_name ne $node->[3];
-                      $doc->{'_tree'} = $node->[4];
-                      @{$doc}{qw(modtime _content _perl)} = @{$ref}{qw(modtime _content _perl)};
-                      return $doc;
-                  }
+                OUTER: while ($file =~ s|/([^/.]+)$||) {
+                    $block_name = length($block_name) ? "$1/$block_name" : $1;
+                    my $ref = eval { $self->load_template($file) } || next;
+                    my $_tree = $ref->{'_tree'};
+                    foreach my $node (@$_tree) {
+                        last if ! ref $node;
+                        next if $node->[0] eq 'META';
+                        last if $node->[0] ne 'BLOCK';
+                        next if $block_name ne $node->[3];
+                        $doc->{'_tree'} = $node->[4];
+                        @{$doc}{qw(modtime _content)} = @{$ref}{qw(modtime _content)};
+                        $doc->{'_perl'} = {
+                            meta   => {},
+                            blocks => {},
+                            code   => $ref->{'_perl'}->{'blocks'}->{$block_name}->{'_perl'}->{'code'},
+                        } if $ref->{'_perl'} && $ref->{'_perl'}->{'blocks'} && $ref->{'_perl'}->{'blocks'}->{$block_name};
+                        return $doc;
+                    }
               }
             } elsif ($self->{'DEFAULT'}) {
                 $err = '' if ($doc->{'_filename'} = eval { $self->include_filename($self->{'DEFAULT'}) });
