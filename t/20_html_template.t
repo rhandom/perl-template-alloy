@@ -19,7 +19,7 @@ BEGIN {
     $is_ta = $module eq 'Template::Alloy';
 };
 use strict;
-use Test::More tests => ($is_ta) ? 240 : ($is_ht) ? 75 : 82;
+use Test::More tests => ($is_ta) ? 250 : ($is_ht) ? 75 : 82;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -134,6 +134,8 @@ process_ok("<TMPL_VAR DEFAULT=bar NAME=foo DEFAULT=bing>d" => "bard");
 process_ok("<!--TMPL_VAR foo-->" => "FOO", {foo => "FOO"}) if $is_ta;
 process_ok("<!--TMPL_VAR NAME='foo'-->" => "FOO", {foo => "FOO"});
 
+process_ok("<TMPL_VAR NAME=foo>" => '&amp;', {foo => '&', tt_config => [AUTO_FILTER => 'html']}) if $is_ta;
+
 ###----------------------------------------------------------------###
 print "### IF / ELSE / UNLESS ############################## $is_compile_perl\n";
 
@@ -196,6 +198,9 @@ process_ok("<TMPL_VAR DEFAULT=bar EXPR=foo>" => "", {foo => "FOO", bar => "BAR"}
 
 process_ok("<!--TMPL_VAR EXPR=\"foo\"-->" => "FOO", {foo => "FOO"}) if ! $is_ht && ! $is_hte;
 
+process_ok("<TMPL_VAR EXPR=foo>" => '&amp;', {foo => '&', tt_config => [AUTO_FILTER => 'html']}) if $is_ta;
+process_ok("<TMPL_VAR EXPR=foo|none>" => '&', {foo => '&', tt_config => [AUTO_FILTER => 'html']}) if $is_ta;
+
 ###----------------------------------------------------------------###
 print "### LOOP ############################################ $is_compile_perl\n";
 
@@ -250,6 +255,9 @@ process_ok("<TMPL_BLOCK foo>(<TMPL_VAR i>)</TMPL_BLOCK><TMPL_SET wow = PROCESS f
 process_ok("<TMPL_GET template.foo><TMPL_META foo = 'bar'>" => "bar") if $is_ta;
 
 process_ok('<TMPL_MACRO bar(n) BLOCK>You said <TMPL_VAR n></TMPL_MACRO><TMPL_GET bar("hello")>' => 'You said hello') if $is_ta;
+
+process_ok("<TMPL_GET foo>" => '&amp;', {foo => '&', tt_config => [AUTO_FILTER => 'html']}) if $is_ta;
+process_ok("<TMPL_GET foo|none>" => '&', {foo => '&', tt_config => [AUTO_FILTER => 'html']}) if $is_ta;
 
 ###----------------------------------------------------------------###
 print "### TT3 CHOMPING #################################### $is_compile_perl\n";
