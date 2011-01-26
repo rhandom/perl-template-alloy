@@ -1997,13 +1997,13 @@ Boolean.  Default 1.  Clear blocks that were set during the process method.
 
 Boolean.  Default 0 (default 1 in Velocity syntax).  If set to true,
 double quoted strings will automatically be passed to the eval filter.
-This configurtation option may also be passed to the CONFIG directive.
+This configuration option may also be passed to the CONFIG directive.
 
 =item AUTO_FILTER
 
 Can be the name of any filter.  Default undef.  Any variable returned by a
 GET directive (including implicit GET) will be passed to the named filter.
-This configurtation option may also be passed to the CONFIG directive.
+This configuration option may also be passed to the CONFIG directive.
 
     # with AUTO_FILTER => 'html'
 
