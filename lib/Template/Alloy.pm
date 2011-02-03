@@ -488,7 +488,7 @@ sub play_expr {
         if (UNIVERSAL::isa($ref, 'CODE')) {
             return $ref if $i >= $#$var && $ARGS->{'return_ref'};
             my @args = $args ? map { $self->play_expr($_) } @$args : ();
-            my $type = lc($self->{'CALL_CONTEXT'} || '');
+            my $type = $self->{'CALL_CONTEXT'} || '';
             if ($type eq 'item') {
                 $ref = $ref->(@args);
             } else {
@@ -592,19 +592,19 @@ sub play_expr {
             ### method calls on objects
             if ($was_dot_call && UNIVERSAL::can($ref, 'can')) {
                 return $ref if $i >= $#$var && $ARGS->{'return_ref'};
-                my $type = lc($self->{'CALL_CONTEXT'} || '');
+                my $type = $self->{'CALL_CONTEXT'} || '';
                 my @args = $args ? map { $self->play_expr($_) } @$args : ();
                 if ($type eq 'item') {
                     $ref = $ref->$name(@args);
+                    next;
+                } elsif ($type eq 'list') {
+                    $ref = [$ref->$name(@args)];
                     next;
                 }
                 my @results = eval { $ref->$name(@args) };
                 if ($@) {
                     my $class = ref $ref;
                     die $@ if ref $@ || $@ !~ /Can\'t locate object method "\Q$name\E" via package "\Q$class\E"/ || $type eq 'list';
-                } elsif ($type eq 'list') {
-                    $ref = \@results;
-                    next;
                 } elsif (defined $results[0]) {
                     $ref = ($#results > 0) ? \@results : $results[0];
                     next;
@@ -696,7 +696,7 @@ sub set_variable {
 
         ### check at each point if the returned thing was a code
         if (UNIVERSAL::isa($ref, 'CODE')) {
-            my $type = lc($self->{'CALL_CONTEXT'} || '');
+            my $type = $self->{'CALL_CONTEXT'} || '';
             my @args = $args ? map { $self->play_expr($_) } @$args : ();
             if ($type eq 'item') {
                 $ref = $ref->(@args);
@@ -742,7 +742,7 @@ sub set_variable {
         ### method calls on objects
         } elsif (UNIVERSAL::can($ref, 'can')) {
             my $lvalueish;
-            my $type = lc($self->{'CALL_CONTEXT'} || '');
+            my $type = $self->{'CALL_CONTEXT'} || '';
             my @args = $args ? map { $self->play_expr($_) } @$args : ();
             if ($i >= $#$var) {
                 $lvalueish = 1;
@@ -752,12 +752,14 @@ sub set_variable {
                 $ref = $ref->$name(@args);
                 return if $lvalueish;
                 next;
+            } elsif ($type eq 'list') {
+                $ref = [$ref->$name(@args)];
+                return if $lvalueish;
+                next;
             }
             my @results = eval { $ref->$name(@args) };
             if (! $@) {
-                if ($type eq 'list') {
-                    $ref = \@results;
-                } elsif (defined $results[0]) {
+                if (defined $results[0]) {
                     $ref = ($#results > 0) ? \@results : $results[0];
                 } elsif (defined $results[1]) {
                     die $results[1]; # TT behavior - why not just throw ?
