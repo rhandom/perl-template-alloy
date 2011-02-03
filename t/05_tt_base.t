@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3068 : 661) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 3074 : 661) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -110,7 +110,7 @@ local $INC{'FooTest2.pm'} = $0;
     package CallContext;
     sub new { my $class = shift; my $args = shift || {}; bless $args, $class }
     sub last_context { shift->{'last_context'} || '' }
-    sub call_me { shift->{'last_context'} = wantarray ? 'list' : defined(wantarray) ? 'scalar' : 'void' }
+    sub call_me { my $self = shift; $self->{'last_context'} = (wantarray ? 'list' : defined(wantarray) ? 'scalar' : 'void').(shift || '') }
     sub array   { return my @a = (1, 2, 3) }
     sub array2  { return my @a = (4) }
     sub list    { return (5, 6, 7) }
@@ -680,11 +680,15 @@ delete $cctx->{'data'};
 process_ok("[% cctx.dataref.foo = 7; cctx.dataref.foo %]" => "7", {cctx => $cctx});
 
 if (! $is_tt) {
-    process_ok('[% SET cctx.call_me    = 2 %][% cctx.last_context %]' => "list", {cctx => $cctx});
+    process_ok('[% SET cctx.call_me    = 2 %][% cctx.last_context %]' => "list2", {cctx => $cctx});
     delete $cctx->{'last_context'};
-    process_ok('[% SET @(cctx.call_me) = 3 %][% cctx.last_context %]' => "list", {cctx => $cctx});
+    process_ok('[% CALL @(cctx.call_me = 3) %][% cctx.last_context %]' => "list3", {cctx => $cctx});
     delete $cctx->{'last_context'};
-    process_ok('[% SET $(cctx.call_me) = 4 %][% cctx.last_context %]' => "scalar", {cctx => $cctx});
+    process_ok('[% CALL $(cctx.call_me = 4) %][% cctx.last_context %]' => "scalar4", {cctx => $cctx});
+    delete $cctx->{'last_context'};
+    process_ok('[% CONFIG CALL_CONTEXT => "list"; SET cctx.call_me = 3; CONFIG CALL_CONTEXT => "smart" %][% cctx.last_context %]' => "list3", {cctx => $cctx});
+    delete $cctx->{'last_context'};
+    process_ok('[% CONFIG CALL_CONTEXT => "item"; SET cctx.call_me = 4 %][% cctx.last_context %]' => "scalar4", {cctx => $cctx});
     delete $cctx->{'data'};
     process_ok('[% cctx.dataref.0.foo = 7; cctx.dataref.0.foo %]' => "7", {cctx => $cctx});
     delete $cctx->{'data'};
