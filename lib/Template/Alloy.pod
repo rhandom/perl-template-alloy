@@ -2513,7 +2513,7 @@ that are relative to the currently running process.
 
 =item SEMICOLONS
 
-Boolean.  Default fast.  If true, then the syntax will require that
+Boolean.  Default false.  If true, then the syntax will require that
 semi-colons separate multiple directives in the same tag.  This is
 useful for keeping the syntax a little more clean as well as trouble
 shooting some errors.
