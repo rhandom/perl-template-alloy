@@ -20,6 +20,7 @@ BEGIN {
 use strict;
 use Test::More tests => (! $is_tt ? 3074 : 661) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
+use Data::Dumper;
 
 use_ok($module);
 
@@ -69,7 +70,7 @@ sub process_ok { # process the value and say if it was ok
     } else {
         ok(0, "Line $line   \"$str\"");
         warn "# Was:\n$out\n# Should've been:\n$test\n";
-        print $obj->error if $obj->can('error');
+        print grep { defined } $obj->error if $obj->can('error');
         print $obj->dump_parse_tree(\$str) if $obj->can('dump_parse_tree');
         exit;
     }
