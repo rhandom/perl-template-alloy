@@ -63,6 +63,59 @@ our $DIRECTIVES = {
 
 sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
+sub load_perl {
+    my ($self, $doc) = @_;
+
+    ### first look for a compiled perl document
+    my $perl;
+    if ($doc->{'_filename'}) {
+        $doc->{'modtime'} ||= (stat $doc->{'_filename'})[9];
+        if ($self->{'COMPILE_DIR'} || $self->{'COMPILE_EXT'}) {
+            my $file = $doc->{'_filename'};
+            if ($self->{'COMPILE_DIR'}) {
+                $file =~ y|:|/| if $^O eq 'MSWin32';
+                $file = $self->{'COMPILE_DIR'} .'/'. $file;
+            } elsif ($doc->{'_is_str_ref'}) {
+                $file = ($self->include_paths->[0] || '.') .'/'. $file;
+            }
+            $file .= $self->{'COMPILE_EXT'} if defined($self->{'COMPILE_EXT'});
+            $file .= $Template::Alloy::PERL_COMPILE_EXT if defined $Template::Alloy::PERL_COMPILE_EXT;
+
+            if (-e $file && ($doc->{'_is_str_ref'} || (stat $file)[9] == $doc->{'modtime'})) {
+                $perl = $self->slurp($file);
+            } else {
+                $doc->{'_compile_filename'} = $file;
+            }
+        }
+    }
+
+    $perl ||= $self->compile_template($doc);
+
+    ### save a cache on the fileside as asked
+    if ($doc->{'_compile_filename'}) {
+        my $dir = $doc->{'_compile_filename'};
+        $dir =~ s|/[^/]+$||;
+        if (! -d $dir) {
+            require File::Path;
+            File::Path::mkpath($dir);
+        }
+        open(my $fh, ">", $doc->{'_compile_filename'}) || $self->throw('compile', "Could not open file \"$doc->{'_compile_filename'}\" for writing: $!");
+        ### todo - think about locking
+        if ($self->{'ENCODING'} && eval { require Encode } && defined &Encode::encode) {
+            print {$fh} Encode::encode($self->{'ENCODING'}, $$perl);
+        } else {
+            print {$fh} $$perl;
+        }
+        close $fh;
+        utime $doc->{'modtime'}, $doc->{'modtime'}, $doc->{'_compile_filename'};
+    }
+
+    $perl = eval $$perl;
+    $self->throw('compile', "Trouble loading compiled perl: $@") if ! $perl && $@;
+
+    return $perl;
+}
+
 ###----------------------------------------------------------------###
 
 sub compile_template {
