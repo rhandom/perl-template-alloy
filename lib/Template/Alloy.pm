@@ -29,16 +29,18 @@ our @CONFIG_RUNTIME     = qw(ADD_LOCAL_PATH CALL_CONTEXT DUMP VMETHOD_FUNCTIONS 
 our $EVAL_CONFIG        = {map {$_ => 1} @CONFIG_COMPILETIME, @CONFIG_RUNTIME};
 our $EXTRA_COMPILE_EXT  = '.sto';
 our $PERL_COMPILE_EXT   = '.pl';
+our $JS_COMPILE_EXT     = '.js';
 our $GLOBAL_CACHE       = {};
 
 ###----------------------------------------------------------------###
 
 our $AUTOROLE = {
-    Compile  => [qw(compile_template compile_tree compile_expr)],
+    Compile  => [qw(load_perl compile_template compile_tree compile_expr)],
     HTE      => [qw(parse_tree_hte param output register_function clear_param query new_file new_scalar_ref new_array_ref new_filehandle)],
     Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse_tree dump_parse_expr define_directive define_syntax)],
     Play     => [qw(play_tree _macro_sub)],
     Stream   => [qw(stream_tree)],
+    JS       => [qw(load_js compile_template_js compile_tree_js compile_expr_js)],
     TT       => [qw(parse_tree_tt3 process)],
     Tmpl     => [qw(parse_tree_tmpl set_delimiters set_strip set_value set_values parse_string set_dir parse_file loop_iteration fetch_loop_iteration)],
     Velocity => [qw(parse_tree_velocity merge)],
@@ -165,10 +167,12 @@ sub _process {
             $self->stream_tree($doc->{'_tree'});
         } elsif ($doc->{'_perl'}) {
             $doc->{'_perl'}->{'code'}->($self, $out_ref);
-        } elsif (! $doc->{'_tree'}) {
-            $self->throw('process', 'No _perl and no _tree found');
-        } else {
+        } elsif ($doc->{'_js'}) {
+            $doc->{'_js'}->{'code'}->($self, $out_ref);
+        } elsif ($doc->{'_tree'}) {
             $self->play_tree($doc->{'_tree'}, $out_ref);
+        } else {
+            $self->throw('process', 'No _perl and no _tree found');
         }
 
         ### trim whitespace from the beginning and the end of a block or template
@@ -303,6 +307,8 @@ sub load_template {
     ### return perl - if they want perl - otherwise - the ast
     if (! $doc->{'_no_perl'} && $self->{'COMPILE_PERL'} && ($self->{'COMPILE_PERL'} ne '2' || $self->{'_tree'})) {
         $doc->{'_perl'} = $self->load_perl($doc);
+    } elsif ($self->{'COMPILE_JS'}) {
+        $doc->{'_js'} = $self->load_js($doc);
     } else {
         $doc->{'_tree'} = $self->load_tree($doc);
     }
@@ -388,59 +394,6 @@ sub load_tree {
     }
 
     return $tree;
-}
-
-sub load_perl {
-    my ($self, $doc) = @_;
-
-    ### first look for a compiled perl document
-    my $perl;
-    if ($doc->{'_filename'}) {
-        $doc->{'modtime'} ||= (stat $doc->{'_filename'})[9];
-        if ($self->{'COMPILE_DIR'} || $self->{'COMPILE_EXT'}) {
-            my $file = $doc->{'_filename'};
-            if ($self->{'COMPILE_DIR'}) {
-                $file =~ y|:|/| if $^O eq 'MSWin32';
-                $file = $self->{'COMPILE_DIR'} .'/'. $file;
-            } elsif ($doc->{'_is_str_ref'}) {
-                $file = ($self->include_paths->[0] || '.') .'/'. $file;
-            }
-            $file .= $self->{'COMPILE_EXT'} if defined($self->{'COMPILE_EXT'});
-            $file .= $PERL_COMPILE_EXT      if defined $PERL_COMPILE_EXT;
-
-            if (-e $file && ($doc->{'_is_str_ref'} || (stat $file)[9] == $doc->{'modtime'})) {
-                $perl = $self->slurp($file);
-            } else {
-                $doc->{'_compile_filename'} = $file;
-            }
-        }
-    }
-
-    $perl ||= $self->compile_template($doc);
-
-    ### save a cache on the fileside as asked
-    if ($doc->{'_compile_filename'}) {
-        my $dir = $doc->{'_compile_filename'};
-        $dir =~ s|/[^/]+$||;
-        if (! -d $dir) {
-            require File::Path;
-            File::Path::mkpath($dir);
-        }
-        open(my $fh, ">", $doc->{'_compile_filename'}) || $self->throw('compile', "Could not open file \"$doc->{'_compile_filename'}\" for writing: $!");
-        ### todo - think about locking
-        if ($self->{'ENCODING'} && eval { require Encode } && defined &Encode::encode) {
-            print {$fh} Encode::encode($self->{'ENCODING'}, $$perl);
-        } else {
-            print {$fh} $$perl;
-        }
-        close $fh;
-        utime $doc->{'modtime'}, $doc->{'modtime'}, $doc->{'_compile_filename'};
-    }
-
-    $perl = eval $$perl;
-    $self->throw('compile', "Trouble loading compiled perl: $@") if ! $perl && $@;
-
-    return $perl;
 }
 
 ###----------------------------------------------------------------###
