@@ -969,6 +969,26 @@ sub tt_var_string {
     return $v;
 }
 
+sub item_method_eval {
+    my $self = shift;
+    my $text = shift; return '' if ! defined $text;
+    my $args = shift || {};
+
+    local $self->{'_eval_recurse'} = $self->{'_eval_recurse'} || 0;
+    $self->throw('eval_recurse', "MAX_EVAL_RECURSE $Template::Alloy::MAX_EVAL_RECURSE reached")
+        if ++$self->{'_eval_recurse'} > ($self->{'MAX_EVAL_RECURSE'} || $MAX_EVAL_RECURSE);
+
+    my %ARGS;
+    @ARGS{ map {uc} keys %$args } = values %$args;
+    delete @ARGS{ grep {! $Template::Alloy::EVAL_CONFIG->{$_}} keys %ARGS };
+    $self->throw("eval_strict", "Cannot disable STRICT once it is enabled") if exists $ARGS{'STRICT'} && ! $ARGS{'STRICT'};
+
+    local @$self{ keys %ARGS } = values %ARGS;
+    my $out = '';
+    $self->process_simple(\$text, $self->_vars, \$out) || $self->throw($self->error);
+    return $out;
+}
+
 1;
 
 ### See the perldoc in Template/Alloy.pod
