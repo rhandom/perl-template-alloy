@@ -76,8 +76,8 @@ our $SCALAR_OPS = our $ITEM_OPS = {
 };
 
 our $ITEM_METHODS = {
-    eval     => \&item_method_eval,
-    evaltt   => \&item_method_eval,
+    eval     => \&Template::Alloy::item_method_eval,
+    evaltt   => \&Template::Alloy::item_method_eval,
     file     => \&item_method_redirect,
     redirect => \&item_method_redirect,
 };
@@ -351,26 +351,6 @@ sub vmethod_url {
     utf8::upgrade($str) if defined &utf8::upgrade;
     $str =~ s/([^;\/?:@&=+\$,A-Za-z0-9\-_.!~*\'()])/sprintf('%%%02X', ord($1))/eg;
     return $str;
-}
-
-sub item_method_eval {
-    my $t    = shift;
-    my $text = shift; return '' if ! defined $text;
-    my $args = shift || {};
-
-    local $t->{'_eval_recurse'} = $t->{'_eval_recurse'} || 0;
-    $t->throw('eval_recurse', "MAX_EVAL_RECURSE $Template::Alloy::MAX_EVAL_RECURSE reached")
-        if ++$t->{'_eval_recurse'} > ($t->{'MAX_EVAL_RECURSE'} || $Template::Alloy::MAX_EVAL_RECURSE);
-
-    my %ARGS;
-    @ARGS{ map {uc} keys %$args } = values %$args;
-    delete @ARGS{ grep {! $Template::Alloy::EVAL_CONFIG->{$_}} keys %ARGS };
-    $t->throw("eval_strict", "Cannot disable STRICT once it is enabled") if exists $ARGS{'STRICT'} && ! $ARGS{'STRICT'};
-
-    local @{ $t }{ keys %ARGS } = values %ARGS;
-    my $out = '';
-    $t->process_simple(\$text, $t->_vars, \$out) || $t->throw($t->error);
-    return $out;
 }
 
 sub item_method_redirect {
