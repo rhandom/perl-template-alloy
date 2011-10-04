@@ -950,6 +950,7 @@ process_ok('[% FOREACH f = [1..3]; 1; END %]' => '111');
 process_ok('[% FOREACH f = [1..3]; f; END %]' => '123');
 process_ok('[% FOREACH f = [1..3]; "$f"; END %]' => '123');
 process_ok('[% FOREACH f = [1..3]; f + 1; END %]' => '234');
+process_ok('[% FOREACH f IN [2,3,4]; FOREACH g IN [6,7,8]; f;g;", "; END; END %]' => '26, 27, 28, 36, 37, 38, 46, 47, 48, ');
 
 {
     package TEST_HASH_OBJ;
@@ -981,11 +982,10 @@ process_ok("[% var = [{key => 'a'}, {key => 'b'}] -%]
 if (! $is_tt) {
     local $Template::Alloy::QR_PRIVATE = 0;
     local $Template::Alloy::QR_PRIVATE = 0; # warn clean
-    Template::Alloy->define_vmethod('scalar', textjoin => sub {join(shift, @_)});
 
     process_ok("[% var = [{key => 'a'}, {key => 'b'}, {key => 'c'}] -%]
 [% LOOP var -%]
-([% textjoin('|', key, __first__, __last__, __inner__, __odd__) %])
+([% key; '|'; __first__; '|'; __last__; '|'; __inner__; '|'; __odd__ %])
 [% END -%]" => "(a|1|0|0|1)
 (b|0|0|1|0)
 (c|0|1|0|1)
