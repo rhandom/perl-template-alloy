@@ -512,7 +512,7 @@ sub compile_META {
     my ($self, $node, $str_ref, $indent) = @_;
     if (my $kp = $node->[3]) {
         $kp = {@$kp} if ref($kp) eq 'ARRAY';
-        while (my($key, $val) = each %$kp) {
+        while (my($key, $val) = each %{ $node->[3] }) {
             s/\'/\\\'/g foreach $key, $val;
             $self->{'_meta'} .= "\n${indent}'$key' => '$val',";
         }
