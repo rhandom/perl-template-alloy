@@ -480,6 +480,7 @@ sub _macro_sub {
 sub play_META {
     my ($self, $hash) = @_;
     return if ! $hash;
+    $hash = {@$hash} if ref($hash) eq 'ARRAY';
     my @keys = keys %$hash;
 
     my $ref;

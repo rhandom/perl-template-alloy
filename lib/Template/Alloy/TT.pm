@@ -243,7 +243,7 @@ sub parse_tree_tt3 {
                 }
 
             } elsif ($func eq 'META') {
-                unshift @meta, %{ $node->[3] }; # first defined win
+                unshift @meta, @{ $node->[3] }; # first defined win
                 $node->[3] = undef;             # only let these be defined once - at the front of the tree
             }
 
@@ -307,7 +307,7 @@ sub parse_tree_tt3 {
 
     ### cleanup the tree
     unshift(@tree, @blocks) if @blocks;
-    unshift(@tree, ['META', 1, 1, {@meta}]) if @meta;
+    unshift(@tree, ['META', 1, 1, \@meta]) if @meta;
     $self->throw('parse', "Missing END directive", $state[-1], pos($$str_ref)) if @state > 0;
 
     ### pull off the last text portion - if any
@@ -543,7 +543,7 @@ sub _load_template_meta {
         my $meta    = $doc->{'_perl'} ? $doc->{'_perl'}->{'meta'}
             : ($doc->{'_tree'} && ref($doc->{'_tree'}->[0]) && $doc->{'_tree'}->[0]->[0] eq 'META') ? $doc->{'_tree'}->[0]->[3]
             : {};
-
+        $meta = {@$meta} if ref($meta) eq 'ARRAY';
         $self->{'_template'} = $doc;
         @{ $doc }{keys %$meta} = values %$meta;
     };
