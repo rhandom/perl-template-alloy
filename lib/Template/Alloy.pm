@@ -284,6 +284,7 @@ sub load_template {
                             blocks => {},
                             code   => $ref->{'_perl'}->{'blocks'}->{$block_name}->{'_perl'}->{'code'},
                         } if $ref->{'_perl'} && $ref->{'_perl'}->{'blocks'} && $ref->{'_perl'}->{'blocks'}->{$block_name};
+                        $doc->{'_js'} = $self->load_js($doc) if $self->{'COMPILE_JS'} && $ref->{'_js'}; # have to regenerate because block is buried in js
                         return $doc;
                     }
               }
