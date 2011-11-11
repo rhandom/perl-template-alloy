@@ -865,7 +865,7 @@ sub parse_META {
     my ($self, $str_ref) = @_;
     my $args = $self->parse_args($str_ref, {named_at_front => 1});
     my $hash;
-    return $hash if ($hash = $self->play_expr($args->[0])) && UNIVERSAL::isa($hash, 'HASH');
+    return [%$hash] if ($hash = $self->play_expr($args->[0])) && UNIVERSAL::isa($hash, 'HASH');
     return undef;
 }
 
