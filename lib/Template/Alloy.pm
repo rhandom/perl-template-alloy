@@ -1,7 +1,7 @@
 package Template::Alloy;
 
 ###----------------------------------------------------------------###
-#  See the perldoc in Template/Alloy.pod
+#  See the perldoc in Template/Alloy.pod                             #
 #  Copyright 2007 - 2011 - Paul Seamons                              #
 #  Distributed under the Perl Artistic License without warranty      #
 ###----------------------------------------------------------------###
