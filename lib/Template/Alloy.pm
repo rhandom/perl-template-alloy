@@ -71,7 +71,10 @@ sub import {
     my $class = shift;
     foreach my $item (@_) {
         next if $item =~ /^(load|1)$/i;
-        return $class->import(keys %$AUTOROLE) if lc $item eq 'all';
+        if (lc $item eq 'all') {
+            local $AUTOROLE->{'JS'}; delete $AUTOROLE->{'JS'};
+            return $class->import(keys %$AUTOROLE);
+        }
 
         my $type;
         if ($type = $STANDIN{$item}) {
