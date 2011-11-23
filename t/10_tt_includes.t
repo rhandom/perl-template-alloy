@@ -69,8 +69,9 @@ sub process_ok { # process the value and say if it was ok
     } else {
         ok(0, "Line $line   \"$str\"");
         warn "# Was:\n$out\n# Should've been:\n$test\n";
-        print $obj->error if $obj->can('error');
+        print map {"$_\n"} grep { defined } $obj->error if $obj->can('error');
         print $obj->dump_parse_tree(\$str) if $obj->can('dump_parse_tree');
+        my ($k,$v) = each %{ $obj->{'_documents'} };
         exit;
     }
 }
