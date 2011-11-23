@@ -92,6 +92,25 @@ Template::Alloy - TT2/3, HT, HTE, Tmpl, and Velocity Engine
     my $str = "#set($foo 1 + 3) ($foo) ($bar) ($!baz)";
     my $out = $t->merge(\$str, $swap);
 
+=head2 JavaScript style usage (requires Template::Alloy::JS)
+
+    my $t = Template::Alloy->new(COMPILE_JS => 1);
+
+    my $swap = {
+        key1 => 'val1',
+        key2 => 'val2',
+        code => sub { 42 },
+        hash => {a => 'b'},
+    };
+
+    my $out = '';
+    $t->process_js('my/template.jstem', $swap, \$out);
+
+    my $str = "[% vars.foo = 1 + 3; write('(' + vars.foo + ') (' + vars.key1 + ')'); %]";
+    my $out = '';
+    $t->process_js(\$str, $swap, \$out);
+
+
 =head1 DESCRIPTION
 
 "An alloy is a homogeneous mixture of two or more elements"
@@ -103,7 +122,7 @@ for non-mini-language based systems will happen eventually).  With
 Template::Alloy you can use your favorite template interface and syntax
 and get features from each of the other major template systems.  And
 Template::Alloy is fast - whether your using mod_perl, cgi, or running
-from the commandline.  There is even Template::Alloy::XS for getting
+from the commandline.  There is even Template::Alloy::JS for getting
 a little more speed when that is necessary.
 
 Template::Alloy happened by accident (accidentally on purpose).  The
@@ -121,6 +140,10 @@ Text::Tmpl templates, support was investigated and interfaces for
 HTML::Template, HTML::Template::Expr, Text::Tmpl, and Velocity (VTL)
 were added.  All of the various engines offer the same features - just
 using different syntaxes and interfaces.
+
+More recently, the Template::Alloy::JS capabilities were introduced
+to bring javascript templates to the server side (along with an increase
+in speed).
 
 Template::Toolkit brought the most to the table.  HTML::Template
 brought the LOOP directive.  HTML::Template::Expr brough more vmethods
@@ -193,6 +216,8 @@ The following is a list of roles used by Template::Alloy.
     Template::Alloy::Velocity - Velocity role
     Template::Alloy::VMethod  - Virtual methods role
 
+    Template::Alloy::JS       - Javascript functionality - available separately
+
 Template::Alloy automatically loads the roles when they are needed or
 requested - but not sooner (with the exception of the Operator role
 and the VMethod role which are always needed and always loaded).  This
@@ -225,7 +250,7 @@ the following syntax as well.
         TT => 1;
 
 Even with all roles loaded Template::Alloy is still relatively small.  You
-can load all of the roles by pass "all" to the use statement.
+can load all of the roles (except the JS role) by passing "all" to the use statement.
 
     use Template::Alloy 'all';
 
@@ -1296,6 +1321,25 @@ or commas (TT2 doesn't support the comma).
     [% INSERT "path/to/template.html",
               "path/to/template2.html" %]
 
+=item C<JS>
+
+Only available if the COMPILE_JS configuration item is true (default is false).
+This requires the Template::Alloy::JS module to be installed.
+
+Allow eval'ing the block of text as javascript.  The block will be parsed and then eval'ed.
+
+    [% a = "BimBam" %]
+    [%~ JS %]
+        write('The variable a was "' + vars.a + '"');
+        vars.b = "FooBar";
+    [% END %]
+    [% b %]
+
+Would print:
+
+    The variable a was "BimBam"
+    FooBar
+
 =item C<LAST>
 
 Used to exit out of a WHILE or FOREACH loop.
@@ -2126,6 +2170,25 @@ Extension to add to stored compiled template filenames.  Default undef.
 If set, the AST of parsed documents will be cached.  If COMPILE_PERL is
 set, the compiled perl code will also be stored.
 
+=item COMPILE_JS
+
+Default false.
+
+Requires installation of Template::Alloy::JS.  When enabled, the parsed
+templates will be translated into JavaScript and executed using the
+V8 javascript engine.  If compile_dir is also set, this compiled javascript
+will be cached to disk.
+
+If your templates are short, there is little benefit to using this other
+than you can then use the JS directive.  If your templates are long or
+you are running in a cached environment, this will speed up your templates.
+
+Certain limitations exist when COMPILE_JS is set, most notably the USE
+and VIEW directives are not supported, and method calls on objects
+passed to the template do not work (code refs passed in do work
+however).  These limitations are do to the nature of JavaScript::V8
+bind and Perl/JavaScript OO differences.
+
 =item COMPILE_PERL
 
 Default false.
@@ -2676,6 +2739,8 @@ The available choices are:
     tt1   - Template::Toolkit ver1 - almost the same as TT2
     ht    - HTML::Template - same as HTML::Template::Expr without EXPR
     hte   - HTML::Template::Expr
+    js    - JavaScript style - requires compile_js to be set.
+    jsr   - JavaScript Raw style - requires compile_js to be set.
 
 Passing in a different syntax allows for the process method
 to use a non-TT syntax and for the output method to use a non-HT
@@ -3163,7 +3228,6 @@ Thanks to Sam Tregar for creating HTML::Template.
 Thanks to David Lowe for creating Text::Tmpl.
 
 Thanks to the Apache Velocity guys.
-
 
 Thanks to Ben Grimm for a patch to allow passing a parsed document to the ->process method.
 
