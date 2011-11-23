@@ -37,6 +37,7 @@ our $TAGS = {
 our $SYNTAX = {
     alloy    => sub { shift->parse_tree_tt3(@_) },
     js       => sub { shift->parse_tree_js(@_) },
+    jsr      => sub { shift->parse_tree_jsr(@_) },
     ht       => sub { my $self = shift; local $self->{'V2EQUALS'} = 0; local $self->{'EXPR'} = 0; $self->parse_tree_hte(@_) },
     hte      => sub { my $self = shift; local $self->{'V2EQUALS'} = 0; $self->parse_tree_hte(@_) },
     tt3      => sub { shift->parse_tree_tt3(@_) },
