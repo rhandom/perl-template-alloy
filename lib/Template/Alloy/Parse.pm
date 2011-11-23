@@ -36,6 +36,7 @@ our $TAGS = {
 
 our $SYNTAX = {
     alloy    => sub { shift->parse_tree_tt3(@_) },
+    js       => sub { shift->parse_tree_js(@_) },
     ht       => sub { my $self = shift; local $self->{'V2EQUALS'} = 0; local $self->{'EXPR'} = 0; $self->parse_tree_hte(@_) },
     hte      => sub { my $self = shift; local $self->{'V2EQUALS'} = 0; $self->parse_tree_hte(@_) },
     tt3      => sub { shift->parse_tree_tt3(@_) },
@@ -72,6 +73,7 @@ our $DIRECTIVES = {
     IF      => [\&parse_IF,      \&play_IF,       1,       1],
     INCLUDE => [\&parse_INCLUDE, \&play_INCLUDE],
     INSERT  => [\&parse_INSERT,  \&play_INSERT],
+    JS      => [sub {},          \&play_JS,       1,       0,       0,        1],
     LAST    => [sub {},          \&play_control],
     LOOP    => [\&parse_LOOP,    \&play_LOOP,     1,       1],
     MACRO   => [\&parse_MACRO,   \&play_MACRO],
