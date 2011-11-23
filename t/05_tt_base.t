@@ -259,6 +259,11 @@ process_ok("[% (a) %]" => '2', {a => 2});
 process_ok("[% ('foo') %]" => 'foo');
 process_ok("[% (a(2)) %]" => '2', {a => sub { $_[0] }});
 
+# make sure JS stub functions don't interfere with existing uses
+process_ok("[% JS 3 %]" => "3");
+process_ok("[% JS 3 %]" => "43", {JS => 4});
+process_ok("[% JS; 3; END %]" => "");
+
 ###----------------------------------------------------------------###
 print "### SET ############################################# $engine_option\n";
 
