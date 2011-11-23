@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3158 : 664) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 3167 : 665) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 use Data::Dumper;
 
@@ -260,8 +260,8 @@ process_ok("[% ('foo') %]" => 'foo');
 process_ok("[% (a(2)) %]" => '2', {a => sub { $_[0] }});
 
 # make sure JS stub functions don't interfere with existing uses
-process_ok("[% JS 3 %]" => "3");
-process_ok("[% JS 3 %]" => "43", {JS => 4});
+process_ok("[% JS 3 %]" => "3") if ! $is_tt;
+process_ok("[% JS 3 %]" => "43", {JS => 4}) if ! $is_tt;
 process_ok("[% JS; 3; END %]" => "");
 
 ###----------------------------------------------------------------###

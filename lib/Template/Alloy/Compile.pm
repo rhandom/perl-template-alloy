@@ -39,6 +39,7 @@ our $DIRECTIVES = {
     IF      => \&compile_IF,
     INCLUDE => \&compile_INCLUDE,
     INSERT  => \&compile_INSERT,
+    JS      => \&compile_JS,
     LAST    => \&compile_LAST,
     LOOP    => \&compile_LOOP,
     MACRO   => \&compile_MACRO,
@@ -424,6 +425,11 @@ sub compile_INSERT {
     _compile_defer_to_play($self, $node, $str_ref, $indent);
 }
 
+sub compile_JS {
+    my ($self, $node, $str_ref, $indent) = @_;
+    _compile_defer_to_play($self, $node, $str_ref, $indent);
+}
+
 sub compile_LAST {
     my ($self, $node, $str_ref, $indent) = @_;
     my $type = $self->{'_in_loop'} || die "Found LAST while not in FOR, FOREACH or WHILE";
@@ -512,7 +518,7 @@ sub compile_META {
     my ($self, $node, $str_ref, $indent) = @_;
     if (my $kp = $node->[3]) {
         $kp = {@$kp} if ref($kp) eq 'ARRAY';
-        while (my($key, $val) = each %{ $node->[3] }) {
+        while (my($key, $val) = each %$kp) {
             s/\'/\\\'/g foreach $key, $val;
             $self->{'_meta'} .= "\n${indent}'$key' => '$val',";
         }
