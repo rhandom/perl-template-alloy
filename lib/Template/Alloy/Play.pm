@@ -385,6 +385,12 @@ sub play_INSERT {
     return;
 }
 
+sub play_JS {
+    my $self = shift;
+    $self->throw('js', 'COMPILE_JS not set while running a JS block') if ! $self->{'COMPILE_JS'};
+    $self->throw('js', 'Cannot run JS directly');
+}
+
 sub play_LOOP {
     my ($self, $ref, $node, $out_ref) = @_;
 
