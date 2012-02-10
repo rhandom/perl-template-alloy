@@ -2,7 +2,7 @@ package Template::Alloy;
 
 ###----------------------------------------------------------------###
 #  See the perldoc in Template/Alloy.pod                             #
-#  Copyright 2007 - 2011 - Paul Seamons                              #
+#  Copyright 2007 - 2012 - Paul Seamons                              #
 #  Distributed under the Perl Artistic License without warranty      #
 ###----------------------------------------------------------------###
 
@@ -15,7 +15,7 @@ use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $ITEM_OPS $ITEM_METH
 
 use vars qw($VERSION);
 BEGIN {
-    $VERSION            = '1.016';
+    $VERSION            = '1.017';
 };
 our $QR_PRIVATE         = qr/^[_.]/;
 our $WHILE_MAX          = 1000;
