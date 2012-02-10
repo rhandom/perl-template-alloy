@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3173 : 668) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 3239 : 668) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 use Data::Dumper;
 
@@ -1303,6 +1303,29 @@ process_ok("[% cctxo.data = 1 %] ~" => "",   {cctxo => $cctxo})   if $is_tt; # T
 process_ok("[% cctxo.bang = 1 %] ~" => " ~", {cctxo => $cctxo});
 process_ok("[% cctxo.dataref.foo = 7; cctxo.dataref.foo %]" => "7", {cctxo => $cctxo});
 if (! $is_tt) {
+    process_ok('[% CALL cctxo.call_me %][% cctxo.last_context %]'    => "list",   {cctxo => $cctxo});
+    process_ok('[% CALL @(cctxo.call_me) %][% cctxo.last_context %]' => "list",   {cctxo => $cctxo});
+    process_ok('[% CALL $(cctxo.call_me) %][% cctxo.last_context %]' => "scalar", {cctxo => $cctxo});
+    process_ok('[% CALL call_cctxo %][% cctxo.last_context %]'    => "list",   {cctxo => $cctxo, call_cctxo => sub { $cctxo->call_me }});
+    process_ok('[% CALL @(call_cctxo) %][% cctxo.last_context %]' => "list",   {cctxo => $cctxo, call_cctxo => sub { $cctxo->call_me }});
+    process_ok('[% CALL $(call_cctxo) %][% cctxo.last_context %]' => "scalar", {cctxo => $cctxo, call_cctxo => sub { $cctxo->call_me }});
+    process_ok('[% CALL cctxo.call_me %][% cctxo.last_context %]' => "list",   {cctxo => $cctxo, tt_config => [CALL_CONTEXT => 'smart']});
+    process_ok('[% CALL cctxo.call_me %][% cctxo.last_context.0 %]' => "list", {cctxo => $cctxo, tt_config => [CALL_CONTEXT => 'list']});
+    process_ok('[% CALL cctxo.call_me %][% cctxo.last_context %]' => "scalar", {cctxo => $cctxo, tt_config => [CALL_CONTEXT => 'item']});
+    process_ok('[% cctxo.array %]'    => qr{^ARRAY},  {cctxo => $cctxo});
+    process_ok('[% @(cctxo.array) %]' => qr{^ARRAY},  {cctxo => $cctxo});
+    process_ok('[% $(cctxo.array) %]' => '3',         {cctxo => $cctxo});
+    process_ok('[% cctxo.array2 %]'    => '4',        {cctxo => $cctxo});
+    process_ok('[% @(cctxo.array2) %]' => qr{^ARRAY}, {cctxo => $cctxo});
+    process_ok('[% $(cctxo.array2) %]' => '1',        {cctxo => $cctxo});
+    process_ok('[% cctxo.list %]'    => qr{^ARRAY},   {cctxo => $cctxo});
+    process_ok('[% @(cctxo.list) %]' => qr{^ARRAY},   {cctxo => $cctxo});
+    process_ok('[% $(cctxo.list) %]' => '7',          {cctxo => $cctxo});
+    process_ok('[% cctxo.scalar %]'    => '8',        {cctxo => $cctxo});
+    process_ok('[% @(cctxo.scalar) %]' => qr{^ARRAY}, {cctxo => $cctxo});
+    process_ok('[% $(cctxo.scalar) %]' => '8',        {cctxo => $cctxo});
+    process_ok('[% cctxo.bang   %] ~'    => 'bing ~', {cctxo => $cctxo});
+
     $cctx->{'clear'}->();
     process_ok('[% SET cctxo.call_me    = 2 %][% cctxo.last_context %]' => "list2", {cctxo => $cctxo});
     $cctx->{'clear'}->();
