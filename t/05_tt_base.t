@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3173 : 667) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 3173 : 668) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 use Data::Dumper;
 
@@ -111,20 +111,33 @@ local $INC{'FooTest2.pm'} = $0;
     sub leave {}      # hacks to allow tt to do the plugins passed via PLUGINS
     sub delocalise {} # hacks to allow tt to do the plugins passed via PLUGINS
 }
+
+my $cctx_last;
+my $cctx_data = {};;
+my $cctx = {
+    last_context => sub { $cctx_last || '' },
+    call_me => sub { $cctx_last = (wantarray ? 'list' : defined(wantarray) ? 'scalar' : 'void').(shift || '') },
+    array   => sub { return my @a = (1, 2, 3) },
+    array2  => sub { return my @a = (4) },
+    list    => sub { return (5, 6, 7) },
+    scalar  => sub { return 8 },
+    dataref => sub { return $cctx_data },
+    clear   => sub { $cctx_last = undef; $cctx_data = {} },
+};
 {
     package CallContext;
-    sub new { my $class = shift; my $args = shift || {}; bless $args, $class }
-    sub last_context { shift->{'last_context'} || '' }
-    sub call_me { my $self = shift; $self->{'last_context'} = (wantarray ? 'list' : defined(wantarray) ? 'scalar' : 'void').(shift || '') }
-    sub array   { return my @a = (1, 2, 3) }
-    sub array2  { return my @a = (4) }
-    sub list    { return (5, 6, 7) }
-    sub scalar  { return 8 }
-    sub dataref { return shift->{'data'} ||= {} }
+    our $AUTOLOAD;
+    sub AUTOLOAD {
+        my $self = shift;
+        my $meth = ($AUTOLOAD =~ /::(\w+)$/) ? $1 : die "Invalid method";
+        return $cctx->{$meth}->(@_) if ref($cctx->{$meth}) eq 'CODE';
+        return $cctx->{$meth} if $cctx->{$meth};
+        die "Invalid method $AUTOLOAD\n" if $meth ne 'DESTROY';
+    }
 }
+my $cctxo = bless {}, 'CallContext';
 
 my $obj  = FooTest2->new;
-my $cctx = CallContext->new;
 my $vars;
 my $stash = {foo => 'Stash', bingo => 'bango'};
 $stash = Template::Stash->new($stash) if eval{require Template::Stash};
@@ -1246,49 +1259,35 @@ process_ok("[% cctx.scalar %]" => "8",        {cctx => $cctx});
 process_ok("[% cctx.bang   %]" => "bing",     {cctx => $cctx});
 
 if (! $is_tt) {
-    delete $cctx->{'last_context'};
+    $cctx->{'clear'}->();
     process_ok('[% CALL cctx.call_me %][% cctx.last_context %]'    => "list",   {cctx => $cctx});
     process_ok('[% CALL @(cctx.call_me) %][% cctx.last_context %]' => "list",   {cctx => $cctx});
     process_ok('[% CALL $(cctx.call_me) %][% cctx.last_context %]' => "scalar", {cctx => $cctx});
-    process_ok('[% CALL call_cctx %][% cctx.last_context %]'    => "list",   {cctx => $cctx, call_cctx => sub { $cctx->call_me }});
-    process_ok('[% CALL @(call_cctx) %][% cctx.last_context %]' => "list",   {cctx => $cctx, call_cctx => sub { $cctx->call_me }});
-    process_ok('[% CALL $(call_cctx) %][% cctx.last_context %]' => "scalar", {cctx => $cctx, call_cctx => sub { $cctx->call_me }});
+    process_ok('[% CALL call_cctx %][% cctx.last_context %]'    => "list",   {cctx => $cctx, call_cctx => sub { $cctx->{'call_me'}->() }});
+    process_ok('[% CALL @(call_cctx) %][% cctx.last_context %]' => "list",   {cctx => $cctx, call_cctx => sub { $cctx->{'call_me'}->() }});
+    process_ok('[% CALL $(call_cctx) %][% cctx.last_context %]' => "scalar", {cctx => $cctx, call_cctx => sub { $cctx->{'call_me'}->() }});
     process_ok('[% CALL cctx.call_me %][% cctx.last_context %]' => "list",   {cctx => $cctx, tt_config => [CALL_CONTEXT => 'smart']});
-    process_ok('[% CALL cctx.call_me %][% cctx.last_context.0 %]' => "list",   {cctx => $cctx, tt_config => [CALL_CONTEXT => 'list']});
+    process_ok('[% CALL cctx.call_me %][% cctx.last_context.0 %]' => "list", {cctx => $cctx, tt_config => [CALL_CONTEXT => 'list']});
     process_ok('[% CALL cctx.call_me %][% cctx.last_context %]' => "scalar", {cctx => $cctx, tt_config => [CALL_CONTEXT => 'item']});
-    process_ok('[% cctx.array %]'    => qr{^ARRAY}, {cctx => $cctx});
-    process_ok('[% @(cctx.array) %]' => qr{^ARRAY}, {cctx => $cctx});
-    process_ok('[% $(cctx.array) %]' => '3',        {cctx => $cctx});
+    process_ok('[% cctx.array %]'    => qr{^ARRAY},  {cctx => $cctx});
+    process_ok('[% @(cctx.array) %]' => qr{^ARRAY},  {cctx => $cctx});
+    process_ok('[% $(cctx.array) %]' => '3',         {cctx => $cctx});
     process_ok('[% cctx.array2 %]'    => '4',        {cctx => $cctx});
     process_ok('[% @(cctx.array2) %]' => qr{^ARRAY}, {cctx => $cctx});
     process_ok('[% $(cctx.array2) %]' => '1',        {cctx => $cctx});
-    process_ok('[% cctx.list %]'    => qr{^ARRAY}, {cctx => $cctx});
-    process_ok('[% @(cctx.list) %]' => qr{^ARRAY}, {cctx => $cctx});
-    process_ok('[% $(cctx.list) %]' => '7',        {cctx => $cctx});
+    process_ok('[% cctx.list %]'    => qr{^ARRAY},   {cctx => $cctx});
+    process_ok('[% @(cctx.list) %]' => qr{^ARRAY},   {cctx => $cctx});
+    process_ok('[% $(cctx.list) %]' => '7',          {cctx => $cctx});
     process_ok('[% cctx.scalar %]'    => '8',        {cctx => $cctx});
     process_ok('[% @(cctx.scalar) %]' => qr{^ARRAY}, {cctx => $cctx});
     process_ok('[% $(cctx.scalar) %]' => '8',        {cctx => $cctx});
-    process_ok('[% cctx.bang   %] ~'    => 'bing ~',     {cctx => $cctx});
-    process_ok('[% @(cctx.bang)   %] ~' => '',     {cctx => $cctx});
-    process_ok('[% $(cctx.bang)   %] ~' => '',     {cctx => $cctx});
-}
-
-delete $cctx->{'bang'};
-#process_ok("[% cctx.data = 1 %] ~" => "",   {cctx => $cctx})   if $is_tt; # TT lets you read but not write - weird
-process_ok("[% cctx.bang = 1 %] ~" => " ~", {cctx => $cctx});
-delete $cctx->{'data'};
-process_ok("[% cctx.dataref.foo = 7; cctx.dataref.foo %]" => "7", {cctx => $cctx});
-
-if (! $is_tt) {
-    process_ok('[% SET cctx.call_me    = 2 %][% cctx.last_context %]' => "list2", {cctx => $cctx});
-    delete $cctx->{'last_context'};
-    process_ok('[% CALL @(cctx.call_me = 3) %][% cctx.last_context %]' => "list3", {cctx => $cctx});
-    delete $cctx->{'last_context'};
-    process_ok('[% CALL $(cctx.call_me = 4) %][% cctx.last_context %]' => "scalar4", {cctx => $cctx});
-    delete $cctx->{'last_context'};
-    process_ok('[% CONFIG CALL_CONTEXT => "list"; SET cctx.call_me = 3; CONFIG CALL_CONTEXT => "smart" %][% cctx.last_context %]' => "list3", {cctx => $cctx});
-    delete $cctx->{'last_context'};
-    process_ok('[% CONFIG CALL_CONTEXT => "item"; SET cctx.call_me = 4 %][% cctx.last_context %]' => "scalar4", {cctx => $cctx});
+    process_ok('[% cctx.bang   %] ~'    => 'bing ~', {cctx => $cctx});
+    process_ok('[% @(cctx.bang)   %] ~' => 'bing ~', {cctx => $cctx});
+    process_ok('[% $(cctx.bang)   %] ~' => 'bing ~', {cctx => $cctx});
+    $cctx->{'clear'}->();
+    process_ok('[% CONFIG CALL_CONTEXT => "list"; CALL cctx.call_me; CONFIG CALL_CONTEXT => "smart" %][% cctx.last_context %]' => "list", {cctx => $cctx});
+    $cctx->{'clear'}->();
+    process_ok('[% CONFIG CALL_CONTEXT => "item"; CALL cctx.call_me %][% cctx.last_context %]' => "scalar", {cctx => $cctx});
     delete $cctx->{'data'};
     process_ok('[% cctx.dataref.0.foo = 7; cctx.dataref.0.foo %]' => "7", {cctx => $cctx});
     delete $cctx->{'data'};
@@ -1297,6 +1296,19 @@ if (! $is_tt) {
     process_ok('[% $(cctx.dataref).0.foo = 7; cctx.dataref.0.foo %]'=> "7", {cctx => $cctx});
     delete $cctx->{'data'};
     process_ok('[% CONFIG CALL_CONTEXT => "list"; cctx.dataref.0.foo = 7; CONFIG CALL_CONTEXT => "item"; cctx.dataref.foo %]'=> "7", {cctx => $cctx});
+}
+
+# call context with methods
+process_ok("[% cctxo.data = 1 %] ~" => "",   {cctxo => $cctxo})   if $is_tt; # TT lets you read but not write - weird
+process_ok("[% cctxo.bang = 1 %] ~" => " ~", {cctxo => $cctxo});
+process_ok("[% cctxo.dataref.foo = 7; cctxo.dataref.foo %]" => "7", {cctxo => $cctxo});
+if (! $is_tt) {
+    $cctx->{'clear'}->();
+    process_ok('[% SET cctxo.call_me    = 2 %][% cctxo.last_context %]' => "list2", {cctxo => $cctxo});
+    $cctx->{'clear'}->();
+    process_ok('[% CALL @(cctxo.call_me = 3) %][% cctxo.last_context %]' => "list3", {cctxo => $cctxo});
+    $cctx->{'clear'}->();
+    process_ok('[% CALL $(cctxo.call_me = 4) %][% cctxo.last_context %]' => "scalar4", {cctxo => $cctxo});
 }
 
 ###----------------------------------------------------------------###
