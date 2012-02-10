@@ -18,7 +18,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3167 : 665) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 3173 : 667) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
 use constant test_taint => 0 && eval { require Taint::Runtime };
 use Data::Dumper;
 
@@ -383,6 +383,7 @@ process_ok("[% n.cos.substr(0,5) %]" => "0.707", {n => atan2(1,1)}) if ! $is_tt;
 process_ok("[% n.defined %]" => "1", {n => ''});
 process_ok("[% n.defined %]" => "", {n => undef});
 process_ok("[% n.defined %]" => "1", {n => '1'});
+process_ok("[% n.dquote %]" => "(\\n|\\\\|\\\")", {n => "(\n|\\|\")"});
 process_ok("[% n.exp.substr(0,5) %]" => "2.718", {n => 1}) if ! $is_tt;
 process_ok("[% n.exp.log.substr(0,5) %]" => "8", {n => 8}) if ! $is_tt;
 process_ok("[% n.fmt %]" => '7', {n => 7}) if ! $is_tt;
@@ -444,6 +445,7 @@ process_ok("[% n.split('/', 2).join('|') %]" => "a|b/c", {n => "a/b/c"});
 process_ok("[% n.sprintf(7) %]" => '7', {n => '%d'}) if ! $is_tt;
 process_ok("[% n.sprintf(3, 7, 12) %]" => '007 12', {n => '%0*d %d'}) if ! $is_tt;
 process_ok("[% n.sqrt %]" => "3", {n => 9}) if ! $is_tt;
+process_ok("[% n.squote %]" => "(\n|\\\\|\\\')", {n => "(\n|\\|\')"});
 process_ok("[% n.srand; 12 %]" => "12", {n => 9}) if ! $is_tt;
 process_ok("[% n.stderr %]" => "", {n => "# testing stderr ... ok\r"});
 process_ok("[% n|trim %]" => "a  b", {n => '  a  b  '}); # TT2 filter
