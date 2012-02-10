@@ -1,3 +1,9 @@
+1.017
+      2012-02-10
+        * Add necessary hooks to allow for COMPILE_JS
+        * Test suite cleanup
+        * Add missing squote and dquote item vmethods
+
 1.016
       2011-01-26
         * Add AUTO_FILTER configuration item to TT and HTE flavors.
