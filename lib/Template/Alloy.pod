@@ -143,7 +143,7 @@ using different syntaxes and interfaces.
 
 More recently, the Template::Alloy::JS capabilities were introduced
 to bring javascript templates to the server side (along with an increase
-in speed).
+in speed if ran in persistent environments).
 
 Template::Toolkit brought the most to the table.  HTML::Template
 brought the LOOP directive.  HTML::Template::Expr brough more vmethods
