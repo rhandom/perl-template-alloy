@@ -7,7 +7,7 @@
 =cut
 
 use 5.006;
-use vars qw($module $is_tt $compile_perl $use_stream $five_six);
+use vars qw($module $is_tt $compile_perl $use_stream $five_six $has_tt_filter);
 BEGIN {
     $module = 'Template::Alloy';
     if ($ENV{'USE_TT'} || grep {/tt/i} @ARGV) {
@@ -15,10 +15,11 @@ BEGIN {
     }
     $is_tt = $module eq 'Template';
     $five_six = ($^V < 5.007) ? 1 : 0;
+    $has_tt_filter = !eval { require Template::Filters } ? 0 : $is_tt ? 1 : 3;
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3242 : 668) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2)));
+use Test::More tests => (! $is_tt ? 3242 : 668) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2))) + $has_tt_filter;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 use Data::Dumper;
 
@@ -409,6 +410,7 @@ process_ok("[% n|format('(%s)') %]" => "(a)\n(b)", {n => "a\nb"}); # TT2 filter
 process_ok("[% n.hash.items.1 %]" => "b", {n => {a => "b"}});
 process_ok("[% n.hex %]" => "255", {n => "FF"}) if ! $is_tt;
 process_ok("[% n|html %]" => "&amp;&lt;&gt;&quot;'", {n => '&<>"\''}); # TT2 filter
+process_ok("[% n|html_entity %]" => "&amp;", {n => '&'}) if $has_tt_filter; # TT2 native filter
 process_ok("[% n|xml %]"  => "&amp;&lt;&gt;&quot;&apos;", {n => '&<>"\''}); # TT2 filter
 process_ok("[% n|indent %]" => "    a\n    b", {n => "a\nb"}); # TT2 filter
 process_ok("[% n|indent(2) %]" => "  a\n  b", {n => "a\nb"}); # TT2 filter
