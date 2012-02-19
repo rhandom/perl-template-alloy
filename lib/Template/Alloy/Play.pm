@@ -803,7 +803,7 @@ sub play_TRY {
 sub play_UNLESS { return $DIRECTIVES->{'IF'}->(@_) }
 
 sub play_USE {
-    my ($self, $ref, $node, $out_ref) = @_;
+    my ($self, $ref, $node, $out_ref, $foreign) = @_; # foreign allows for usage from JS
     my ($var, $module, $args) = @$ref;
 
     ### get the stash storage location - default to the module
@@ -818,18 +818,18 @@ sub play_USE {
     my $obj;
     if (my $fact = $self->{'PLUGIN_FACTORY'}->{$module} || $self->{'PLUGIN_FACTORY'}->{lc $module}) {
         if (UNIVERSAL::isa($fact, 'CODE')) {
-            $obj = $fact->($self->context, map { $self->play_expr($_) } @args);
+            $obj = $fact->($self->context, $foreign ? @$foreign : map { $self->play_expr($_) } @args);
         }
 
     } elsif (my $pkg = $self->{'PLUGINS'}->{$module} || $self->{'PLUGINS'}->{lc $module}) {
         (my $req = "$pkg.pm") =~ s|::|/|g;
         if (UNIVERSAL::isa($pkg, 'UNIVERSAL') || eval { require $req }) {
             my $shape = $pkg->load;
-            $obj = $shape->new($self->context, map { $self->play_expr($_) } @args);
+            $obj = $shape->new($self->context, $foreign ? @$foreign : map { $self->play_expr($_) } @args);
         }
 
     } elsif (lc($module) eq 'iterator') { # use our iterator if none found (TT's works fine too)
-        $obj = $self->iterator($args[0]);
+        $obj = $self->iterator($foreign ? @$foreign : map { $self->play_expr($_) } @args);
 
     } else {
         my $found;
@@ -843,7 +843,7 @@ sub play_USE {
                     $found = 1;
                     if (eval { require $req }) {
                         my $shape = $pkg->load;
-                        $obj = $shape->new($self->context, map { $self->play_expr($_) } @args);
+                        $obj = $shape->new($self->context, $foreign ? @$foreign : map { $self->play_expr($_) } @args);
                     }
                     last;
                 }
@@ -854,7 +854,7 @@ sub play_USE {
             (my $req = "$pkg.pm") =~ s|::|/|g;
             if (UNIVERSAL::isa($pkg, 'UNIVERSAL') || eval { require $req }) {
                 my $shape = $pkg->load;
-                $obj = $shape->new($self->context, map { $self->play_expr($_) } @args);
+                $obj = $shape->new($self->context, $foreign ? @$foreign : map { $self->play_expr($_) } @args);
                 $found = 1;
                 last;
             }
@@ -863,7 +863,7 @@ sub play_USE {
         if (! $found && $self->{'LOAD_PERL'}) {
             (my $req = "$module.pm") =~ s|::|/|g;
             if (UNIVERSAL::isa($module, 'UNIVERSAL') || eval { require $req }) {
-                $obj = $module->new(map { $self->play_expr($_) } @args);
+                $obj = $module->new($foreign ? @$foreign : map { $self->play_expr($_) } @args);
             }
         }
     }
@@ -873,6 +873,7 @@ sub play_USE {
         $self->throw('plugin', $err);
     }
 
+    return $obj if $foreign;
     $self->set_variable(\@var, $obj);
 
     return;
