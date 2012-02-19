@@ -19,7 +19,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3248 : 670) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2))) + $has_tt_filter;
+use Test::More tests => (! $is_tt ? 3254 : 672) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2))) + $has_tt_filter;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 use Data::Dumper;
 
@@ -854,7 +854,7 @@ process_ok("[% 'foobar'.match(/(f\\w\\w)/).0 %]" => 'foo');
 }
 
 ###----------------------------------------------------------------###
-print "### BLOCK / PROCESS / INCLUDE######################## $engine_option\n";
+print "### BLOCK / PROCESS / INCLUDE / WRAPPER ############# $engine_option\n";
 
 process_ok("[% PROCESS foo %]one" => '');
 process_ok("[% BLOCK foo %]one" => '');
@@ -885,6 +885,9 @@ process_ok("[% BLOCK foo %]hi [% one %] there[% END %][% INCLUDE foo one = 'two'
 process_ok("[% BLOCK foo %]FOO[% IF ! a ; a = 1; PROCESS bar; END %][% END %][% BLOCK bar %]BAR[% PROCESS foo %][% END %][% PROCESS foo %]" => "") if ! $is_tt && ! $use_stream;
 process_ok("[% BLOCK foo %]FOO[% IF ! a ; a = 1; PROCESS bar; END %][% END %][% BLOCK bar %]BAR[% PROCESS foo %][% END %][% PROCESS foo %]d" => "FOOBAR") if $use_stream;
 process_ok("[% BLOCK foo %]FOO[% IF ! a ; a = 1; PROCESS bar; END %][% END %][% BLOCK bar %]BAR[% PROCESS foo %][% END %][% PROCESS foo %]" => "FOOBARFOO", {tt_config => [RECURSION => 1]});
+
+process_ok("[% BLOCK foo %]([% content %])[% END %][% WRAPPER foo %]hi there[% END %]" => "(hi there)");
+process_ok("[% BLOCK foo %]([% one = 1; content %])[% END %][% WRAPPER foo %]hi there[% END %][% one %]" => "(hi there)won", {one => 'won'});
 
 process_ok('[% a = 23; PROCESS $foo %]' => 'bar 23 baz', {foo => \ "bar [% a %] baz"});
 
