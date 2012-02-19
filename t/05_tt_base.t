@@ -19,7 +19,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3245 : 669) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2))) + $has_tt_filter;
+use Test::More tests => (! $is_tt ? 3248 : 670) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2))) + $has_tt_filter;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 use Data::Dumper;
 
@@ -1177,6 +1177,7 @@ process_ok("[% USE FooTest2(bar = 'baz') %]one[% FooTest2.bar %]" => 'onebarbaz'
 process_ok("[% USE FooTest(bar = 'baz') %]one[% FooTest.bar %]" => 'onebarbaz', {tt_config => \@config_p});
 process_ok("[% USE d = FooTest(bar = 'baz') %]one[% d.bar %]" => 'onebarbaz', {tt_config => \@config_p});
 process_ok("[% USE d.d = FooTest(bar = 'baz') %]one[% d.d.bar %]" => '', {tt_config => \@config_p});
+process_ok("[% USE FooTest(somerand = 8) %]one[% FooTest.somerand %]" => 'one8', {tt_config => \@config_p});
 
 process_ok("[% USE a(bar = 'baz') %]one[% a.seven %]" => '',     {tt_config => [@config_p, PLUGINS => {a=>'FooTest'}, ]});
 process_ok("[% USE a(bar = 'baz') %]one[% a.seven %]" => 'one7', {tt_config => [@config_p, PLUGINS => {a=>'FooTest2'},]});
