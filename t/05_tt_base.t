@@ -19,7 +19,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3242 : 668) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2))) + $has_tt_filter;
+use Test::More tests => (! $is_tt ? 3245 : 669) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2))) + $has_tt_filter;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 use Data::Dumper;
 
@@ -1169,6 +1169,7 @@ print "### USE ############################################# $engine_option\n";
 
 my @config_p = (PLUGIN_BASE => 'MyTestPlugin', LOAD_PERL => 1);
 process_ok("[% USE son_of_gun_that_does_not_exist %]one" => '', {tt_config => \@config_p});
+process_ok("[% USE Iterator([3..6]) %]hey[% CALL Iterator.get_first; Iterator.size %]" => "hey4");
 process_ok("[% USE FooTest %]one" => 'one', {tt_config => \@config_p});
 process_ok("[% USE FooTest2 %]one" => 'one', {tt_config => \@config_p});
 process_ok("[% USE FooTest(bar = 'baz') %]one[% FooTest.bar %]" => 'onebarbaz', {tt_config => \@config_p});
