@@ -3,6 +3,7 @@
         * Add necessary hooks to allow for COMPILE_JS
         * Test suite cleanup
         * Add missing squote and dquote item vmethods
+        * Fix bug in internal iterator
 
 1.016
       2011-01-26
