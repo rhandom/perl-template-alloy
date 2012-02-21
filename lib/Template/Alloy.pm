@@ -168,10 +168,10 @@ sub _process {
         if ($self->{'STREAM'}) {
             $self->throw('process', 'No _tree found') if ! $doc->{'_tree'};
             $self->stream_tree($doc->{'_tree'});
+        } elsif ($self->{'COMPILE_JS'}) {
+            $self->play_js($doc, $out_ref);
         } elsif ($doc->{'_perl'}) {
             $doc->{'_perl'}->{'code'}->($self, $out_ref);
-        } elsif ($doc->{'_js'}) {
-            $self->play_js($doc->{'_js'}, $out_ref);
         } elsif ($doc->{'_tree'}) {
             $self->play_tree($doc->{'_tree'}, $out_ref);
         } else {
