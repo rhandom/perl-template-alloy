@@ -40,7 +40,7 @@ our $AUTOROLE = {
     Parse    => [qw(parse_tree parse_expr apply_precedence parse_args dump_parse_tree dump_parse_expr define_directive define_syntax)],
     Play     => [qw(play_tree _macro_sub)],
     Stream   => [qw(stream_tree)],
-    JS       => [qw(load_js compile_template_js compile_tree_js compile_expr_js js_context process_js parse_tree_js process_jsr parse_tree_jsr)],
+    JS       => [qw(load_js compile_template_js compile_tree_js play_js js_context process_js parse_tree_js process_jsr parse_tree_jsr)],
     TT       => [qw(parse_tree_tt3 process)],
     Tmpl     => [qw(parse_tree_tmpl set_delimiters set_strip set_value set_values parse_string set_dir parse_file loop_iteration fetch_loop_iteration)],
     Velocity => [qw(parse_tree_velocity merge)],
@@ -171,7 +171,7 @@ sub _process {
         } elsif ($doc->{'_perl'}) {
             $doc->{'_perl'}->{'code'}->($self, $out_ref);
         } elsif ($doc->{'_js'}) {
-            $doc->{'_js'}->{'code'}->($self, $out_ref);
+            $self->play_js($doc->{'_js'}, $out_ref);
         } elsif ($doc->{'_tree'}) {
             $self->play_tree($doc->{'_tree'}, $out_ref);
         } else {
