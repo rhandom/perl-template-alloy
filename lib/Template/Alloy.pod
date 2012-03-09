@@ -92,9 +92,9 @@ Template::Alloy - TT2/3, HT, HTE, Tmpl, and Velocity Engine
     my $str = "#set($foo 1 + 3) ($foo) ($bar) ($!baz)";
     my $out = $t->merge(\$str, $swap);
 
-=head2 JavaScript style usage (requires Template::Alloy::JS)
+=head2 Javascript style usage (requires Template::Alloy::JS)
 
-    my $t = Template::Alloy->new(COMPILE_JS => 1);
+    my $t = Template::Alloy->new;
 
     my $swap = {
         key1 => 'val1',
@@ -106,7 +106,7 @@ Template::Alloy - TT2/3, HT, HTE, Tmpl, and Velocity Engine
     my $out = '';
     $t->process_js('my/template.jstem', $swap, \$out);
 
-    my $str = "[% vars.foo = 1 + 3; write('(' + vars.foo + ') (' + vars.key1 + ')'); %]";
+    my $str = "[% var foo = 1 + 3; write('(' + foo + ') (' + get('key1') + ')'); %]";
     my $out = '';
     $t->process_js(\$str, $swap, \$out);
 
@@ -142,7 +142,7 @@ were added.  All of the various engines offer the same features - just
 using different syntaxes and interfaces.
 
 More recently, the Template::Alloy::JS capabilities were introduced
-to bring javascript templates to the server side (along with an increase
+to bring Javascript templates to the server side (along with an increase
 in speed if ran in persistent environments).
 
 Template::Toolkit brought the most to the table.  HTML::Template
@@ -1330,8 +1330,8 @@ Allow eval'ing the block of text as javascript.  The block will be parsed and th
 
     [% a = "BimBam" %]
     [%~ JS %]
-        write('The variable a was "' + vars.a + '"');
-        vars.b = "FooBar";
+        write('The variable a was "' + get('a') + '"');
+        set('b', "FooBar");
     [% END %]
     [% b %]
 
@@ -2175,7 +2175,7 @@ set, the compiled perl code will also be stored.
 Default false.
 
 Requires installation of Template::Alloy::JS.  When enabled, the parsed
-templates will be translated into JavaScript and executed using the
+templates will be translated into Javascript and executed using the
 V8 javascript engine.  If compile_dir is also set, this compiled javascript
 will be cached to disk.
 
@@ -2186,7 +2186,7 @@ you are running in a cached environment, this will speed up your templates.
 Certain limitations exist when COMPILE_JS is set, most notably the USE
 and VIEW directives are not supported, and method calls on objects
 passed to the template do not work (code refs passed in do work
-however).  These limitations are do to the nature of JavaScript::V8
+however).  These limitations are due to the nature of JavaScript::V8
 bind and Perl/JavaScript OO differences.
 
 =item COMPILE_PERL
