@@ -312,7 +312,7 @@ sub load_template {
     if (! $doc->{'_no_perl'} && $self->{'COMPILE_PERL'} && ($self->{'COMPILE_PERL'} ne '2' || $self->{'_tree'})) {
         $doc->{'_perl'} = $self->load_perl($doc);
     } elsif ($self->{'COMPILE_JS'}) {
-        $doc->{'_js'} = $self->load_js($doc);
+        $self->load_js($doc);
     } else {
         $doc->{'_tree'} = $self->load_tree($doc);
     }
