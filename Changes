@@ -1,6 +1,6 @@
 1.017
       2012-02-10
-        * Add necessary hooks to allow for COMPILE_JS
+        * Add necessary hooks to allow for COMPILE_JS (See Template::Alloy::JS)
         * Test suite cleanup
         * Add missing squote and dquote item vmethods
         * Fix bug in internal iterator
