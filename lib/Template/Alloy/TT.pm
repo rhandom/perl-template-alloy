@@ -429,7 +429,7 @@ sub process {
             ### found error handler - try it out
             if (defined $file) {
                 $output = '';
-                local $copy->{'error'} = local $copy->{'e'} = $err;
+                local $copy->{'error'} = local $copy->{'e'} = $self->{'COMPILE_JS'} ? {type => $type, info => $err->info} : $err;
                 local $self->{'STREAM'} = undef if $self->{'WRAPPER'};
                 $self->_process($file, $copy, \$output);
             }
