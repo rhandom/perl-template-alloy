@@ -343,7 +343,13 @@ sub load_template {
 sub string_id {
     my ($self, $ref) = @_;
     require Digest::MD5;
-    my $sum   = Digest::MD5::md5_hex($$ref);
+    my $str = ref($self)
+        && $self->{'ENCODING'} # ENCODING is defined
+        && eval { require Encode } # Encode.pm is available
+        && defined &Encode::encode
+        ? Encode::encode($self->{'ENCODING'}, $$ref)
+        : $$ref;
+    my $sum = Digest::MD5::md5_hex($str);
     return 'Alloy_str_ref_cache/'.substr($sum,0,3).'/'.$sum;
 }
 
