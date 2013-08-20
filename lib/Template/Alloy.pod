@@ -1324,7 +1324,7 @@ or commas (TT2 doesn't support the comma).
 =item C<JS>
 
 Only available if the COMPILE_JS configuration item is true (default is false).
-This requires the Template::Alloy::JS module to be installed.
+This requires the L<Template::Alloy::JS> module to be installed.
 
 Allow eval'ing the block of text as javascript.  The block will be parsed and then eval'ed.
 
@@ -2174,7 +2174,7 @@ set, the compiled perl code will also be stored.
 
 Default false.
 
-Requires installation of Template::Alloy::JS.  When enabled, the parsed
+Requires installation of L<Template::Alloy::JS>.  When enabled, the parsed
 templates will be translated into Javascript and executed using the
 V8 javascript engine.  If compile_dir is also set, this compiled javascript
 will be cached to disk.
