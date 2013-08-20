@@ -856,6 +856,8 @@ Note: virtual methods can only be used on hash contructs in Alloy, not in TT.
 
 Note: this works in Alloy and is planned for TT3.
 
+=back
+
 =head1 VIRTUAL METHODS
 
 Virtual methods (vmethods) are a TT feature that allow for operating on the
@@ -1987,6 +1989,8 @@ Remove all adjacent whitespace.  The "~" is used to indicate CHOMP_GREEDY.
 Would print:
 
     Hello.Hi.Howdy.
+
+=back
 
 =head1 CONFIGURATION
 
