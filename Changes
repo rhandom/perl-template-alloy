@@ -1,3 +1,8 @@
+1.018
+      2013-08-20
+        * Final prep for release
+        * RT #76570 - bugfix provided by onken@netcubed.de to fix encoding error or scalar ref templates.
+
 1.017
       2012-02-10
         * Add necessary hooks to allow for COMPILE_JS (See Template::Alloy::JS)

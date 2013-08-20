@@ -13,7 +13,7 @@ BEGIN {
         $has_encode = 1;
     }
 
-    $n_tests = 192;
+    $n_tests = 193;
     $n_tests += 12 if $has_encode;
 };
 
@@ -79,11 +79,11 @@ sub process_ok { # process the value and say if it was ok
 sub pristine {
     my $contents = shift || "[% blue %]BAR";
     my $encoding = shift;
-    
+
     if ($encoding) {
         $contents = Encode::encode( $encoding, $contents );
     }
-    
+
     $Template::Alloy::GLOBAL_CACHE = {};
     flush_dir($test_dir);
     flush_dir($test_dir2);
@@ -262,6 +262,12 @@ if ($has_encode) {
                );
 
     process_ok($name => $out, {blue => $in, tt_config => [ENCODING => $encoding, COMPILE_EXT => '.ttc']});
+
+    my $tt = $module->new(ENCODING => 'UTF8');
+    my $template = "\x{200b}";
+    my $fail;
+    $tt->process(\$template, {}, \my $out) or $fail = $@;
+    ok(!$fail, 'lives ok') || diag $fail;
 }
 
 ###----------------------------------------------------------------###
