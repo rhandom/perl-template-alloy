@@ -75,9 +75,9 @@ $o->{'BLOCKS'} = {
     nok2 => '[% 3',
     bad  => [],
 };
-ok($o->load_template('foo')->{'name'} eq 'foo', "Can load a string block");
-ok($o->load_template('code')->{'name'} eq 'code', "Can load a code block");
-ok($o->load_template('ok')->{'name'} eq 'ok', "Can load a previously loaded template");
+is($o->load_template('foo')->{'name'}, 'foo', "Can load a string block");
+is($o->load_template('code')->{'name'}, 'code', "Can load a code block");
+is($o->load_template('ok')->{'name'}, 'ok', "Can load a previously loaded template");
 ok(! eval { $o->load_template('nok') }  && $@, "Can't load a poorly formed block");
 ok(! eval { $o->load_template('nok2') } && $@, "Can't load a string block with parse errors");
 ok(! eval { $o->load_template('bad') }  && $@, "Can't load a ref block");
