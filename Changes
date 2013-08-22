@@ -3,8 +3,10 @@
         * Final prep for release (1.017 never saw cpan)
         * RT #76570 - bugfix provided by onken@netcubed.de to fix encoding error or scalar ref templates.
         * RT #79641 - copy buggy behavior of Template::Toolkit in that we now allow for [% # comment %] all on one line (we previously supported [%# comment %])
+        * RT #69966 - allow for node_info to be a little safer, allow DUMP to also be more safe, allow block _filename to get passed along
         * Add real json methods
         * Fix warning when calling .html on undefined
+        * Fix bug in HTE with ASSOCIATE pointed out by David Warring
 
 1.017
       2012-02-10
