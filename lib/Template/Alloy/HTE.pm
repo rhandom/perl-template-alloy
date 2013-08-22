@@ -420,7 +420,7 @@ sub output {
 
     my $param = $self->{'_vars'} || {};
     if (my $ref = $self->{'ASSOCIATE'}) {
-        foreach my $obj (ref($ref) eq 'ARRAY' ? $ref : @$ref) {
+        foreach my $obj (ref($ref) eq 'ARRAY' ? @$ref : $ref) {
             foreach my $key ($obj->param) {
                 $self->{'_vars'}->{$self->{'CASE_SENSITIVE'} ? $key : lc($key)} = $obj->param($key);
             }
