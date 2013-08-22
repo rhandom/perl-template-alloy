@@ -11,8 +11,9 @@ use warnings;
 
 use Template::Alloy;
 use Template::Alloy::Operator qw($QR_OP_ASSIGN);
-
 our $VERSION = $Template::Alloy::VERSION;
+our $QR_COMMENTS;
+our $QR_CX = ($^V < 5.009) ? '' : '+\s*'; # perl 5.10 allows possessive
 
 sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
@@ -31,7 +32,8 @@ sub parse_tree_tt3 {
     local $self->{'START_TAG'}  = $self->{'START_TAG'} || $Template::Alloy::Parse::TAGS->{$STYLE}->[0];
     local $self->{'_start_tag'} = (! $self->{'INTERPOLATE'}) ? $self->{'START_TAG'} : qr{(?: $self->{'START_TAG'} | (\$))}sx;
 
-    our $QR_COMMENTS ||= $Template::Alloy::Parse::QR_COMMENTS; # must be our because we localise later on
+    local $QR_COMMENTS = local $Template::Alloy::Parse::QR_COMMENTS = "(?sm: \\s* \\# .*? (?: \$ | (?=$self->{'_end_tag'}) ) )*$QR_CX"
+        if ! $QR_COMMENTS;
     my $dirs    = $Template::Alloy::Parse::DIRECTIVES;
     my $aliases = $Template::Alloy::Parse::ALIASES;
     local @{ $dirs }{ keys %$aliases } = values %$aliases; # temporarily add to the table
@@ -95,11 +97,11 @@ sub parse_tree_tt3 {
                 if ($$str_ref =~ m{ \G \{ }gcx) {
                     local $self->{'_operator_precedence'} = 0; # allow operators
                     $ref = $self->parse_expr($str_ref);
-                    $$str_ref =~ m{ \G \s* $QR_COMMENTS \} }gcxo
+                    $$str_ref =~ m{ \G \s* $QR_COMMENTS \} }gcx
                         || $self->throw('parse', 'Missing close }', undef, pos($$str_ref));
                 } else {
                     local $self->{'_operator_precedence'} = 1; # no operators
-                    local $QR_COMMENTS = qr{};
+                    local $QR_COMMENTS = local $Template::Alloy::Parse::QR_COMMENTS = qr{};
                     $ref = $self->parse_expr($str_ref);
                 }
                 $self->throw('parse', "Error while parsing for interpolated string", undef, pos($$str_ref))
@@ -236,12 +238,14 @@ sub parse_tree_tt3 {
 
                 ### allow for one more closing tag of the old style
                 if ($$str_ref =~ m{ \G \s* $QR_COMMENTS ([+~=-]?) $old_end }gcxs) {
+                    $QR_COMMENTS = $Template::Alloy::Parse::QR_COMMENTS = "(?sm: \\s* \\# .*? (?: \$ | (?=$self->{'_end_tag'}) ) )*$QR_CX";
                     $post_chomp = $1 || $self->{'POST_CHOMP'};
                     $post_chomp =~ y/-=~+/1230/ if $post_chomp;
                     $continue = 0;
                     $post_op  = 0;
                     next;
                 }
+                $QR_COMMENTS = $Template::Alloy::Parse::QR_COMMENTS = "(?sm: \\s* \\# .*? (?: \$ | (?=$self->{'_end_tag'}) ) )*$QR_CX";
 
             } elsif ($func eq 'META') {
                 unshift @meta, @{ $node->[3] }; # first defined win
