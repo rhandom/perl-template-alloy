@@ -102,10 +102,12 @@ sub _is_empty_named_args {
 sub play_BLOCK {
     my ($self, $block_name, $node, $out_ref) = @_;
 
-    ### store a named reference - but do nothing until something processes it
+    # store a named reference - but do nothing until something processes it
+    my $comp = $self->{'_component'};
     $self->{'BLOCKS'}->{$block_name} = {
         _tree => $node->[4],
-        name  => $self->{'_component'}->{'name'} .'/'. $block_name,
+        name  => $comp->{'name'} .'/'. $block_name,
+        (map {$_ => $comp->{$_}} grep {$comp->{$_}} qw(_filename _content _line_offsets)),
     };
 
     return;
@@ -852,7 +854,7 @@ sub play_USE {
 
             my $pkg = "${base}::${module}";
             (my $req = "$pkg.pm") =~ s|::|/|g;
-            if (UNIVERSAL::isa($pkg, 'UNIVERSAL') || eval { require $req }) {
+            if ($pkg->can('load') || eval { require $req }) {
                 my $shape = $pkg->load;
                 $obj = $shape->new($self->context, $foreign ? @$foreign : map { $self->play_expr($_) } @args);
                 $found = 1;
@@ -862,7 +864,7 @@ sub play_USE {
 
         if (! $found && $self->{'LOAD_PERL'}) {
             (my $req = "$module.pm") =~ s|::|/|g;
-            if (UNIVERSAL::isa($module, 'UNIVERSAL') || eval { require $req }) {
+            if ($module->can('new') || eval { require $req }) {
                 $obj = $module->new($foreign ? @$foreign : map { $self->play_expr($_) } @args);
             }
         }
