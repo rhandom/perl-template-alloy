@@ -16,7 +16,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt) ? 348 : 105;
+use Test::More tests => (! $is_tt) ? 351 : 106;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
 use_ok($module);
@@ -71,108 +71,49 @@ sub process_ok { # process the value and say if it was ok
         warn "# Was:\n$out\n# Should've been:\n$test\n";
         print map {"$_\n"} grep { defined } $obj->error if $obj->can('error');
         print $obj->dump_parse_tree(\$str) if $obj->can('dump_parse_tree');
-        my ($k,$v) = each %{ $obj->{'_documents'} };
+        if ($compile_perl && $obj->can('compile_template')) {
+            foreach my $key (sort keys %{ $obj->{'_documents'} }) {
+                my $v = $obj->{'_documents'}->{$key};
+                print "--------------------- $key ---------------------\n";
+                print ${ $obj->compile_template($v) };
+            }
+        }
         exit;
     }
 }
 
 ### create some files to include
-my $foo_template = "$test_dir/foo.tt";
-END { unlink $foo_template };
-open(my $fh, ">", $foo_template) || die "Couldn't open $foo_template: $!";
-print $fh "([% template.foo %][% INCLUDE bar.tt %])";
-close $fh;
+my @files;
+END { unlink @files };
+sub write_file {
+    my ($file, $content) = @_;
+    push @files, $file;
+    open(my $fh, ">", $file) || die "Couldn't open $file: $!";
+    print $fh $content;
+    close $fh;
+}
 
-my $bar_template = "$test_dir/bar.tt";
-END { unlink $bar_template };
-open($fh, ">", $bar_template) || die "Couldn't open $bar_template: $!";
-print $fh "[% blue %]BAR";
-close $fh;
-
-my $baz_template = "$test_dir/baz.tt";
-END { unlink $baz_template };
-open($fh, ">", $baz_template) || die "Couldn't open $baz_template: $!";
-print $fh "[% SET baz = 42 %][% baz %][% bing %]";
-close $fh;
-
-my $wrap_template = "$test_dir/wrap.tt";
-END { unlink $wrap_template };
-open($fh, ">", $wrap_template) || die "Couldn't open $wrap_template: $!";
-print $fh "Hi[% baz; template.foo; baz = 'wrap' %][% content %]there";
-close $fh;
-
-my $meta_template = "$test_dir/meta.tt";
-END { unlink $meta_template };
-open($fh, ">", $meta_template) || die "Couldn't open $meta_template: $!";
-print $fh "[% META bar='meta.tt' %]Metafoo([% component.foo %]) Metabar([% component.bar %])";
-close $fh;
-
-my $catch_template = "$test_dir/catch.tt";
-END { unlink $catch_template };
-open($fh, ">", $catch_template) || die "Couldn't open $catch_template: $!";
-print $fh "Error ([% error.type %]) - ([% error.info %])";
-close $fh;
-
-my $catch2_template = "$test_dir/catch2.tt";
-END { unlink $catch2_template };
-open($fh, ">", $catch2_template) || die "Couldn't open $catch2_template: $!";
-print $fh "Error2 ([% error.type %]) - ([% error.info %])";
-close $fh;
-
-my $die_template = "$test_dir/die.tt";
-END { unlink $die_template };
-open($fh, ">", $die_template) || die "Couldn't open $die_template: $!";
-print $fh "[% THROW bing 'blang' %])";
-close $fh;
-
-my $config_template = "$test_dir/config.tt";
-END { unlink $config_template };
-open($fh, ">", $config_template) || die "Couldn't open $config_template: $!";
-print $fh "[% CONFIG DUMP => {html => 1} %][% DUMP foo %]";
-close $fh;
-
-my $template_template = "$test_dir/template.tt";
-END { unlink $template_template };
-open($fh, ">", $template_template) || die "Couldn't open $template_template: $!";
-print $fh "<<[% PROCESS \$template %][% content %]>>";
-close $fh;
-
-my $nested_foo_template = "$test_dir/nested/foo.tt";
-END { unlink $nested_foo_template };
-open($fh, ">", $nested_foo_template) || die "Couldn't open $nested_foo_template: $!";
-print $fh "(Nested foo [% INCLUDE bar.tt %])";
-close $fh;
-
-my $nested_bar_template = "$test_dir/nested/bar.tt";
-END { unlink $nested_bar_template };
-open($fh, ">", $nested_bar_template) || die "Couldn't open $nested_bar_template: $!";
-print $fh "Nested bar";
-close $fh;
-
-my $nested_foo2_template = "$test_dir/nested/foo2.tt";
-END { unlink $nested_foo2_template };
-open($fh, ">", $nested_foo2_template) || die "Couldn't open $nested_foo2_template: $!";
-print $fh "(Nested foo [% INCLUDE bar2.tt %])";
-close $fh;
-
-my $nested_bar2_template = "$test_dir/nested/bar2.tt";
-END { unlink $nested_bar2_template };
-open($fh, ">", $nested_bar2_template) || die "Couldn't open $nested_bar2_template: $!";
-print $fh "Nested bar2";
-close $fh;
-
-my $block_defs_template = "$test_dir/blocks.tt";
-END { unlink $block_defs_template };
-open($fh, ">", $block_defs_template) || die "Couldn't open $block_defs_template: $!";
-print $fh "
+write_file("$test_dir/foo.tt",         "([% template.foo %][% INCLUDE bar.tt %])");
+write_file("$test_dir/bar.tt",         "[% blue %]BAR");
+write_file("$test_dir/baz.tt",         "[% SET baz = 42 %][% baz %][% bing %]");
+write_file("$test_dir/wrap.tt",        "Hi[% baz; template.foo; baz = 'wrap' %][% content %]there");
+write_file("$test_dir/meta.tt",        "[% META bar='meta.tt' %]Metafoo([% component.foo %]) Metabar([% component.bar %])");
+write_file("$test_dir/catch.tt",       "Error ([% error.type %]) - ([% error.info %])");
+write_file("$test_dir/catch2.tt",      "Error2 ([% error.type %]) - ([% error.info %])");
+write_file("$test_dir/die.tt",         "[% THROW bing 'blang' %])");
+write_file("$test_dir/config.tt",      "[% CONFIG DUMP => {html => 1} %][% DUMP foo %]");
+write_file("$test_dir/config2.tt",     "[% PROCESS nested %][% BLOCK nested %][% CONFIG DUMP => {html => 0} %][% DUMP foo %][% END %]");
+write_file("$test_dir/template.tt",    "<<[% PROCESS \$template %][% content %]>>");
+write_file("$test_dir/nested/foo.tt",  "(Nested foo [% INCLUDE bar.tt %])");
+write_file("$test_dir/nested/bar.tt",  "Nested bar");
+write_file("$test_dir/nested/foo2.tt", "(Nested foo [% INCLUDE bar2.tt %])");
+write_file("$test_dir/nested/bar2.tt", "Nested bar2");
+write_file("$test_dir/blocks.tt", "
 [%~ BLOCK bar %]bar[% END ~%]
 [%~ BLOCK foo %]I am [% text || 'foo' %] - [% template.blam %][% PROCESS bar %][% END ~%]
 [%~ MACRO foo_m(text) BLOCK %]I am [% text || 'foo_m' %] - [% template.blam %][% END ~%]
 [%~ META blam = 'BLAM' ~%]
-";
-close $fh;
-
-
+");
 
 for my $opt ('normal', 'compile_perl', 'stream') {
     $compile_perl = ($opt eq 'compile_perl');
@@ -350,6 +291,10 @@ process_ok("[% CONFIG DUMP => {html => 0}; DUMP foo; PROCESS config.tt; DUMP foo
     foo = 'FOO';
 <b>DUMP: File "config.tt" line 1</b><pre>foo = &apos;FOO&apos;;
 </pre>DUMP: File "input text" line 1
+    foo = 'FOO';
+}, {foo => 'FOO'}) if ! $is_tt;
+
+process_ok("[% PROCESS 'config2.tt' %]" => qq{DUMP: File "config2.tt/nested" line 1
     foo = 'FOO';
 }, {foo => 'FOO'}) if ! $is_tt;
 
