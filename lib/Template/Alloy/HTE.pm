@@ -665,7 +665,7 @@ See L<Template::Alloy>.
 
 =head1 AUTHOR
 
-Paul Seamons <paul at seamons dot com>
+Paul Seamons <paul@seamons.com>
 
 =head1 LICENSE
 
