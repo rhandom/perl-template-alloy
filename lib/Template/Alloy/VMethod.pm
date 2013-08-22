@@ -591,6 +591,11 @@ Not available in TT - available in HTML::Template::Expr.
 
     [% item.int %] Return the integer portion of the value (0 if none).
 
+=item json
+
+    [% item.json    %] Returns a JSON encoded representation.
+    [% item.json(1) %] Returns a pretty JSON encoded representation.
+
 =item lc
 
 Same as the lower vmethod.  Returns the lowercased version of the item.
@@ -842,6 +847,11 @@ In Template::Alloy and TT3 you may also use normal regular expression notation.
     [% mylist.join %] Joins on space.
     [% mylist.join(", ") Joins on the passed argument.
 
+=item json
+
+    [% mylist.json    %] Returns a JSON encoded representation.
+    [% mylist.json(1) %] Returns a pretty JSON encoded representation.
+
 =item last
 
     [% mylist.last(3) %]  Returns a list of the last 3 items in the list.
@@ -994,6 +1004,11 @@ and represent the keys to be deleted.
 
     [% myhash.items %] Returns a list of the key and values (flattened hash)
 
+=item json
+
+    [% myhash.json    %] Returns a JSON encoded representation.
+    [% myhash.json(1) %] Returns a pretty JSON encoded representation.
+
 =item keys
 
     [% myhash.keys.join(', ') %] Returns an arrayref of the keys of the hash.
@@ -1089,7 +1104,7 @@ found in the $VOBJS hash of Template::Alloy.
 
 =head1 AUTHOR
 
-Paul Seamons <perl at seamons dot com>
+Paul Seamons <paul@seamons.com>
 
 =head1 LICENSE
 

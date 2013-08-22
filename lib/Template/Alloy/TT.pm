@@ -1165,7 +1165,7 @@ $Template::Alloy::Parse::DIRECTIVES hashref.
 
 =head1 AUTHOR
 
-Paul Seamons <perl at seamons dot com>
+Paul Seamons <paul@seamons.com>
 
 =head1 LICENSE
 
