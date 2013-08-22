@@ -259,6 +259,7 @@ sub load_template {
         } else {
             $self->throw('block', "Invalid block definition (missing tree)");
         }
+        $doc->{$_} = $block->{$_} for grep {$block->{$_}} qw(_filename _content _line_offsets name);
         return $doc;
     }
 
@@ -908,6 +909,11 @@ sub node_info {
     my $doc = $self->{'_component'};
     my $i = $node->[1];
     my $j = $node->[2] || return ''; # META can be 0
+    return {
+        file => $doc->{'name'},
+        line => 'unknown',
+        text => 'unknown',
+    } if !$doc->{'_filename'} && !$doc->{'_content'};
     $doc->{'_content'} ||= $self->slurp($doc->{'_filename'});
     my $s = substr(${ $doc->{'_content'} }, $i, $j - $i);
     $s =~ s/^\s+//;
