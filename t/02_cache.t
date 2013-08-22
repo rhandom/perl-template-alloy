@@ -266,7 +266,8 @@ if ($has_encode) {
     my $tt = $module->new(ENCODING => 'UTF8');
     $template = "\x{200b}";
     my $fail;
-    $tt->process(\$template, {}, \my $out) or $fail = $@;
+    $out = '';
+    $tt->process(\$template, {}, \ $out) or $fail = $@;
     ok(!$fail, 'lives ok') || diag $fail;
 }
 
