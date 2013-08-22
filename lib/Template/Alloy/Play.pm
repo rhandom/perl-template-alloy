@@ -198,7 +198,7 @@ sub play_DUMP {
     $_ = $self->play_expr($_) foreach @dump;
 
     ### look for the text describing what to dump
-    my $info = $self->node_info($node);
+    my $info = eval { $self->node_info($node) } || {text => 'unknown', file => 'unknown', line => 'unknown'};
     my $out;
     if (@dump) {
         $out = $handler->(@dump && @dump == 1 ? $dump[0] : \@dump);
