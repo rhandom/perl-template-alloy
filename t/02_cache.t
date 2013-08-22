@@ -264,7 +264,7 @@ if ($has_encode) {
     process_ok($name => $out, {blue => $in, tt_config => [ENCODING => $encoding, COMPILE_EXT => '.ttc']});
 
     my $tt = $module->new(ENCODING => 'UTF8');
-    my $template = "\x{200b}";
+    $template = "\x{200b}";
     my $fail;
     $tt->process(\$template, {}, \my $out) or $fail = $@;
     ok(!$fail, 'lives ok') || diag $fail;
