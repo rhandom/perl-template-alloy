@@ -2,7 +2,7 @@ package Template::Alloy;
 
 ###----------------------------------------------------------------###
 #  See the perldoc in Template/Alloy.pod                             #
-#  Copyright 2007 - 2012 - Paul Seamons                              #
+#  Copyright 2007 - 2013 - Paul Seamons                              #
 #  Distributed under the Perl Artistic License without warranty      #
 ###----------------------------------------------------------------###
 
