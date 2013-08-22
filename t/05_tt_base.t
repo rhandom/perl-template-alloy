@@ -7,19 +7,20 @@
 =cut
 
 use 5.006;
-use vars qw($module $is_tt $compile_perl $use_stream $five_six $has_tt_filter);
+our ($module, $is_tt, $compile_perl, $use_stream, $five_six, $five_eight, $has_tt_filter);
 BEGIN {
     $module = 'Template::Alloy';
     if ($ENV{'USE_TT'} || grep {/tt/i} @ARGV) {
         $module = 'Template';
     }
     $is_tt = $module eq 'Template';
-    $five_six = ($^V < 5.007) ? 1 : 0;
+    $five_six   = ($^V < 5.007) ? 1 : 0;
+    $five_eight = ($^V < 5.009) ? 1 : 0;
     $has_tt_filter = !eval { require Template::Filters } ? 0 : $is_tt ? 1 : 3;
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3254 : 672) - (! $five_six ? 0 : (3 * ($is_tt ? 1 : 2))) + $has_tt_filter;
+use Test::More tests => (! $is_tt ? 3260 : 674) - (!$five_six ? 0 : 3*($is_tt ? 1 : 3)) - (!$five_eight ? 0 : 3*($is_tt?0:1)) + $has_tt_filter;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 use Data::Dumper;
 
@@ -482,10 +483,10 @@ process_ok("[% n.fmt('%#o') %]" => '010', {n => 8}) if ! $is_tt;
 process_ok("[% n.fmt('%#o') %]" => '0', {n => 0}) if ! $is_tt;
 
 process_ok("[% n.fmt('%02d') %]" => '07', {n => 7}) if ! $is_tt;
-process_ok("[% n.fmt('%04.2d') %]" => '  07', {n => 7}) if ! $is_tt;
-process_ok("[% n.fmt('%+04.2d') %]" => ' +07', {n => 7}) if ! $is_tt;
-process_ok("[% n.fmt('% 04.2d') %]" => '  07', {n => 7}) if ! $is_tt;
-process_ok("[% n.fmt('% +04.2d') %]" => ' +07', {n => 7}) if ! $is_tt;
+process_ok("[% n.fmt('%04.2d') %]" => ($five_eight ? '0007' : '  07'), {n => 7}) if ! $is_tt;
+process_ok("[% n.fmt('%+04.2d') %]" => ($five_eight ? '+007' : ' +07'), {n => 7}) if ! $is_tt;
+process_ok("[% n.fmt('% 04.2d') %]" => ($five_eight ? ' 007' : '  07'), {n => 7}) if ! $is_tt;
+process_ok("[% n.fmt('% +04.2d') %]" => ($five_eight ? '+007' : ' +07'), {n => 7}) if ! $is_tt;
 process_ok("[% n.fmt('%02f') %]" => '7.000000', {n => 7}) if ! $is_tt;
 process_ok("[% n.fmt('%04.2f') %]" => '7.00', {n => 7}) if ! $is_tt;
 process_ok("[% n.fmt('%05.2f') %]" => '07.00', {n => 7}) if ! $is_tt;
@@ -911,17 +912,19 @@ process_ok("[% UNLESS 1 %]Yes[% ELSIF 0 %]No[% ELSE %]hmm[% END %]" => 'hmm');
 ###----------------------------------------------------------------###
 print "### comments ######################################## $engine_option\n";
 
-process_ok("[%# one %]" => '', {one => 'ONE'});
-process_ok("[%#\n one %]" => '', {one => 'ONE'});
-process_ok("[%-#\n one %]" => '', {one => 'ONE'})     if ! $is_tt;
-process_ok("[% #\n one %]" => 'ONE', {one => 'ONE'});
+process_ok("[%# one %]f" => 'f', {one => 'ONE'});
+process_ok("[%#\n one %]f" => 'f', {one => 'ONE'});
+process_ok("[%-#\n one %]f" => 'f', {one => 'ONE'})     if ! $is_tt;
+process_ok("[% #\n one %]f" => 'ONEf', {one => 'ONE'});
+process_ok("[% # one %]\n one %]f" => "\n one %]f", {one => "ONE"}) if $is_tt || !$five_eight;
 process_ok("[%# BLOCK one %]" => '');
 process_ok("[%# BLOCK one %]two" => 'two');
 process_ok("[%# BLOCK one %]two[% END %]" => '');
 process_ok("[%# BLOCK one %]two[% END %]three" => '');
+process_ok("[% %]" => '');
 process_ok("[%
-#
--%]
+  # Some comment
+CALL 1 -%]
 foo" => "foo");
 
 ###----------------------------------------------------------------###
