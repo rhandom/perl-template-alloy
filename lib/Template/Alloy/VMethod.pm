@@ -22,6 +22,10 @@ sub new { die "This class is a role for use by packages such as Template::Alloy"
 
 ###----------------------------------------------------------------###
 
+our ($JSON, $JSONP);
+sub json  { $JSON  ||= do { require JSON; JSON->new->utf8->allow_nonref->allow_unknown->allow_blessed->convert_blessed->canonical } }
+sub jsonp { $JSONP ||= do { require JSON; JSON->new->utf8->allow_nonref->allow_unknown->allow_blessed->convert_blessed->canonical->pretty } }
+
 our $SCALAR_OPS = our $ITEM_OPS = {
     '0'      => sub { $_[0] },
     abs      => sub { no warnings; abs shift },
@@ -36,11 +40,12 @@ our $SCALAR_OPS = our $ITEM_OPS = {
     'format' => \&vmethod_format,
     hash     => sub { {value => $_[0]} },
     hex      => sub { no warnings; hex $_[0] },
-    html     => sub { local $_ = $_[0]; s/&/&amp;/g; s/</&lt;/g; s/>/&gt;/g; s/\"/&quot;/g; $_ },
+    html     => sub { local $_ = $_[0]; return $_ if ! $_; s/&/&amp;/g; s/</&lt;/g; s/>/&gt;/g; s/\"/&quot;/g; $_ },
     indent   => \&vmethod_indent,
     int      => sub { no warnings; int $_[0] },
     item     => sub { $_[0] },
     js       => sub { local $_ = $_[0]; return if ! $_; s/\n/\\n/g; s/\r/\\r/g; s/(?<!\\)([\"\'])/\\$1/g; $_ },
+    json     => sub { return json()->encode($_[0]) if ! $_[1]; my $j = jsonp()->encode($_[0]); chomp $j; $j },
     lc       => sub { lc $_[0] },
     lcfirst  => sub { lcfirst $_[0] },
     length   => sub { defined($_[0]) ? length($_[0]) : 0 },
@@ -82,6 +87,7 @@ our $ITEM_METHODS = {
     evaltt   => \&Template::Alloy::item_method_eval,
     file     => \&item_method_redirect,
     redirect => \&item_method_redirect,
+    block_exists => sub { defined($_[1]) && UNIVERSAL::isa($_[0], 'HASH') && $_[0]->{'BLOCKS'} && exists($_[0]->{'BLOCKS'}->{$_[1]}) || 0 },
 };
 
 our $FILTER_OPS = {}; # generally - non-dynamic filters belong in scalar ops
@@ -95,6 +101,7 @@ our $LIST_OPS = {
     import   => sub { my $ref = shift; push @$ref, grep {defined} map {ref eq 'ARRAY' ? @$_ : undef} @_; '' },
     item     => sub { $_[0]->[ $_[1] || 0 ] },
     join     => sub { my ($ref, $join) = @_; $join = ' ' if ! defined $join; no warnings; return join $join, @$ref },
+    json     => sub { return json()->encode($_[0]) if ! $_[1]; my $j = jsonp()->encode($_[0]); chomp $j; $j },
     last     => sub { my ($ref, $i) = @_; return $ref->[-1] if ! $i; return [@{$ref}[-$i .. -1]]},
     list     => sub { $_[0] },
     map      => sub { no warnings; my ($ref, $code) = @_; UNIVERSAL::isa($code, 'CODE') ? [map {$code->($_)} @$ref] : [map {$code} @$ref] },
@@ -130,6 +137,7 @@ our $HASH_OPS = {
     import   => sub { my ($a, $b) = @_; @{$a}{keys %$b} = values %$b if ref($b) eq 'HASH'; '' },
     item     => sub { my ($h, $k) = @_; $k = '' if ! defined $k; $Template::Alloy::QR_PRIVATE && $k =~ $Template::Alloy::QR_PRIVATE ? undef : $h->{$k} },
     items    => sub { [ %{ $_[0] } ] },
+    json     => sub { return json()->encode($_[0]) if ! $_[1]; my $j = jsonp()->encode($_[0]); chomp $j; $j },
     keys     => sub { [keys %{ $_[0] }] },
     list     => \&vmethod_list_hash,
     new      => sub { no warnings; return (@_ == 1 && ref $_[-1] eq 'HASH') ? $_[-1] : {@_} },
