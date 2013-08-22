@@ -1036,7 +1036,7 @@ Methods by these names are used by execute_tree to execute the parsed tree.
 
 =head1 AUTHOR
 
-Paul Seamons <paul at seamons dot com>
+Paul Seamons <paul@seamons.com>
 
 =head1 LICENSE
 

@@ -608,7 +608,7 @@ to allow additional vmethods or filters to be called on existing data.
 
 =head1 AUTHOR
 
-Paul Seamons <paul at seamons dot com>
+Paul Seamons <paul@seamons.com>
 
 =head1 LICENSE
 

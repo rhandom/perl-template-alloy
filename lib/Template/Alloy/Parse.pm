@@ -1222,7 +1222,7 @@ Also the following can be included in a template to view the output in a templat
 
 =head1 AUTHOR
 
-Paul Seamons <paul at seamons dot com>
+Paul Seamons <paul@seamons.com>
 
 =head1 LICENSE
 
