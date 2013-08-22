@@ -251,7 +251,8 @@ sub load_template {
             $self->throw('block', "Unsupported BLOCK type \"$block\"") if ref $block;
             $block = eval { $self->load_template(\$block) } || $self->throw('block', 'Parse error on predefined block');
         }
-        $doc->{'name'} = $file;
+        $doc->{'name'} = ($block->{'name'} && $block->{'name'} ne 'input text') ? $block->{'name'} : $file;
+        $doc->{'_filename'} = $block->{'_filename'} if $block->{'_filename'};
         if ($block->{'_perl'}) {
             $doc->{'_perl'} = $block->{'_perl'};
         } elsif ($block->{'_tree'}) {
@@ -259,7 +260,6 @@ sub load_template {
         } else {
             $self->throw('block', "Invalid block definition (missing tree)");
         }
-        $doc->{$_} = $block->{$_} for grep {$block->{$_}} qw(_filename _content _line_offsets name);
         return $doc;
     }
 

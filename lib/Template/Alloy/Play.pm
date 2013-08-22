@@ -107,7 +107,7 @@ sub play_BLOCK {
     $self->{'BLOCKS'}->{$block_name} = {
         _tree => $node->[4],
         name  => $comp->{'name'} .'/'. $block_name,
-        (map {$_ => $comp->{$_}} grep {$comp->{$_}} qw(_filename _content _line_offsets)),
+        ($comp->{'_filename'} ? (_filename => $comp->{'_filename'}) : ()),
     };
 
     return;
