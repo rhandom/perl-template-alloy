@@ -20,7 +20,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => (! $is_tt ? 3260 : 674) - (!$five_six ? 0 : 3*($is_tt ? 1 : 3)) - (!$five_eight ? 0 : 3*($is_tt?0:1)) + $has_tt_filter;
+use Test::More tests => (! $is_tt ? 3260 : 674) - (!$five_six ? 0 : 3*($is_tt ? 1 : 3)) + $has_tt_filter;
 use constant test_taint => 0 && eval { require Taint::Runtime };
 use Data::Dumper;
 
@@ -917,6 +917,7 @@ process_ok("[%#\n one %]f" => 'f', {one => 'ONE'});
 process_ok("[%-#\n one %]f" => 'f', {one => 'ONE'})     if ! $is_tt;
 process_ok("[% #\n one %]f" => 'ONEf', {one => 'ONE'});
 process_ok("[% # one %]\n one %]f" => "\n one %]f", {one => "ONE"}) if $is_tt || !$five_eight;
+process_ok("[% # one %]\n one %]f" => "ONEf", {one => "ONE"}) if !$is_tt && $five_eight; # I personally think this is the more correct behavior
 process_ok("[%# BLOCK one %]" => '');
 process_ok("[%# BLOCK one %]two" => 'two');
 process_ok("[%# BLOCK one %]two[% END %]" => '');
