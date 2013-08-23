@@ -562,7 +562,7 @@ Allow for Expr parsing to follow proper precedence rules.
 
 =item
 
-Uses all of the caching and opcode tree optimations provided by
+Uses all of the caching and opcode tree optimizations provided by
 Template::Alloy and Template::Alloy::XS.
 
 =item
@@ -599,7 +599,7 @@ Alloy will check the full path array on each include.
 =item debug items
 
 The HTML::Template style options are included here, but you
-can use the TT style DEBUG and DUMP directives to do intropection.
+can use the TT style DEBUG and DUMP directives to do introspection.
 
 =item max_includes
 
@@ -621,7 +621,7 @@ Defines a new function for later use as text vmethod or top level function.
 
 =item C<clear_param>
 
-Empties the paramter list.
+Empties the parameter list.
 
 =item C<query>
 
