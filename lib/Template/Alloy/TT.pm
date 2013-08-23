@@ -13,7 +13,7 @@ use Template::Alloy;
 use Template::Alloy::Operator qw($QR_OP_ASSIGN);
 our $VERSION = $Template::Alloy::VERSION;
 our $QR_COMMENTS;
-our $QR_CX = ($^V < 5.009) ? '' : '+\s*'; # perl 5.10 allows possessive
+use constant posessive => ($^V >= 5.009) || 0; # perl 5.10 allows possessive
 
 sub new { die "This class is a role for use by packages such as Template::Alloy" }
 
@@ -32,8 +32,7 @@ sub parse_tree_tt3 {
     local $self->{'START_TAG'}  = $self->{'START_TAG'} || $Template::Alloy::Parse::TAGS->{$STYLE}->[0];
     local $self->{'_start_tag'} = (! $self->{'INTERPOLATE'}) ? $self->{'START_TAG'} : qr{(?: $self->{'START_TAG'} | (\$))}sx;
 
-    local $QR_COMMENTS = local $Template::Alloy::Parse::QR_COMMENTS = "(?sm: \\s* \\# .*? (?: \$ | (?=$self->{'_end_tag'}) ) )*$QR_CX"
-        if ! $QR_COMMENTS;
+    local $QR_COMMENTS = $QR_COMMENTS || (posessive() ? (local $Template::Alloy::Parse::QR_COMMENTS = "(?sm: \\s*+ \\# .*? (?: \$ | (?=$self->{'_end_tag'}) ) )*+ \\s*+") : $Template::Alloy::Parse::QR_COMMENTS);
     my $dirs    = $Template::Alloy::Parse::DIRECTIVES;
     my $aliases = $Template::Alloy::Parse::ALIASES;
     local @{ $dirs }{ keys %$aliases } = values %$aliases; # temporarily add to the table
@@ -238,14 +237,16 @@ sub parse_tree_tt3 {
 
                 ### allow for one more closing tag of the old style
                 if ($$str_ref =~ m{ \G \s* $QR_COMMENTS ([+~=-]?) $old_end }gcxs) {
-                    $QR_COMMENTS = $Template::Alloy::Parse::QR_COMMENTS = "(?sm: \\s* \\# .*? (?: \$ | (?=$self->{'_end_tag'}) ) )*$QR_CX";
+                    $Template::Alloy::Parse::QR_COMMENTS = "(?sm: \\s*+ \\# .*? (?: \$ | (?=$self->{'_end_tag'}) ) )*+ \\s*+" if posessive();
+                    $QR_COMMENTS = $Template::Alloy::Parse::QR_COMMENTS;
                     $post_chomp = $1 || $self->{'POST_CHOMP'};
                     $post_chomp =~ y/-=~+/1230/ if $post_chomp;
                     $continue = 0;
                     $post_op  = 0;
                     next;
                 }
-                $QR_COMMENTS = $Template::Alloy::Parse::QR_COMMENTS = "(?sm: \\s* \\# .*? (?: \$ | (?=$self->{'_end_tag'}) ) )*$QR_CX";
+                $Template::Alloy::Parse::QR_COMMENTS = "(?sm: \\s*+ \\# .*? (?: \$ | (?=$self->{'_end_tag'}) ) )*+ \\s*+" if posessive();
+                $QR_COMMENTS = $Template::Alloy::Parse::QR_COMMENTS;
 
             } elsif ($func eq 'META') {
                 unshift @meta, @{ $node->[3] }; # first defined win
