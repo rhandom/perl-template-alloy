@@ -121,7 +121,7 @@ from all of the major mini-language based template systems (support
 for non-mini-language based systems will happen eventually).  With
 Template::Alloy you can use your favorite template interface and syntax
 and get features from each of the other major template systems.  And
-Template::Alloy is fast - whether your using mod_perl, cgi, or running
+Template::Alloy is fast - whether your using mod_perl, CGI, or running
 from the commandline.  There is even Template::Alloy::JS for getting
 a little more speed when that is necessary.
 
@@ -138,15 +138,15 @@ provides a full-featured implementation of the Template::Toolkit language.
 After a move to a new company that was using HTML::Template::Expr and
 Text::Tmpl templates, support was investigated and interfaces for
 HTML::Template, HTML::Template::Expr, Text::Tmpl, and Velocity (VTL)
-were added.  All of the various engines offer the same features - just
-using different syntaxes and interfaces.
+were added.  All of the various engines offer the same features - each
+using a different syntax and interface.
 
 More recently, the Template::Alloy::JS capabilities were introduced
 to bring Javascript templates to the server side (along with an increase
 in speed if ran in persistent environments).
 
 Template::Toolkit brought the most to the table.  HTML::Template
-brought the LOOP directive.  HTML::Template::Expr brough more vmethods
+brought the LOOP directive.  HTML::Template::Expr brought more vmethods
 and using vmethods as top level functions.  Text::Tmpl brought the
 COMMENT directive and encouraged speed matching (Text::Tmpl is almost
 entirely C based and is very fast).  The Velocity engine brought
@@ -179,10 +179,10 @@ variable parsing to other applications.
 
 The regex parser returns an AST (abstract syntax tree) of the text,
 directives, variables, and expressions.  All of the different template
-syntaxes compile to the same AST format.  The AST is composed only of
-scalars and arrayrefs and is suitable for sending to JavaScript via
-JSON or sharing with other languages.  The parse_tree method is used
-for returning this AST.
+syntax options compile to the same AST format.  The AST is composed
+only of scalars and arrayrefs and is suitable for sending to
+JavaScript via JSON or sharing with other languages.  The parse_tree
+method is used for returning this AST.
 
 Once at the AST stage, there are two modes of operation.  Alloy can
 either operate directly on the AST using the Play role, or it can
@@ -249,8 +249,9 @@ the following syntax as well.
         Compile => 1,
         TT => 1;
 
-Even with all roles loaded Template::Alloy is still relatively small.  You
-can load all of the roles (except the JS role) by passing "all" to the use statement.
+Even with all roles loaded Template::Alloy is still relatively small.
+You can load all of the roles (except the JS role) by passing "all" to
+the use statement.
 
     use Template::Alloy 'all';
 
@@ -260,10 +261,10 @@ can load all of the roles (except the JS role) by passing "all" to the use state
     # or
     use Template::Alloy all => 1;
 
-As a final option, Template::Alloy also includes the ability to stand-in for
-other template modules.  It is able to do this because it supports the
-majority of the interface of the other template systems.  You
-can do this in the following way:
+As a final option, Template::Alloy also includes the ability to
+stand-in for other template modules.  It is able to do this because it
+supports the majority of the interface of the other template systems.
+You can do this in the following way:
 
     use Template::Alloy qw(Text::Tmpl HTML::Template);
 
@@ -328,9 +329,10 @@ Process takes three arguments.
 
 The $in argument can be any one of:
 
-    String containing the filename of the template to be processed.  The filename should
-    be relative to INCLUDE_PATH.  (See INCLUDE_PATH, ABSOLUTE, and RELATIVE configuration items).
-    In memory caching and file side caching are available for this type.
+    String containing the filename of the template to be processed.
+    The filename should be relative to INCLUDE_PATH.  (See
+    INCLUDE_PATH, ABSOLUTE, and RELATIVE configuration items).  In
+    memory caching and file side caching are available for this type.
 
     A reference to a scalar containing the contents of the template to be processed.
 
@@ -338,10 +340,11 @@ The $in argument can be any one of:
 
     An open filehandle that will return the contents of the template when read.
 
-The $swap argument should be hashref containing key value pairs that will be
-available to variables swapped into the template.  Values can be hashrefs, hashrefs
-of hashrefs and so on, arrayrefs, arrayrefs of arrayrefs and so on, coderefs, objects,
-and simple scalar values such as numbers and strings.  See the section on variables.
+The $swap argument should be hashref containing key value pairs that
+will be available to variables swapped into the template.  Values can
+be hashrefs, hashrefs of hashrefs and so on, arrayrefs, arrayrefs of
+arrayrefs and so on, coderefs, objects, and simple scalar values such
+as numbers and strings.  See the section on variables.
 
 The $out argument can be any one of:
 
@@ -373,27 +376,31 @@ item to the "new" method.  All calls to process would then default to HTE syntax
 
 Similar to the process method but with the following restrictions:
 
-The $in parameter is limited to a filename or a reference a string containing the contents.
+The $in parameter is limited to a filename or a reference a string
+containing the contents.
 
-The $out parameter may only be a reference to a scalar string that output will be appended to.
+The $out parameter may only be a reference to a scalar string that
+output will be appended to.
 
-Additionally, the following configuration variables will be ignored:  VARIABLES,
-PRE_DEFINE, BLOCKS, PRE_PROCESS, PROCESS, POST_PROCESS, AUTO_RESET, OUTPUT.
+Additionally, the following configuration variables will be ignored:
+VARIABLES, PRE_DEFINE, BLOCKS, PRE_PROCESS, PROCESS, POST_PROCESS,
+AUTO_RESET, OUTPUT.
 
 =item C<error>
 
-Should something go wrong during a "process" command, the error that occurred can
-be retrieved via the error method.
+Should something go wrong during a "process" command, the error that
+occurred can be retrieved via the error method.
 
     $obj->process('somefile.html', {a => 'b'}, \$string_ref)
         || die $obj->error;
 
 =item C<output>
 
-HTML::Template way to process a template.  The output method requires that a filename,
-filehandle, scalarref, or arrayref argument was passed to the new method.  All of
-the HT calling conventions for new are supported.  The key difference is that Alloy will
-not actually process the template until the output method is called.
+HTML::Template way to process a template.  The output method requires
+that a filename, filehandle, scalarref, or arrayref argument was
+passed to the new method.  All of the HT calling conventions for new
+are supported.  The key difference is that Alloy will not actually
+process the template until the output method is called.
 
     my $obj = Template::Alloy->new(filename => 'myfile.html');
     $obj->param(\%swap);
@@ -401,17 +408,20 @@ not actually process the template until the output method is called.
 
 See the HTML::Template documentation for more information.
 
-The output method defaults to using the "hte" syntax which will parse HTE and HT documents.
-To parse TT3 or TT2 documents, you must pass the SYNTAX configuration
-item to the "new" method.  All calls to process would then default to TT3 syntax.
+The output method defaults to using the "hte" syntax which will parse
+HTE and HT documents.  To parse TT3 or TT2 documents, you must pass
+the SYNTAX configuration item to the "new" method.  All calls to
+process would then default to TT3 syntax.
 
     my $obj = Template::Alloy->new(SYNTAX => 'tt3');
 
-Any errors that occur during the output method will die with the error as the die value.
+Any errors that occur during the output method will die with the error
+as the die value.
 
 =item C<param>
 
-HTML::Template way to get or set variable values that will be used by the output method.
+HTML::Template way to get or set variable values that will be used by
+the output method.
 
     my $val = $obj->param('key'); # get one value
 
@@ -423,13 +433,14 @@ HTML::Template way to get or set variable values that will be used by the output
 
 See the HTML::Template documentation for more information.
 
-Note: Alloy does not support the die_on_bad_params configuration.  This is because Alloy
-does not resolve variable names until the output method is called.
+Note: Alloy does not support the die_on_bad_params configuration.
+This is because Alloy does not resolve variable names until the output
+method is called.
 
 =item C<define_vmethod>
 
-This method is available for defining extra Virtual methods or filters.  This method is similar
-to Template::Stash::define_vmethod.
+This method is available for defining extra Virtual methods or
+filters.  This method is similar to Template::Stash::define_vmethod.
 
     Template::Alloy->define_vmethod(
         'text',
@@ -478,7 +489,7 @@ We'll add more details in later revisions of this document.
 
 =item C<define_syntax>
 
-This method can be used for adding other syntaxes to or overridding
+This method can be used for adding another syntax to or overriding
 existing ones in the list of choices available in Alloy.  The syntax can
 be chosen by the SYNTAX configuration item.
 
@@ -521,7 +532,7 @@ You will get:
    You've been foo'ed (ralph, 7)
 
 Future revisions of this document will include more samples.
-This is an experimental feature and the api will probably change.
+This is an experimental feature and the API will probably change.
 
 =item C<dump_parse_tree>
 
@@ -566,10 +577,11 @@ hash reference.  This stash is initially populated by either passing a
 hashref as the second argument to the process method, or by setting
 the "VARIABLES" or "PRE_DEFINE" configuration variables.
 
-If you are using the HT and HTE syntaxes, the VAR, IF, UNLESS,
+If you are using either the HT or the HTE syntax, the VAR, IF, UNLESS,
 LOOP, and INCLUDE directives will accept a NAME attribute which may
 only be a single level (non-chained) HTML::Template variable name, or
-they may accept an EXPR attribute which may be any valid TT3 variable or expression.
+they may accept an EXPR attribute which may be any valid TT3 variable
+or expression.
 
 The following are some sample ways to access variables.
 
@@ -779,7 +791,7 @@ Scientific notation is supported.
 
     [% .0000001.fmt('%.1e') %]  Prints 1.0e-07
 
-Hexidecimal input is also supported.
+Hexadecimal input is also supported.
 
     [% 0xff + 0 %]    Prints 255
 
@@ -898,7 +910,7 @@ for the particular directive.
 
 The examples given in this section are done using the
 Template::Toolkit syntax, but can be done in any of the various
-syntaxes.  See L<Template::Alloy::TT>, L<Template::Alloy::HTE>,
+syntax options.  See L<Template::Alloy::TT>, L<Template::Alloy::HTE>,
 L<Template::Alloy::Tmpl>, and L<Template::Alloy::Velocity>.
 
     [% IF 1 %]One[% END %]
@@ -911,7 +923,7 @@ L<Template::Alloy::Tmpl>, and L<Template::Alloy::Velocity>.
 In TT multiple directives can be inside the same set of '[%' and '%]'
 tags as long as they are separated by space or semi-colons (;) (The
 Alloy version of Tmpl allows multiple also - but none of the other
-syntaxes do).  Any block directive that can also be used as a
+syntax options do).  Any block directive that can also be used as a
 post-operative directive (such as IF, WHILE, FOREACH, UNLESS, FILTER,
 and WRAPPER) must be separated from preceding directives with a
 semi-colon if it is being used as a block directive.  It is more safe
@@ -1101,7 +1113,7 @@ Same as the EVALUATE directive.
 Introduced by the Velocity templating language.  Parses and processes the
 contents of the passed item.  This is similar to the eval filter, but
 Velocity needs a directive.  Named arguments may be used for
-reconfiguring the parser.  Any of the items that can be passed to
+re-configuring the parser.  Any of the items that can be passed to
 the CONFIG directive may be passed here.
 
     [% EVALUATE "[% 1 + 3 %]" %]
@@ -1666,7 +1678,7 @@ be re-thrown using $error as the argument to THROW.
       [% CATCH bar %]
         Caught bar.
       [% CATCH DEFAULT %]
-        Caught default - but rethrew.
+        Caught default - but re-threw.
         [% THROW $error %]
       [% END %]
     [% CATCH foo %]
@@ -1679,7 +1691,7 @@ be re-thrown using $error as the argument to THROW.
 
 Would print:
 
-        Caught default - but rethrew.
+        Caught default - but re-threw.
 
       Caught foo.bar.
 
@@ -2333,7 +2345,7 @@ Any of the Data::Dumper configuration items may be passed.
 
 Default undef.  If set, and if Perl version is greater than or equal to
 5.7.3 (when Encode.pm was first included), then Encode::decode will
-be called everytime a template file is processed and will be passed
+be called every time a template file is processed and will be passed
 the value of ENCODING and text from the template.
 
 This item can also be set using [% CONFIG ENCODING => encoding %] before
@@ -2372,7 +2384,7 @@ configuration items.
 
 =item ERRORS
 
-Same as the ERROR configuration item.  Both may be used interchangably.
+Same as the ERROR configuration item.  Both may be used interchangeably.
 
 =item EVAL_PERL
 
@@ -2609,9 +2621,8 @@ Would print:
 
     (1)($bar) (1)()
 
-Note that you can use an exclamation point directly after the
-the dollar to make the variable silent.  This is similar to how
-Velocity works.
+Note that you can use an exclamation point directly after the dollar
+to make the variable silent.  This is similar to how Velocity works.
 
 =item START_TAG
 
@@ -2688,13 +2699,13 @@ Defaults to false.  If set to true, any undefined variable that is
 encountered will cause the processing of the template to abort.  This
 can be caught with a TRY block.  This can be useful for making sure
 that the template only attempts to use variables that were correctly
-initialized similiar in spirit to Perl's "use strict."
+initialized similar in spirit to Perl's "use strict."
 
 When this occurs the strict_throw method is called.
 
 See the STRICT_THROW configuration for additional options.
 
-Similar functionality could be implemeted using UNDEFINED_ANY.
+Similar functionality could be implemented using UNDEFINED_ANY.
 
 The STRICT configuration item can be passed to new or it may also be
 set during runtime using the CONFIG directive.  Once set though it
@@ -2819,7 +2830,7 @@ following is a basic table of changes invoked by using V1DOLLAR.
 
 =item V2EQUALS
 
-Default 1 in TT syntaxes, defaults to 0 in HTML::Template syntaxes.
+Default 1 in the TT syntax, defaults to 0 in the HTML::Template syntax.
 
 If set to 1 then "==" is an alias for "eq" and "!= is an alias for
 "ne".
@@ -2891,7 +2902,7 @@ Content generated by the PRE_PROCESS and POST_PROCESS will come before
 and after (respectively) the content generated by the WRAPPER
 configuration item.
 
-See the WRAPPER direcive for more examples of how wrappers are construted.
+See the WRAPPER directive for more examples of how wrappers are constructed.
 
 =back
 
@@ -3080,7 +3091,7 @@ Resolves the file passed, and then returns its contents.
 =item C<list_filters>
 
 Dynamically loads the filters list from Template::Filters when a filter
-is used that is not natively implemented in Alloy.
+is used that does not have a native implementation in Alloy.
 
 =item C<load_template>
 
@@ -3110,7 +3121,7 @@ here.
 
 =item C<parse_tree>
 
-Parses the passed string ref with the appopriate template syntax.
+Parses the passed string ref with the appropriate template syntax.
 
 See L<Template::Alloy::Parse> for more details.
 
