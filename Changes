@@ -1,3 +1,8 @@
+1.019
+      2013-08-23
+        * Fix comment bug on perl 5.8 or older
+        * Fix many pod typos that accumulated over the years
+
 1.018
       2013-08-22
         * Final prep for release (1.017 never saw cpan)
