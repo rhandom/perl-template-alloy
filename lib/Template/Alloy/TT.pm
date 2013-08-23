@@ -861,7 +861,7 @@ Allow for scientific notation. (TT3)
 
 =item
 
-Allow for hexidecimal input. (TT3)
+Allow for hexadecimal input. (TT3)
 
     [% a = 0xff0000 %][% a %] # = 16711680
 
@@ -928,7 +928,7 @@ TT2 requires them to contain something.
 
 Added a DUMP directive.
 
-Used for Data::Dumpering the passed variable or expression.
+Used for Data::Dumper'ing the passed variable or expression.
 
    [% DUMP a.a %]
 
@@ -998,7 +998,7 @@ and methods and will call in list context.  Item context will
 always call in item (scalar) context and will return one item.
 
 The @() and $() operators allow for functions embedded inside
-to use list and item context (respectively).  They are modelled
+to use list and item context (respectively).  They are modeled
 after the corresponding Perl 6 context specifiers.  See the
 Template::Alloy::Operators perldoc and CALL_CONTEXT configuration
 documentation for more information.
@@ -1091,7 +1091,7 @@ Alloy has better line information
 When debug dirs is on, directives on different lines separated
 by colons show the line they are on rather than a general line range.
 
-Parse errors actually know what line and character they occured at.
+Parse errors actually know what line and character they occurred at.
 
 =back
 
@@ -1118,7 +1118,7 @@ is no immediate plan to support the TT behavior.
 Full support is offered for the PLUGINS and LOAD_PERL configuration
 items.
 
-Also note that Template::Alloy only natively supports the Iterator
+Also note that Template::Alloy only has native support for the Iterator
 plugin.  Any of the other plugins requested will need to provided by
 installing Template::Toolkit or the appropriate plugin module.
 

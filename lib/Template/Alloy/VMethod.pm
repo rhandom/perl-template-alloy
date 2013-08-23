@@ -391,7 +391,7 @@ __END__
 =head1 DESCRIPTION
 
 The Template::Alloy::VMethod role provides all of the extra vmethods,
-filters, and virtual objects that add to the base featureset of
+filters, and virtual objects that add to the base feature set of
 Template::Alloy.  Most of the vmethods listed here are similar to
 those provided by Template::Toolkit.  We will try to keep
 Template::Alloy's in sync.  Template::Alloy also provides several
@@ -649,7 +649,7 @@ called as a filter to bypass the application of the AUTO_FILTER.
 
 =item null
 
-    [% item.null %] Return nonthing.
+    [% item.null %] Return nothing.
 
 If the item contains a coderef it will still be executed, but the result would
 be ignored.
@@ -659,7 +659,7 @@ be ignored.
     [% "377".oct %]
 
 Returns the decimal value of the octal string.  On recent versions of perl you
-may also pass numbers starting with 0x which will be interpreted as hexidecimal,
+may also pass numbers starting with 0x which will be interpreted as hexadecimal,
 and starting with 0b which will be interpreted as binary.
 
 Not available in TT - available in HTML::Template::Expr.
@@ -758,7 +758,7 @@ Returns the square root of the number.
 
 =item srand
 
-Calls the perl srand function to set the interal random seed.  This
+Calls the perl srand function to set the internal random seed.  This
 will affect future calls to the rand vmethod.
 
 =item stderr
@@ -865,8 +865,8 @@ In Template::Alloy and TT3 you may also use normal regular expression notation.
     [% mylist.map(->{ this.upper }) %] Returns a list with the macro played on each item.
     [% mylist.map(->(a){ a.upper }) %] Same thing
 
-The RETURN directive or return list, item, and hash vmethods allow for returning more interesing
-items.
+The RETURN directive or return list, item, and hash vmethods allow for
+returning more interesting items.
 
     [% [1..3].map(->(a){ [1..a].return }) %]
 

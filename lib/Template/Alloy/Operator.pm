@@ -229,7 +229,7 @@ Takes an operator AST in the form of
     [undef, '+', 1, 2]
 
 Essentially, all operators are stored in RPN notation with
-a leading "undef" to disabiguate operators in a normal
+a leading "undef" to disambiguate operators in a normal
 Alloy expression AST.
 
 =item define_operator
@@ -527,7 +527,7 @@ Right associative.  Lower precedence version of the '//' operator.
 
 Macro operator.  Works like the MACRO directive but can be used in
 map, sort, and grep list operations.  Syntax is based on the Perl 6
-pointy sub.  There are two diffences from the MACRO directive.  First
+pointy sub.  There are two differences from the MACRO directive.  First
 is that if no argument list is specified, a default argument list with
 a single parameter named "this" will be used.  Second, the C<-E<gt>>
 operator parses its block as if it was already in a template tag.
