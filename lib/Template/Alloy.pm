@@ -15,7 +15,7 @@ use Template::Alloy::VMethod  qw(define_vmethod $SCALAR_OPS $ITEM_OPS $ITEM_METH
 
 use vars qw($VERSION);
 BEGIN {
-    $VERSION            = '1.019';
+    $VERSION            = '1.020';
 };
 our $QR_PRIVATE         = qr/^[_.]/;
 our $WHILE_MAX          = 1000;
@@ -234,6 +234,7 @@ sub load_template {
             $doc->{'_perl'} = $self->load_perl($doc) if ! $doc->{'_perl'} && $self->{'COMPILE_PERL'}; # second hit
             return $doc;
         }
+        delete @$doc{qw(_tree modtime _content _line_offsets _perl _js)};
 
     ### looks like a previously cached not-found
     } elsif ($self->{'_not_found'}->{$file}) {
