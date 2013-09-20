@@ -1,3 +1,8 @@
+1.020
+      2013-09-20
+        * Fix COMPILE_PERL with GLOBAL_CACHE compilation bug that was modifying the tree.
+        * Fix caching bugs when GLOBAL_CACHE and COMPILE_PERL or COMPILE_JS are used in conjunction with each other.
+
 1.019
       2013-08-23
         * Fix comment bug on perl 5.8 or older
