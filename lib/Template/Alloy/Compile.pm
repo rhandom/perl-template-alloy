@@ -184,8 +184,9 @@ sub compile_tree {
 
         # text nodes are just the bare text
         if (! ref $node) {
-            $node =~ s/([\'\\])/\\$1/g;
-            $code .= "\n\n${indent}\$\$out_ref .= '$node';";
+            my $copy = $node; # must make a copy before modification
+            $copy =~ s/([\'\\])/\\$1/g;
+            $code .= "\n\n${indent}\$\$out_ref .= '$copy';";
             next;
         }
 
