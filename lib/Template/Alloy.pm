@@ -604,6 +604,8 @@ sub play_expr {
                 } else {
                     $ref = undef;
                 }
+            } else {
+                $ref = undef;
             }
         }
 
