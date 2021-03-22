@@ -104,7 +104,7 @@ local $INC{'FooTest2.pm'} = $0;
 {
     package FooTest2;
     use base qw(MyTestPlugin::FooTest);
-    use vars qw($AUTOLOAD);
+    our $AUTOLOAD;
     sub new {
         my $class   = shift;
         my $args    = shift || {}; # note - no plugin context
